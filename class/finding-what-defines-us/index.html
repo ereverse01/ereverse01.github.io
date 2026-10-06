@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<!-- 화면 폭을 종이 폭(794px)에 고정: 어느 기기에서나 줄바꿈이 같아 필기 위치가 어긋나지 않는다 -->
+<meta name="viewport" content="width=794">
+<title>Finding What Defines Us</title>
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: #e9ecef;
+    color: #1a1a1a;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  }
+
+  /* ---------- 도구 막대 ---------- */
+  #toolbar {
+    position: sticky; top: 0; z-index: 10;
+    width: 794px; margin: 0 auto;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+    padding: 8px 12px;
+    background: #fff; border-bottom: 1px solid #ced4da;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    user-select: none; -webkit-user-select: none;
+  }
+  .group { display: flex; align-items: center; gap: 4px; }
+  .group + .group { padding-left: 10px; border-left: 1px solid #dee2e6; }
+  #toolbar button {
+    font: inherit; font-size: 14px;
+    height: 36px; min-width: 36px; padding: 0 10px;
+    border: 1px solid #ced4da; border-radius: 8px;
+    background: #fff; color: #1a1a1a; cursor: pointer;
+  }
+  #toolbar button.on { background: #1c7ed6; border-color: #1c7ed6; color: #fff; }
+  #toolbar button.swatch { width: 30px; min-width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #adb5bd; }
+  #toolbar button.swatch.on { box-shadow: 0 0 0 3px #1c7ed6; }
+  #toolbar button.width i { display: block; width: 18px; border-radius: 4px; background: currentColor; }
+  #toolbar button.action { background: #f1f3f5; font-weight: bold; }
+  #toolbar button.primary { background: #2f9e44; border-color: #2f9e44; color: #fff; font-weight: bold; }
+  .actions { margin-left: auto; }
+
+  /* ---------- 종이 ---------- */
+  .page {
+    position: relative;
+    width: 794px; height: 1123px;        /* A4 */
+    margin: 14px auto;
+    padding: 36px 40px 30px;
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0,0,0,.15);
+    display: flex; flex-direction: column; gap: 12px;
+    overflow: hidden;
+  }
+  .page canvas {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    z-index: 2;
+    mix-blend-mode: multiply;            /* 형광펜이 글자를 가리지 않게 */
+    touch-action: none;
+  }
+  body.hand .page canvas { pointer-events: none; }
+  /* 입력칸은 필기 레이어 위에 둔다 (배경이 투명해 아래 필기가 보인다) */
+  .field { position: relative; z-index: 3; touch-action: none; cursor: text; }
+  body.hand .field { touch-action: auto; }
+
+  header h1 { margin: 0 0 4px; font: bold 30px Georgia, "Times New Roman", serif; }
+  header .unit { font-size: 13px; color: #868e96; letter-spacing: .08em; }
+  .who { display: flex; gap: 18px; margin-top: 8px; font-size: 15px; }
+  .who input {
+    font: inherit; width: 150px; padding: 2px 6px;
+    border: 0; border-bottom: 1.5px solid #495057; background: transparent; outline: none;
+  }
+
+  .pno {
+    align-self: flex-start;
+    font-size: 13px; font-weight: bold; color: #1c7ed6;
+    padding: 1px 10px; border: 1.5px solid #1c7ed6; border-radius: 20px;
+  }
+  .para {
+    margin: 0;
+    font: 16px/1.8 Georgia, "Times New Roman", serif;
+    text-align: left;
+  }
+  .para .n {
+    font: bold 12px "Malgun Gothic", sans-serif; color: #fff; background: #495057;
+    border-radius: 4px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px;
+  }
+  /* 영어 지문 | 우리말 해석 두 칸 */
+  .row { display: grid; grid-template-columns: 1fr 250px; gap: 16px; align-items: start; }
+  .ko {
+    margin: 0; padding-left: 14px; border-left: 2px solid #dee2e6;
+    font-size: 13px; line-height: 1.75; color: #495057; word-break: keep-all;
+  }
+  .ko { position: relative; }
+  /* 학생 화면: 공개 전에는 해석을 가린다 (자리는 그대로 두어 필기 위치가 어긋나지 않게) */
+  .ko.locked { visibility: hidden; }
+  .ko.locked::after {
+    content: "🔒 해석은 선생님이 공개하면 나타나요";
+    visibility: visible; position: absolute; top: 0; left: 14px; right: 0;
+    color: #adb5bd;
+  }
+  body.hide-ko .ko, body.hide-ko .ko::after { visibility: hidden; }
+  .ko.shut { color: #adb5bd; }
+  .ko .reveal { top: 0; right: 0; }
+  blockquote.para {
+    padding: 12px 18px;
+    background: #fff9db; border-left: 5px solid #f59f00; border-radius: 0 8px 8px 0;
+    font-style: italic;
+  }
+  .para .gap { display: inline-block; width: 50px; }   /* 본문 빈칸 ( ) */
+  .para u { text-decoration: underline 2px #e03131; text-underline-offset: 4px; }   /* 문제에 나오는 밑줄 */
+  blockquote cite { display: block; margin-top: 2px; text-align: right; font-size: 13px; color: #868e96; }
+
+  /* ---------- 질문 카드 ---------- */
+  .q {
+    position: relative;
+    border: 1.5px solid #74c0fc; border-radius: 10px; background: #f3f9ff;
+    padding: 8px 12px 6px;
+  }
+  /* 학생 화면: 공개 전에는 내용을 가린다 (자리는 그대로) */
+  .q.locked { background: #f8f9fa; border-color: #dee2e6; border-style: dashed; }
+  .q.locked > * { visibility: hidden; }
+  .q.locked::after {
+    content: "🔒 선생님이 공개하면 질문이 나타나요";
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; color: #868e96;
+  }
+  /* 선생님 화면: 공개 버튼 */
+  .q.shut { border-style: dashed; opacity: .75; }
+  .reveal {
+    position: absolute; top: 6px; right: 8px; z-index: 4;
+    font: bold 13px "Malgun Gothic", sans-serif; padding: 4px 12px;
+    border: 0; border-radius: 20px; background: #2f9e44; color: #fff; cursor: pointer;
+  }
+  .shut > .reveal { background: #e8590c; }
+  .q .head { display: flex; align-items: baseline; gap: 8px; font-size: 15px; line-height: 1.5; }
+  .q .no { font-weight: bold; color: #1c7ed6; }
+  .q .blank { display: inline-block; width: 90px; }   /* 질문의 ___ 는 빈칸으로 보인다 */
+  .q .type {
+    flex: none; font-size: 12px; font-weight: bold; color: #fff;
+    padding: 1px 8px; border-radius: 20px; background: #1c7ed6;
+  }
+  .q .type.vocab { background: #e8590c; }
+  .q .type.grammar { background: #7048e8; }
+  .q .type.apply { background: #0c8599; }
+  .q textarea {
+    display: block; width: 100%; height: 32px; margin-top: 2px; padding: 2px 6px;
+    font: 15px/28px "Malgun Gothic", sans-serif; color: #0b3d91;
+    border: 0; outline: none; resize: none; overflow: hidden;
+    background: repeating-linear-gradient(transparent 0 27px, #a5d8ff 27px 28px);
+  }
+
+  .words {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 14px;
+    padding: 6px 12px; border-radius: 10px; background: #f8f0fc;
+    font-size: 13px; line-height: 1.6; color: #495057;
+  }
+  .words .vt { grid-column: 1 / -1; font-weight: bold; color: #9c36b5; }
+  .words b { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; margin-right: 4px; }
+  .notes {
+    flex: 1; min-height: 0;
+    border: 1.5px dashed #ced4da; border-radius: 10px; padding: 6px 12px;
+    font-size: 13px; color: #868e96;
+    background: repeating-linear-gradient(transparent 0 31px, #e9ecef 31px 32px);
+    background-position: 0 28px;
+  }
+  .foot { margin-top: auto; text-align: center; font-size: 12px; color: #adb5bd; }
+  .notes + .foot { margin-top: 0; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+    padding: 10px 18px; border-radius: 20px;
+    background: rgba(33,37,41,.92); color: #fff; font-size: 15px;
+    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ---------- PDF(인쇄) ---------- */
+  @page { size: A4; margin: 0; }
+  @media print {
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #toolbar, #toast, .reveal { display: none; }
+    .page { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; height: 1122px; }
+    .page:last-of-type { break-after: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="group" id="tools">
+    <button data-tool="hand" title="화면 이동·키보드 입력">✋ 이동</button>
+    <button data-tool="pen">✏️ 펜</button>
+    <button data-tool="hl">🖍 형광펜</button>
+    <button data-tool="eraser">🧽 지우개</button>
+  </div>
+  <div class="group" id="colors"></div>
+  <div class="group" id="widths">
+    <button class="width" data-w="2" title="얇게"><i style="height:2px"></i></button>
+    <button class="width" data-w="3.5" title="보통"><i style="height:4px"></i></button>
+    <button class="width" data-w="6" title="굵게"><i style="height:7px"></i></button>
+  </div>
+  <div class="group">
+    <button id="undo" title="실행 취소">↶</button>
+    <button id="clear">전체 지우기</button>
+    <button id="ko">해석 가리기</button>
+  </div>
+  <div class="group actions">
+    <button class="action" id="copy">내 답 복사</button>
+    <button class="action" id="pdf">PDF로 저장</button>
+    <button class="primary" id="submit">선생님께 제출</button>
+  </div>
+  <div class="group" id="teacherBar" hidden>
+    <b style="color:#e8590c">선생님 화면</b>
+    <button id="showKo">해석 모두 공개</button>
+    <button id="hideAll">모두 숨기기</button>
+  </div>
+</div>
+
+<main id="sheet"></main>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   선생님이 바꾸는 곳 ①: 문단별 질문
+   p: 문단 번호(1~7). 한 문단에 질문이 여럿이면 Q2-1, Q2-2처럼 번호가 붙는다.
+   type: "내용 이해" | "어휘" | "문법" | "적용"
+   q 안의 ___ 는 빈칸으로 보인다.
+   ============================================================ */
+const QUESTIONS = [
+  { p: 1, type: "내용 이해", q: "우리의 정체성은 우리가 (___)할 때 발달한다." },
+  { p: 2, type: "내용 이해", q: "문화적 관습의 예시로 언급된 것을 우리말로 쓰시오." },
+  { p: 2, type: "적용",     q: "어떤 음식이 위와 같은 문화적 관습을 낳았을까?" },
+  { p: 2, type: "내용 이해", q: "위 글의 밑줄 친 문장에서 its adaptability와 food is a stable source of cultural identity가 의미하는 바를 각각 우리말로 써 보세요." },
+  { p: 3, type: "내용 이해", q: "밑줄 친 Korean words related to food가 가리키는 것을 본문에서 찾아 우리말로 모두 쓰세요." },
+  { p: 4, type: "내용 이해", q: "본문에서 언급된 다문화적 정체성을 가지게 되는 경우를 한 가지만 써 보세요." },
+  { p: 4, type: "문법",     q: "위 글의 괄호에 알맞은 말은?" },
+  { p: 5, type: "내용 이해", q: "Why does the writer cry in an Asian grocery store? (Answer in English.)" },
+  { p: 6, type: "어휘",     q: "본문의 괄호에 알맞은 단어는? ① remove ② generate ③ recognize" },
+  { p: 7, type: "문법",     q: "본문의 괄호에 가장 적절한 전치사는? ① at ② along ③ with ④ despite" }
+];
+// 질문 번호 표시: 문단에 질문이 하나면 Q2, 여럿이면 Q2-1, Q2-2
+const LABELS = QUESTIONS.map((Q, i) => {
+  const same = QUESTIONS.filter(x => x.p === Q.p);
+  return same.length > 1 ? `Q${Q.p}-${same.indexOf(Q) + 1}` : `Q${Q.p}`;
+});
+
+/* ============================================================
+   선생님이 바꾸는 곳 ②: 구글 시트 제출 주소
+   구글시트_설정.md 를 따라 만든 웹 앱 URL을 따옴표 안에 붙여 넣으세요.
+   ============================================================ */
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyh3DgLo5VzLIa8QmNcZ4sp0VvLAmpZ-WmZFBUR2j0-fnx7JibiMk1Ge7bYVoHa5ktj/exec";
+
+/* ---------- 지문 ---------- */
+const PARAS = [
+  "Our identity is our sense of who we are. It defines us and our existence. The formation of our identity begins from the moment we are born. However, it is developed further every time we interact socially. These interactions may take place with individuals—such as family members, friends, and teachers—or in formal or informal groups. Cultural identity is a major component of our identity, as it teaches us about ourselves and gives us a sense of belonging.",
+  "Food can be important to our sense of cultural identity because many kinds of food are closely tied to particular cultures. Some kinds of food are also often accompanied by specific cultural practices, such as using chopsticks. Still, food can easily travel across cultures. And when it does, it can develop into something new. One example is Mexican food in America. It is a mixture of Mexican recipes and common American ingredients. <u>Despite its adaptability, food is a stable source of cultural identity for people.</u> This is because food allows them to distinguish themselves from other cultural groups. All aspects of food—including the way it is prepared, cooked, served, and consumed—are part of cultural identity.",
+  "A unique food related word is sometimes an identifier of a certain culture. Take Korea as an example. Korean culture is becoming increasingly popular around the world. More and more people are trying Korean food and enjoying its healthy ingredients and unique flavors. As a result, non-Koreans are becoming familiar with <u>Korean words related to food</u>. Some of these terms have even been added to the Oxford English Dictionary. In fact, 9 of the 26 newly listed Korean words in the dictionary are related to food, including <i>banchan</i>, <i>galbi</i>, <i>samgyeopsal</i>, and <i>mukbang</i>.",
+  "In the modern world, people from different cultural groups often mix with one another. Children whose parents are from two different cultural backgrounds have a multicultural identity. A multicultural identity also forms when parents adopt children from a different culture. These children may struggle to fit in with a certain cultural group. Similarly, immigrants (<span class='gap'></span>) try to adapt to a new culture may experience the same confusion. You might be able to understand the meaning of cultural confusion by reading the following passage written by a Korean American writer.",
+  "Since the day my mother died, I haven’t been able to enter an Asian grocery store without crying. The shop is like a little piece of Korea. Everywhere I look, I see familiar labels on items such as my favorite ramyeon or the tteok for making tteokguk, which Koreans eat on New Year’s Day. The dumpling skins in the freezers bring back memories of my mother. I remember when my mother and I used to fill the skins with ingredients. The sight of the banchan refrigerators reminds me of the taste of my mother’s lovingly made side dishes. With my mother gone, I ask myself, “Am I still Korean? How can I be Korean if I have no one to ask which kind of rice we used to buy anymore?”",
+  "Like the woman in this story, people with a multicultural identity sometimes have problems defining themselves. However, there are some advantages to having a multicultural identity. People with a multicultural identity naturally gain the ability to (<span class='gap'></span>) cultural differences. They can fill the gap between cultures and easily adapt to cross-cultural situations. For example, a Korean American may feel attached to their Korean cultural identity when playing <i>yunnori</i> on Chuseok, a Korean holiday similar to Thanksgiving. However, they will feel attached to their American cultural identity when they watch a parade on Thanksgiving Day.",
+  "Our cultural identity helps us to understand ourselves and our place in the world. Food can be a powerful connection to our cultural identity because it involves cultural traditions that get passed down from one person to another. People (<span class='gap'></span>) a multicultural identity, for example, may feel that their favorite dishes help them define who they are. In this way, food can be a way to maintain a link to the cultures that they come from."
+];
+
+/* 선생님이 바꾸는 곳 ③: 문단별 단어 (질문의 답이 되는 단어는 넣지 않는다) */
+const VOCAB = [
+  [["identity", "정체성"], ["formation", "형성"], ["interact", "상호작용하다"], ["component", "구성 요소"], ["belonging", "소속감"]],
+  [["be tied to", "~와 연결되다"], ["accompany", "동반하다"], ["ingredient", "재료"], ["distinguish", "구별하다"], ["consume", "먹다, 소비하다"]],
+  [["identifier", "식별 표지"], ["increasingly", "점점 더"], ["flavor", "맛"], ["familiar with", "~에 익숙한"], ["term", "용어"]],
+  [["multicultural", "다문화의"], ["adopt", "입양하다"], ["struggle", "어려움을 겪다"], ["fit in", "어울리다"], ["immigrant", "이민자"], ["confusion", "혼란"]],
+  [["grocery store", "식료품점"], ["label", "상표"], ["freezer", "냉동고"], ["dumpling skin", "만두피"], ["side dish", "반찬"]],
+  [["define", "정의하다"], ["advantage", "장점"], ["fill the gap", "간극을 메우다"], ["cross-cultural", "여러 문화가 만나는"], ["attached to", "~에 애착을 느끼는"]],
+  [["connection", "연결"], ["tradition", "전통"], ["pass down", "물려주다"], ["maintain", "유지하다"], ["link", "연결 고리"]]
+];
+
+// 문단별 우리말 해석
+const KO = [
+  "우리의 정체성은 우리가 누구인지에 대한 인식이다. 그것은 우리와 우리의 존재를 규정한다. 정체성의 형성은 우리가 태어나는 순간부터 시작된다. 하지만 정체성은 우리가 사회적으로 상호작용할 때마다 더 발달한다. 이러한 상호작용은 가족, 친구, 선생님 같은 개인들과 이루어질 수도 있고, 공식적이거나 비공식적인 집단 안에서 이루어질 수도 있다. 문화적 정체성은 우리 정체성의 주요 구성 요소인데, 그것이 우리 자신에 대해 알려 주고 소속감을 주기 때문이다.",
+  "많은 음식이 특정 문화와 밀접하게 연결되어 있기 때문에, 음식은 우리의 문화적 정체성에 중요할 수 있다. 어떤 음식은 젓가락 사용과 같은 특정한 문화적 관습을 동반하기도 한다. 그런데도 음식은 문화를 넘어 쉽게 이동할 수 있다. 그리고 그럴 때 음식은 새로운 무언가로 발전할 수 있다. 한 예가 미국의 멕시코 음식이다. 그것은 멕시코 요리법과 흔한 미국 식재료가 섞인 것이다. 이러한 적응성에도 불구하고, 음식은 사람들에게 안정적인 문화적 정체성의 원천이다. 음식이 사람들로 하여금 자신을 다른 문화 집단과 구별할 수 있게 해 주기 때문이다. 음식이 준비되고, 조리되고, 차려지고, 소비되는 방식을 포함한 음식의 모든 측면이 문화적 정체성의 일부이다.",
+  "음식과 관련된 독특한 단어는 때때로 어떤 문화를 나타내는 표지가 된다. 한국을 예로 들어 보자. 한국 문화는 전 세계에서 점점 더 인기를 얻고 있다. 점점 더 많은 사람들이 한국 음식을 먹어 보고 그 건강한 재료와 독특한 맛을 즐기고 있다. 그 결과, 한국인이 아닌 사람들도 음식과 관련된 한국어 단어에 익숙해지고 있다. 이 단어들 중 일부는 옥스퍼드 영어 사전에 추가되기까지 했다. 실제로 사전에 새로 등재된 한국어 단어 26개 중 9개가 음식과 관련된 것으로, 반찬, 갈비, 삼겹살, 먹방 등이 있다.",
+  "현대 세계에서는 서로 다른 문화 집단의 사람들이 자주 섞인다. 부모가 서로 다른 두 문화적 배경 출신인 아이들은 다문화적 정체성을 갖는다. 다문화적 정체성은 부모가 다른 문화의 아이를 입양할 때에도 형성된다. 이 아이들은 특정 문화 집단에 어울리는 데 어려움을 겪을 수 있다. 마찬가지로, 새로운 문화에 적응하려는 이민자들도 같은 혼란을 겪을 수 있다. 한국계 미국인 작가가 쓴 다음 글을 읽으면 문화적 혼란의 의미를 이해할 수 있을 것이다.",
+  "어머니가 돌아가신 날 이후로, 나는 울지 않고는 아시아 식료품점에 들어갈 수 없었다. 그 가게는 작은 한국과 같다. 어디를 보든 내가 좋아하는 라면이나, 한국인들이 설날에 먹는 떡국을 만드는 떡 같은 물건에 붙은 익숙한 상표가 보인다. 냉동고 안의 만두피는 어머니에 대한 기억을 떠올리게 한다. 어머니와 내가 만두피에 소를 채워 넣곤 하던 때가 기억난다. 반찬 냉장고를 보면 어머니가 사랑을 담아 만든 반찬의 맛이 떠오른다. 어머니가 떠나신 지금, 나는 스스로에게 묻는다. “나는 여전히 한국인일까? 우리가 예전에 어떤 쌀을 사곤 했는지 물어볼 사람이 더 이상 없는데, 내가 어떻게 한국인일 수 있을까?”",
+  "이 이야기 속 여성처럼, 다문화적 정체성을 가진 사람들은 때때로 자신을 정의하는 데 어려움을 겪는다. 하지만 다문화적 정체성을 갖는 것에는 몇 가지 장점이 있다. 다문화적 정체성을 가진 사람들은 문화적 차이를 알아차리는 능력을 자연스럽게 얻는다. 그들은 문화 간의 간극을 메우고 여러 문화가 만나는 상황에 쉽게 적응할 수 있다. 예를 들어, 한국계 미국인은 추수감사절과 비슷한 한국 명절인 추석에 윷놀이를 할 때 한국 문화 정체성에 애착을 느낄 수 있다. 하지만 추수감사절에 퍼레이드를 볼 때는 미국 문화 정체성에 애착을 느낄 것이다.",
+  "우리의 문화적 정체성은 우리 자신과 세상 속 우리의 위치를 이해하도록 도와준다. 음식은 한 사람에게서 다른 사람에게로 전해지는 문화적 전통을 담고 있기 때문에, 우리의 문화적 정체성과 이어 주는 강력한 연결 고리가 될 수 있다. 예를 들어, 다문화적 정체성을 가진 사람들은 자신이 좋아하는 음식이 자신이 누구인지 정의하는 데 도움이 된다고 느낄 수 있다. 이런 식으로, 음식은 그들이 비롯된 문화들과의 연결을 유지하는 방법이 될 수 있다."
+];
+
+// 종이 각 장에 무엇을 놓을지: 숫자 = 문단 번호(0부터), 문자열 = 쪽수 표시
+const LAYOUT = [
+  ["header", 0, "notes"],
+  ["101p", 1, "notes"],
+  [2, "notes"],
+  ["102p", 3, "notes"],
+  [4, "notes"],
+  ["103p", 5, "notes"],
+  ["104p", 6, "notes"]
+];
+const QUOTE = 4;                       // 인용문 문단
+const PAGE_W = 794, PAGE_H = 1123;
+const STORE = "finding-what-defines-us-v2";
+const TYPE_CLASS = { "어휘": "vocab", "문법": "grammar", "적용": "apply" };
+const COLORS = [                       // [펜 색, 형광펜 색]
+  ["#1a1a1a", "#fff27a"], ["#e03131", "#ffc9c9"], ["#1c7ed6", "#a5d8ff"], ["#2f9e44", "#b2f2bb"]
+];
+
+/* ---------- 저장된 내용 불러오기 ---------- */
+let data = { sid: "", name: "", answers: [], strokes: [] };
+try { Object.assign(data, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) {}
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE, JSON.stringify(data)); } catch (e) {}
+  }, 300);
+}
+
+/* ---------- 화면 만들기 ---------- */
+const sheet = document.getElementById("sheet");
+const canvases = [];
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+LAYOUT.forEach((items, p) => {
+  let html = "";
+  for (const it of items) {
+    if (it === "header") {
+      html += `<header>
+        <div class="unit">READING</div>
+        <h1>Finding What Defines Us</h1>
+        <div class="who">
+          <label>학번 <input id="sid" class="field" autocomplete="off"></label>
+          <label>이름 <input id="name" class="field" autocomplete="off"></label>
+        </div>
+      </header>`;
+    } else if (it === "notes") {
+      html += `<div class="notes">메모</div>`;
+    } else if (typeof it === "string") {
+      html += `<div class="pno">${it}</div>`;
+    } else {
+      const num = `<span class="n">${it + 1}</span>`;
+      const en = it === QUOTE
+        ? `<blockquote class="para">${num}${PARAS[it]}<cite>Adapted from Michelle Zauner, <i>Crying in H Mart</i></cite></blockquote>`
+        : `<p class="para">${num}${PARAS[it]}</p>`;
+      html += `<div class="row">${en}<p class="ko" data-k="${it}">${KO[it]}</p></div>`;
+      QUESTIONS.forEach((Q, qi) => {
+        if (Q.p !== it + 1) return;
+        html += `<div class="q" data-q="${qi}">
+          <div class="head"><span class="no">${LABELS[qi]}</span>
+            <span class="type ${TYPE_CLASS[Q.type] || ""}">${esc(Q.type)}</span>
+            <span>${esc(Q.q).replace(/_{3,}/g, '<span class="blank"></span>')}</span></div>
+          <textarea class="field" data-q="${qi}" placeholder="위의 ✋ 이동 버튼을 누르고 키보드로 쓰세요"></textarea>
+        </div>`;
+      });
+      html += `<div class="words"><span class="vt">📘 Words</span>${
+        VOCAB[it].map(([w, m]) => `<span><b>${w}</b> ${m}</span>`).join("")}</div>`;
+    }
+  }
+  html += `<div class="foot">${p + 1} / ${LAYOUT.length}</div><canvas></canvas>`;
+  const page = document.createElement("section");
+  page.className = "page";
+  page.innerHTML = html;
+  sheet.appendChild(page);
+
+  const cv = page.querySelector("canvas");
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = PAGE_W * dpr; cv.height = PAGE_H * dpr;
+  cv.getContext("2d").scale(dpr, dpr);
+  canvases.push(cv);
+  if (!data.strokes[p]) data.strokes[p] = [];
+});
+
+// 학번·이름·답 입력칸
+for (const id of ["sid", "name"]) {
+  const el = document.getElementById(id);
+  el.value = data[id] || "";
+  el.addEventListener("input", () => { data[id] = el.value; save(); });
+}
+document.querySelectorAll("textarea[data-q]").forEach(t => {
+  t.value = data.answers[t.dataset.q] || "";
+  // 한 줄로 시작하고, 답이 길어지면 최대 4줄까지 늘어난다
+  const fit = () => { t.style.height = "32px"; t.style.height = Math.min(t.scrollHeight, 116) + "px"; };
+  t.addEventListener("input", () => { data.answers[t.dataset.q] = t.value; fit(); save(); });
+  fit();
+});
+
+/* ---------- 그리기 ---------- */
+function drawStroke(ctx, s) {
+  // darken: 같은 색 형광펜이 겹쳐도 진해지지 않는다
+  ctx.globalCompositeOperation = s.hl ? "darken" : "source-over";
+  ctx.strokeStyle = ctx.fillStyle = s.c;
+  ctx.lineWidth = s.w; ctx.lineCap = s.hl ? "butt" : "round"; ctx.lineJoin = "round";
+  const pt = s.pts;
+  ctx.beginPath();
+  if (pt.length === 2) {
+    if (s.hl) ctx.fillRect(pt[0] - s.w / 2, pt[1] - s.w / 2, s.w, s.w);
+    else { ctx.arc(pt[0], pt[1], s.w / 2, 0, 7); ctx.fill(); }
+    return;
+  }
+  ctx.moveTo(pt[0], pt[1]);
+  for (let i = 2; i < pt.length; i += 2) ctx.lineTo(pt[i], pt[i + 1]);
+  ctx.stroke();
+}
+function redraw(p) {
+  const ctx = canvases[p].getContext("2d");
+  ctx.clearRect(0, 0, PAGE_W, PAGE_H);
+  data.strokes[p].forEach(s => drawStroke(ctx, s));
+}
+canvases.forEach((_, p) => redraw(p));
+
+/* ---------- 도구 상태 ---------- */
+let tool = "hand", colorIdx = 0, width = 3.5;
+const history = [];                    // {p, add: stroke} 또는 {p, del: [strokes]}
+
+const colorsBox = document.getElementById("colors");
+COLORS.forEach((_, i) => {
+  const b = document.createElement("button");
+  b.className = "swatch"; b.dataset.c = i;
+  colorsBox.appendChild(b);
+});
+function refreshToolbar() {
+  document.body.classList.toggle("hand", tool === "hand");
+  document.querySelectorAll("#tools button").forEach(b => b.classList.toggle("on", b.dataset.tool === tool));
+  document.querySelectorAll("#colors button").forEach((b, i) => {
+    b.style.background = COLORS[i][tool === "hl" ? 1 : 0];
+    b.classList.toggle("on", i === colorIdx);
+  });
+  document.querySelectorAll("#widths button").forEach(b => b.classList.toggle("on", +b.dataset.w === width));
+}
+document.getElementById("tools").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  tool = b.dataset.tool; refreshToolbar();
+});
+colorsBox.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  colorIdx = +b.dataset.c;
+  if (tool === "hand" || tool === "eraser") tool = "pen";
+  refreshToolbar();
+});
+document.getElementById("widths").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  width = +b.dataset.w; refreshToolbar();
+});
+refreshToolbar();
+
+document.getElementById("undo").addEventListener("click", () => {
+  const h = history.pop(); if (!h) return;
+  const list = data.strokes[h.p];
+  if (h.add) { const i = list.indexOf(h.add); if (i >= 0) list.splice(i, 1); }
+  else list.push(...h.del);
+  redraw(h.p); save();
+});
+document.getElementById("ko").addEventListener("click", e => {
+  const hide = document.body.classList.toggle("hide-ko");
+  e.target.textContent = hide ? "해석 보기" : "해석 가리기";
+  e.target.classList.toggle("on", hide);
+});
+document.getElementById("clear").addEventListener("click", () => {
+  if (!confirm("필기를 모두 지울까요? (입력한 답은 그대로 남습니다)")) return;
+  data.strokes.forEach((list, p) => {
+    if (list.length) history.push({ p, del: list.splice(0) });
+    redraw(p);
+  });
+  save();
+});
+
+/* ---------- 펜 입력: 펜·마우스는 필기, 손가락은 스크롤 ---------- */
+let drawing = null;                    // {p, id, stroke, erased}
+let finger = null;                     // {id, y, moved, v, t}
+let glide = 0;
+
+function pos(cv, e) {
+  const r = cv.getBoundingClientRect(), k = PAGE_W / r.width;
+  return [Math.round((e.clientX - r.left) * k * 10) / 10, Math.round((e.clientY - r.top) * k * 10) / 10];
+}
+function eraseAt(p, x, y) {
+  const list = data.strokes[p], R = 12;
+  let hit = false;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const pt = list[i].pts, r = R + list[i].w / 2;
+    for (let j = 0; j < pt.length; j += 2) {
+      if (Math.abs(pt[j] - x) < r && Math.abs(pt[j + 1] - y) < r) {
+        drawing.erased.push(list.splice(i, 1)[0]); hit = true; break;
+      }
+    }
+  }
+  if (hit) redraw(p);
+}
+
+function startDraw(cv, p, e) {
+  if (e.button > 0 || drawing) return;
+  e.preventDefault();
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  const [x, y] = pos(cv, e);
+  drawing = { p, id: e.pointerId, erased: [] };
+  if (tool === "eraser") { eraseAt(p, x, y); return; }
+  const hl = tool === "hl";
+  drawing.stroke = { c: COLORS[colorIdx][hl ? 1 : 0], w: hl ? width * 5 : width, hl: hl ? 1 : 0, pts: [x, y] };
+}
+function startFinger(e) {
+  if (drawing) return;                 // 펜 쓰는 중 손바닥은 무시
+  cancelAnimationFrame(glide);
+  finger = { id: e.pointerId, y: e.clientY, moved: 0, v: 0, t: e.timeStamp };
+}
+
+// 손가락: 어디서든 끌면 스크롤
+window.addEventListener("pointermove", e => {
+  if (!finger || e.pointerId !== finger.id) return;
+  const dy = e.clientY - finger.y, dt = Math.max(1, e.timeStamp - finger.t);
+  finger.moved += Math.abs(dy);
+  finger.v = 0.7 * finger.v + 0.3 * (dy / dt);
+  finger.y = e.clientY; finger.t = e.timeStamp;
+  window.scrollBy(0, -dy);
+});
+const fingerEnd = e => {
+  if (!finger || e.pointerId !== finger.id) return;
+  const f = finger; finger = null;
+  if (f.moved >= 8 && Math.abs(f.v) > 0.2) coast(f.v);
+};
+window.addEventListener("pointerup", fingerEnd);
+window.addEventListener("pointercancel", fingerEnd);
+
+// 입력칸은 필기 레이어 위에 있다: 손가락·마우스로 누르면 키보드 입력, 펜으로 쓰면 필기
+document.querySelectorAll(".field").forEach(f => {
+  const cv = f.closest(".page").querySelector("canvas"), p = canvases.indexOf(cv);
+  f.addEventListener("pointerdown", e => {
+    if (tool === "hand") return;
+    if (e.pointerType === "touch") startFinger(e);
+    else if (e.pointerType === "pen") startDraw(cv, p, e);
+  });
+});
+
+canvases.forEach((cv, p) => {
+  cv.addEventListener("pointerdown", e => {
+    if (e.pointerType === "touch") startFinger(e);
+    else startDraw(cv, p, e);
+  });
+
+  cv.addEventListener("pointermove", e => {
+    if (!drawing || e.pointerId !== drawing.id) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of evs.length ? evs : [e]) {
+      const [x, y] = pos(cv, ev);
+      if (!drawing.stroke) { eraseAt(p, x, y); continue; }
+      const pt = drawing.stroke.pts, n = pt.length;
+      if (x === pt[n - 2] && y === pt[n - 1]) continue;
+      pt.push(x, y);
+      // 방금 그은 조각만 그린다 (끝이 매끄럽게 이어지도록 한 점 앞에서 시작)
+      const from = Math.max(0, n - 4);
+      drawStroke(cv.getContext("2d"), { ...drawing.stroke, pts: pt.slice(from) });
+    }
+  });
+
+  const end = e => {
+    if (!drawing || e.pointerId !== drawing.id) return;
+    const d = drawing; drawing = null;
+    if (d.stroke) {
+      data.strokes[p].push(d.stroke);
+      history.push({ p, add: d.stroke });
+      if (d.stroke.pts.length === 2) drawStroke(cv.getContext("2d"), d.stroke);
+    } else if (d.erased.length) {
+      history.push({ p, del: d.erased });
+    }
+    save();
+  };
+  cv.addEventListener("pointerup", end);
+  cv.addEventListener("pointercancel", end);
+});
+
+// 손가락 스크롤 뒤 미끄러짐
+function coast(v) {
+  let last = performance.now();
+  const step = now => {
+    const dt = now - last; last = now;
+    window.scrollBy(0, -v * dt);
+    v *= Math.pow(0.95, dt / 16);
+    if (Math.abs(v) > 0.03) glide = requestAnimationFrame(step);
+  };
+  glide = requestAnimationFrame(step);
+}
+/* ---------- 내보내기 ---------- */
+const toastEl = document.getElementById("toast");
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg; toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2500);
+}
+function answersText() {
+  const lines = [`[Finding What Defines Us] ${data.sid || "학번 없음"} ${data.name || "이름 없음"}`];
+  QUESTIONS.forEach((_, i) => lines.push(`${LABELS[i]}. ${(data.answers[i] || "").trim() || "(미작성)"}`));
+  return lines.join("\n");
+}
+function needName() {
+  if (data.sid.trim() && data.name.trim()) return false;
+  alert("첫 장 맨 위에 학번과 이름을 먼저 써 주세요.");
+  window.scrollTo(0, 0);
+  return true;
+}
+
+document.getElementById("pdf").addEventListener("click", () => window.print());
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const text = answersText();
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+  }
+  toast("답을 복사했어요. 붙여넣기 하세요.");
+});
+
+document.getElementById("submit").addEventListener("click", async () => {
+  if (!SHEET_URL) { alert("아직 제출 주소가 설정되지 않았어요. 선생님께 알려 주세요."); return; }
+  if (needName()) return;
+  if (!confirm("지금 쓴 답을 선생님께 제출할까요?")) return;
+  try {
+    // 응답을 읽을 수 없는 방식(no-cors)이라 전송 여부만 확인한다
+    await fetch(SHEET_URL, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        sid: data.sid.trim(), name: data.name.trim(),
+        labels: LABELS,
+        answers: QUESTIONS.map((_, i) => (data.answers[i] || "").trim())
+      })
+    });
+    toast("제출했어요!");
+  } catch (err) {
+    alert("제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.");
+  }
+});
+
+/* ---------- 질문 공개: 선생님이 누르면 학생 화면에 열림 ----------
+   선생님은 index.html#teacher (또는 선생님용.html)로 연다.
+   공개 상태는 구글 Apps Script에 저장되고, 학생 화면은 5초마다 확인한다. */
+const TEACHER = location.hash === "#teacher" || /[?&]teacher\b/.test(location.search);
+// 공개할 수 있는 것: 질문 카드(번호 0~6)와 해석(번호 100~106)을 한 목록으로 관리한다
+const KO_ID = 100;
+const items = [
+  ...[...document.querySelectorAll(".q[data-q]")].map(el => ({ el, id: +el.dataset.q, name: LABELS[+el.dataset.q] })),
+  ...[...document.querySelectorAll(".ko[data-k]")].map(el => ({ el, id: KO_ID + +el.dataset.k, name: `${+el.dataset.k + 1}번 문단 해석` }))
+];
+let openList = Array.isArray(data.open) ? data.open : [];
+let everLoaded = false, failCount = 0;
+
+function applyOpen() {
+  // 공개 상태를 한 번도 받아오지 못하면(제출 주소 없음·연결 실패) 모두 보여 준다
+  const all = !SHEET_URL || (!everLoaded && failCount >= 2);
+  items.forEach(({ el, id }) => {
+    const on = openList.includes(id);
+    el.classList.toggle("locked", !TEACHER && !all && !on);
+    el.classList.toggle("shut", TEACHER && !on);
+    const b = el.querySelector(".reveal");
+    if (b) b.textContent = on ? "공개 중 · 숨기기" : (id >= KO_ID ? "해석 공개" : "학생에게 공개");
+  });
+}
+async function poll() {
+  if (!SHEET_URL) return;
+  try {
+    const res = await fetch(SHEET_URL + "?t=" + Date.now());
+    const j = await res.json();
+    if (!Array.isArray(j.open)) throw new Error("no open list");
+    openList = j.open; data.open = j.open; everLoaded = true; failCount = 0; save();
+  } catch (err) {
+    failCount++;
+  }
+  applyOpen();
+}
+
+async function sendOpen(list) {
+  let key;
+  try { key = localStorage.getItem("teacherKey"); } catch (e) {}
+  key = key || prompt("선생님 비밀번호를 입력하세요 (Apps Script에 정한 것)");
+  // 전각 숫자(２９６６)·앞뒤 공백을 일반 글자로 바꿔 입력 실수를 줄인다
+  key = (key || "").normalize("NFKC").trim();
+  if (!key) return;
+  try {
+    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "open", key, open: list }) });
+    const j = await res.json();
+    if (!j.ok) { try { localStorage.removeItem("teacherKey"); } catch (e) {} alert("비밀번호가 맞지 않아요."); return; }
+    try { localStorage.setItem("teacherKey", key); } catch (e) {}
+    openList = j.open; everLoaded = true; applyOpen();
+    return true;
+  } catch (err) {
+    alert("공개 상태를 보내지 못했어요. 인터넷 연결과 Apps Script 배포를 확인해 주세요.");
+  }
+}
+
+if (TEACHER) {
+  document.getElementById("teacherBar").hidden = false;
+  items.forEach(({ el, id, name }) => {
+    const b = document.createElement("button");
+    b.className = "reveal";
+    b.addEventListener("click", async () => {
+      const on = openList.includes(id);
+      const list = on ? openList.filter(x => x !== id) : [...openList, id].sort((a, b) => a - b);
+      if (await sendOpen(list)) toast(`${name}을(를) ${on ? "숨겼어요" : "학생 화면에 공개했어요"}`);
+    });
+    el.appendChild(b);
+  });
+  document.getElementById("showKo").addEventListener("click", async () => {
+    const list = [...new Set([...openList, ...KO.map((_, i) => KO_ID + i)])].sort((a, b) => a - b);
+    if (await sendOpen(list)) toast("모든 해석을 학생 화면에 공개했어요");
+  });
+  document.getElementById("hideAll").addEventListener("click", async () => {
+    if (confirm("질문과 해석을 모두 학생 화면에서 숨길까요?") && await sendOpen([])) toast("질문과 해석을 모두 숨겼어요");
+  });
+}
+applyOpen();
+poll();
+setInterval(() => { if (document.visibilityState === "visible") poll(); }, TEACHER ? 15000 : 5000);
+</script>
+</body>
+</html>
