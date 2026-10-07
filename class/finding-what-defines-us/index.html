@@ -175,17 +175,102 @@
   }
   #toast.show { opacity: 1; }
 
+  /* ---------- 표지 ---------- */
+  #cover {
+    position: fixed; inset: 0; z-index: 50; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, #1f2a44 0%, #3b2a4d 55%, #6b3b3b 100%);
+    color: #fff; text-align: center;
+    transition: opacity .5s, visibility .5s;
+  }
+  #cover.gone { opacity: 0; visibility: hidden; }
+  #cover svg.bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #cover .inner { position: relative; padding: 0 40px; }
+  #cover .eyebrow {
+    font: bold min(15px, 2.4vh) "Malgun Gothic", sans-serif; letter-spacing: .35em; color: #ffd8a8;
+  }
+  #cover h1 {
+    margin: min(14px, 2vh) 0 0;
+    font: bold min(96px, 11vh, 11.5vw)/1.02 Georgia, "Times New Roman", serif;
+    white-space: nowrap;
+    text-shadow: 0 4px 24px rgba(0,0,0,.35);
+  }
+  #cover h1 .self { display: block; font-style: italic; color: #ffd43b; }
+  #cover .lesson {
+    margin-top: min(22px, 3vh);
+    font: italic min(26px, 3.6vh) Georgia, "Times New Roman", serif; color: #f1f3f5;
+  }
+  #cover .tag { margin-top: min(8px, 1.2vh); font-size: min(16px, 2.6vh); color: #ced4da; }
+  #cover .start {
+    margin-top: min(40px, 5vh);
+    font: bold min(22px, 3.4vh) "Malgun Gothic", sans-serif;
+    padding: min(16px, 2.2vh) min(52px, 7vh);
+    border: 0; border-radius: 999px; cursor: pointer;
+    color: #3b2a4d; background: #ffd43b;
+    box-shadow: 0 8px 24px rgba(255, 212, 59, .35);
+  }
+  #cover .start:active { transform: scale(.97); }
+
   /* ---------- PDF(인쇄) ---------- */
   @page { size: A4; margin: 0; }
   @media print {
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #toolbar, #toast, .reveal { display: none; }
+    #toolbar, #toast, .reveal, #cover { display: none; }
     .page { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; height: 1122px; }
     .page:last-of-type { break-after: auto; }
   }
 </style>
 </head>
 <body>
+
+<!-- 표지: 지문(指紋) 무늬 + 지문 속 음식들. 시작하기를 누르면 학습지가 나온다 -->
+<div id="cover">
+  <svg class="bg" viewBox="0 0 794 1123" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <g id="i-bowl">
+        <path d="M-44 0 A44 36 0 0 0 44 0 Z" fill="#ff8787"/>
+        <path d="M-38 0 A38 22 0 0 1 38 0 Z" fill="#f8f9fa"/>
+        <path d="M-44 0 H44" stroke="#c92a2a" stroke-width="4"/>
+        <path d="M6 -46 L58 -8 M16 -52 L64 -16" stroke="#e9c46a" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <g id="i-dumpling">
+        <path d="M-40 12 Q-36 -34 0 -34 Q36 -34 40 12 Z" fill="#f8f0e3"/>
+        <path d="M-22 -26 l6 14 M-8 -32 l3 15 M8 -32 l-3 15 M22 -26 l-6 14" stroke="#d6c4a8" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <g id="i-taco">
+        <path d="M-42 14 A42 42 0 0 1 42 14 Z" fill="#ffd43b"/>
+        <path d="M-34 -2 q8 -10 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#8ce99a" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="-14" cy="-12" r="5" fill="#ff6b6b"/><circle cx="12" cy="-14" r="5" fill="#ff6b6b"/>
+      </g>
+      <g id="i-tteok">
+        <ellipse cx="-22" cy="0" rx="17" ry="11" fill="#f8f9fa"/>
+        <ellipse cx="6" cy="-6" rx="17" ry="11" fill="#fff4e6"/>
+        <ellipse cx="22" cy="10" rx="17" ry="11" fill="#f8f9fa"/>
+      </g>
+      <g id="i-sticks">
+        <path d="M-40 30 L40 -30 M-28 38 L48 -20" stroke="#e9c46a" stroke-width="6" stroke-linecap="round"/>
+      </g>
+    </defs>
+    <g id="fp" fill="none" stroke="#ffd8a8" stroke-linecap="round" opacity=".22"></g>
+    <g opacity=".9">
+      <use href="#i-bowl" transform="translate(110 170) rotate(-12) scale(1.3)"/>
+      <use href="#i-dumpling" transform="translate(680 150) rotate(10) scale(1.2)"/>
+      <use href="#i-taco" transform="translate(690 930) rotate(-8) scale(1.3)"/>
+      <use href="#i-tteok" transform="translate(110 940) rotate(8) scale(1.3)"/>
+      <use href="#i-sticks" transform="translate(70 560) rotate(20)"/>
+      <use href="#i-dumpling" transform="translate(730 560) rotate(-14) scale(.9)"/>
+      <use href="#i-tteok" transform="translate(400 90) scale(.8)"/>
+      <use href="#i-bowl" transform="translate(400 1040) scale(.9)"/>
+    </g>
+  </svg>
+  <div class="inner">
+    <div class="eyebrow">ENGLISH READING</div>
+    <h1>One-of-a-kind <span class="self">Self</span></h1>
+    <div class="lesson">Finding What Defines Us</div>
+    <div class="tag">음식과 문화 속에서 나를 찾는 시간</div>
+    <button class="start" id="start">시작하기 →</button>
+  </div>
+</div>
 
 <div id="toolbar">
   <div class="group" id="tools">
@@ -782,6 +867,32 @@ if (TEACHER) {
 applyOpen();
 poll();
 setInterval(() => { if (document.visibilityState === "visible") poll(); }, TEACHER ? 15000 : 5000);
+
+/* ---------- 표지 ---------- */
+(() => {
+  // 지문(指紋) 무늬: 크기가 다른 타원 고리를 군데군데 끊어 그린다
+  const fp = document.getElementById("fp");
+  for (let i = 0; i < 16; i++) {
+    const rx = 26 + i * 22, ry = rx * 1.28;
+    const e = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    e.setAttribute("cx", 397); e.setAttribute("cy", 560);
+    e.setAttribute("rx", rx); e.setAttribute("ry", ry);
+    e.setAttribute("stroke-width", 7);
+    const c = 2 * Math.PI * Math.sqrt((rx * rx + ry * ry) / 2);
+    e.setAttribute("stroke-dasharray", `${c * (.55 + (i % 3) * .1)} ${c * .06} ${c * .18} ${c * .05}`);
+    e.setAttribute("stroke-dashoffset", i * 37);
+    fp.appendChild(e);
+  }
+  const cover = document.getElementById("cover");
+  // 같은 탭에서 한 번 시작했으면 새로고침해도 표지를 건너뛴다
+  let started = false;
+  try { started = sessionStorage.getItem("started") === "1"; } catch (e) {}
+  if (started) cover.classList.add("gone");
+  document.getElementById("start").addEventListener("click", () => {
+    cover.classList.add("gone");
+    try { sessionStorage.setItem("started", "1"); } catch (e) {}
+  });
+})();
 </script>
 </body>
 </html>
