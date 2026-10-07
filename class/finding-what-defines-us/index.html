@@ -488,6 +488,15 @@ function eraseAt(p, x, y) {
   if (hit) redraw(p);
 }
 
+const HOLD_MS = 500;                   // 이만큼 멈추면 직선으로 바뀐다
+// 가로·세로에 거의 맞는 선(8도 이내)은 정확한 수평·수직선으로 맞춘다
+function straightEnd(x0, y0, x, y) {
+  const a = Math.abs(Math.atan2(y - y0, x - x0) * 180 / Math.PI);
+  if (a < 8 || a > 172) return [x, y0];
+  if (Math.abs(a - 90) < 8) return [x0, y];
+  return [x, y];
+}
+
 function startDraw(cv, p, e) {
   if (e.button > 0 || drawing) return;
   e.preventDefault();
@@ -540,7 +549,7 @@ canvases.forEach((cv, p) => {
 
   // 아직 화면에 안 그린 점들을 한 번에 그린다
   const flush = () => {
-    const d = drawing; if (!d || !d.stroke) return;
+    const d = drawing; if (!d || !d.stroke || d.snapped) return;
     d.raf = 0;
     const pt = d.stroke.pts;
     if (pt.length <= d.drawn) return;
@@ -549,24 +558,61 @@ canvases.forEach((cv, p) => {
     d.drawn = pt.length;
   };
 
+  /* 직선 그리기: 선을 긋고 펜을 떼지 않은 채 잠깐 멈추면 시작점~끝점 직선으로 바뀐다.
+     바뀐 뒤에도 펜을 떼기 전까지 끝점을 움직일 수 있다. */
+  const showStraight = () => {
+    const d = drawing; if (!d) return;
+    d.raf = 0;
+    redraw(p);
+    drawStroke(cv.getContext("2d"), d.stroke);
+  };
+  const snap = () => {
+    const d = drawing; if (!d || !d.stroke || d.snapped) return;
+    const pt = d.stroke.pts, n = pt.length;
+    if (Math.hypot(pt[n - 2] - pt[0], pt[n - 1] - pt[1]) < 12) return;   // 너무 짧으면 그대로
+    d.snapped = true;
+    d.stroke.pts = [pt[0], pt[1], ...straightEnd(pt[0], pt[1], pt[n - 2], pt[n - 1])];
+    showStraight();
+    // 직선이 됐다는 짧은 진동 (지원하는 기기만)
+    if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(15);
+  };
+
   cv.addEventListener("pointermove", e => {
     if (!drawing || e.pointerId !== drawing.id) return;
+    const d = drawing;
     const r = cv.getBoundingClientRect(), k = PAGE_W / r.width;
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    let x, y;
     for (const ev of evs.length ? evs : [e]) {
-      const x = Math.round((ev.clientX - r.left) * k * 10) / 10, y = Math.round((ev.clientY - r.top) * k * 10) / 10;
-      if (!drawing.stroke) { eraseAt(p, x, y); continue; }
-      const pt = drawing.stroke.pts, n = pt.length;
+      x = Math.round((ev.clientX - r.left) * k * 10) / 10; y = Math.round((ev.clientY - r.top) * k * 10) / 10;
+      if (!d.stroke) { eraseAt(p, x, y); continue; }
+      if (d.snapped) continue;
+      const pt = d.stroke.pts, n = pt.length;
       // 너무 촘촘한 점은 건너뛴다 (S펜은 아주 자주 위치를 보낸다)
       if (Math.abs(x - pt[n - 2]) + Math.abs(y - pt[n - 1]) < 1) continue;
       pt.push(x, y);
     }
+    if (!d.stroke) return;
+    if (d.snapped) {                       // 직선이 된 뒤: 끝점만 따라간다
+      const pt = d.stroke.pts;
+      d.stroke.pts = [pt[0], pt[1], ...straightEnd(pt[0], pt[1], x, y)];
+      if (!d.raf) d.raf = requestAnimationFrame(showStraight);
+      return;
+    }
     flush();                               // 펜 신호가 오면 바로 그린다
+    // 펜이 4px 넘게 움직일 때마다 '멈춤' 시계를 다시 잰다
+    if (!d.anchor || Math.hypot(x - d.anchor[0], y - d.anchor[1]) > 4) {
+      d.anchor = [x, y];
+      clearTimeout(d.hold);
+      d.hold = setTimeout(snap, HOLD_MS);
+    }
   });
 
   const end = e => {
     if (!drawing || e.pointerId !== drawing.id) return;
-    if (drawing.raf) { cancelAnimationFrame(drawing.raf); }
+    clearTimeout(drawing.hold);
+    if (drawing.raf) { cancelAnimationFrame(drawing.raf); drawing.raf = 0; }
+    if (drawing.snapped) showStraight();
     flush();
     const d = drawing; drawing = null;
     if (d.stroke) {
