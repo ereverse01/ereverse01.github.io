@@ -56,7 +56,6 @@
   .page canvas {
     position: absolute; left: 0; top: 0; width: 100%; height: 100%;
     z-index: 2;
-    mix-blend-mode: multiply;            /* 형광펜이 글자를 가리지 않게 */
     touch-action: none;
   }
   body.hand .page canvas { pointer-events: none; }
@@ -300,8 +299,10 @@ const PAGE_W = 794, PAGE_H = 1123;
 const STORE = "finding-what-defines-us-v2";
 const TYPE_CLASS = { "어휘": "vocab", "문법": "grammar", "적용": "apply" };
 const COLORS = [                       // [펜 색, 형광펜 색]
-  ["#1a1a1a", "#fff27a"], ["#e03131", "#ffc9c9"], ["#1c7ed6", "#a5d8ff"], ["#2f9e44", "#b2f2bb"]
+  ["#1a1a1a", "#ffd43b"], ["#e03131", "#ff8787"], ["#1c7ed6", "#74c0fc"], ["#2f9e44", "#8ce99a"]
 ];
+// 예전 버전에서 저장된 연한 형광펜 색을 새 색으로 바꿔 그린다
+const OLD_HL = { "#fff27a": "#ffd43b", "#ffc9c9": "#ff8787", "#a5d8ff": "#74c0fc", "#b2f2bb": "#8ce99a" };
 
 /* ---------- 저장된 내용 불러오기 ---------- */
 let data = { sid: "", name: "", answers: [], strokes: [] };
@@ -384,9 +385,10 @@ document.querySelectorAll("textarea[data-q]").forEach(t => {
 
 /* ---------- 그리기 ---------- */
 function drawStroke(ctx, s) {
-  // 형광펜 색은 불투명한 연한 색이라 겹쳐 그어도 진해지지 않는다 (글자는 화면 합성으로 비쳐 보인다)
-  ctx.strokeStyle = ctx.fillStyle = s.c;
-  ctx.lineWidth = s.w; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  // 형광펜은 반투명으로 칠해 아래 글자가 비쳐 보이게 한다
+  ctx.globalAlpha = s.hl ? 0.4 : 1;
+  ctx.strokeStyle = ctx.fillStyle = s.hl ? (OLD_HL[s.c] || s.c) : s.c;
+  ctx.lineWidth = s.w; ctx.lineCap = s.hl ? "butt" : "round"; ctx.lineJoin = "round";
   const pt = s.pts;
   ctx.beginPath();
   if (pt.length === 2) {
@@ -536,7 +538,7 @@ canvases.forEach((cv, p) => {
     else startDraw(cv, p, e);
   });
 
-  // 아직 화면에 안 그린 점들을 한 번에 그린다 (화면 한 장면에 한 번)
+  // 아직 화면에 안 그린 점들을 한 번에 그린다
   const flush = () => {
     const d = drawing; if (!d || !d.stroke) return;
     d.raf = 0;
@@ -559,7 +561,7 @@ canvases.forEach((cv, p) => {
       if (Math.abs(x - pt[n - 2]) + Math.abs(y - pt[n - 1]) < 1) continue;
       pt.push(x, y);
     }
-    if (drawing.stroke && !drawing.raf) drawing.raf = requestAnimationFrame(flush);
+    flush();                               // 펜 신호가 오면 바로 그린다
   });
 
   const end = e => {
