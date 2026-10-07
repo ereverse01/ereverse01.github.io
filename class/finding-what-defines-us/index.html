@@ -384,10 +384,9 @@ document.querySelectorAll("textarea[data-q]").forEach(t => {
 
 /* ---------- 그리기 ---------- */
 function drawStroke(ctx, s) {
-  // darken: 같은 색 형광펜이 겹쳐도 진해지지 않는다
-  ctx.globalCompositeOperation = s.hl ? "darken" : "source-over";
+  // 형광펜 색은 불투명한 연한 색이라 겹쳐 그어도 진해지지 않는다 (글자는 화면 합성으로 비쳐 보인다)
   ctx.strokeStyle = ctx.fillStyle = s.c;
-  ctx.lineWidth = s.w; ctx.lineCap = s.hl ? "butt" : "round"; ctx.lineJoin = "round";
+  ctx.lineWidth = s.w; ctx.lineCap = "round"; ctx.lineJoin = "round";
   const pt = s.pts;
   ctx.beginPath();
   if (pt.length === 2) {
@@ -402,7 +401,9 @@ function drawStroke(ctx, s) {
 function redraw(p) {
   const ctx = canvases[p].getContext("2d");
   ctx.clearRect(0, 0, PAGE_W, PAGE_H);
-  data.strokes[p].forEach(s => drawStroke(ctx, s));
+  // 형광펜을 먼저 깔고 그 위에 펜 글씨를 그린다
+  data.strokes[p].forEach(s => { if (s.hl) drawStroke(ctx, s); });
+  data.strokes[p].forEach(s => { if (!s.hl) drawStroke(ctx, s); });
 }
 canvases.forEach((_, p) => redraw(p));
 
@@ -491,7 +492,7 @@ function startDraw(cv, p, e) {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   const [x, y] = pos(cv, e);
-  drawing = { p, id: e.pointerId, erased: [] };
+  drawing = { p, id: e.pointerId, erased: [], drawn: 0, raf: 0 };
   if (tool === "eraser") { eraseAt(p, x, y); return; }
   const hl = tool === "hl";
   drawing.stroke = { c: COLORS[colorIdx][hl ? 1 : 0], w: hl ? width * 5 : width, hl: hl ? 1 : 0, pts: [x, y] };
@@ -535,28 +536,42 @@ canvases.forEach((cv, p) => {
     else startDraw(cv, p, e);
   });
 
+  // 아직 화면에 안 그린 점들을 한 번에 그린다 (화면 한 장면에 한 번)
+  const flush = () => {
+    const d = drawing; if (!d || !d.stroke) return;
+    d.raf = 0;
+    const pt = d.stroke.pts;
+    if (pt.length <= d.drawn) return;
+    const from = Math.max(0, d.drawn - 2);   // 앞 조각과 이어지도록 마지막 점부터
+    drawStroke(cv.getContext("2d"), { ...d.stroke, pts: pt.slice(from) });
+    d.drawn = pt.length;
+  };
+
   cv.addEventListener("pointermove", e => {
     if (!drawing || e.pointerId !== drawing.id) return;
+    const r = cv.getBoundingClientRect(), k = PAGE_W / r.width;
     const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
     for (const ev of evs.length ? evs : [e]) {
-      const [x, y] = pos(cv, ev);
+      const x = Math.round((ev.clientX - r.left) * k * 10) / 10, y = Math.round((ev.clientY - r.top) * k * 10) / 10;
       if (!drawing.stroke) { eraseAt(p, x, y); continue; }
       const pt = drawing.stroke.pts, n = pt.length;
-      if (x === pt[n - 2] && y === pt[n - 1]) continue;
+      // 너무 촘촘한 점은 건너뛴다 (S펜은 아주 자주 위치를 보낸다)
+      if (Math.abs(x - pt[n - 2]) + Math.abs(y - pt[n - 1]) < 1) continue;
       pt.push(x, y);
-      // 방금 그은 조각만 그린다 (끝이 매끄럽게 이어지도록 한 점 앞에서 시작)
-      const from = Math.max(0, n - 4);
-      drawStroke(cv.getContext("2d"), { ...drawing.stroke, pts: pt.slice(from) });
     }
+    if (drawing.stroke && !drawing.raf) drawing.raf = requestAnimationFrame(flush);
   });
 
   const end = e => {
     if (!drawing || e.pointerId !== drawing.id) return;
+    if (drawing.raf) { cancelAnimationFrame(drawing.raf); }
+    flush();
     const d = drawing; drawing = null;
     if (d.stroke) {
       data.strokes[p].push(d.stroke);
       history.push({ p, add: d.stroke });
       if (d.stroke.pts.length === 2) drawStroke(cv.getContext("2d"), d.stroke);
+      if (d.stroke.hl) redraw(p);            // 형광펜은 펜 글씨 아래로 다시 깔아 준다
     } else if (d.erased.length) {
       history.push({ p, del: d.erased });
     }
