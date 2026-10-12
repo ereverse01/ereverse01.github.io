@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<title>우리집 주유카드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --card: #ffffff;
+    --ink: #1f2933;
+    --sub: #6b7280;
+    --line: #e7e2d8;
+    --main: #0f766e;
+    --main-soft: #d7efe9;
+    --warn: #c2410c;
+    --shadow: 0 1px 2px rgba(31,41,51,.06), 0 6px 20px rgba(31,41,51,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 16px; line-height: 1.45;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  input { font: inherit; color: inherit; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+
+  /* 상단 */
+  header { padding: 22px 0 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
+  h1 .logo { width: 32px; height: 32px; border-radius: 10px; background: var(--main); color: #fff; display: grid; place-items: center; font-size: 17px; }
+  .sync { font-size: 13px; color: var(--sub); }
+  .sync.err { color: var(--warn); }
+
+  .card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; margin-top: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--sub); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+
+  /* 할당액 — 제일 눈에 띄게 */
+  .alloc { background: linear-gradient(135deg, #0f766e, #115e59); color: #fff; }
+  .alloc h2 { color: #ccfbf1; }
+  .alloc h2 b { color: #fff; font-size: 17px; }
+  .alloc .edit { font-size: 13px; color: #ccfbf1; padding: 4px 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; }
+  .alloc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .alloc-tile { background: rgba(255,255,255,.12); border-radius: 14px; padding: 12px 14px; }
+  .alloc-tile .nm { font-size: 15px; display: flex; align-items: center; gap: 6px; color: #e6fffa; }
+  .alloc-tile .amt { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; margin-top: 2px; }
+  .alloc-tile .amt small { font-size: 16px; font-weight: 600; margin-left: 1px; }
+  .alloc-tile .used { font-size: 12.5px; color: #b2f0e4; margin-top: 6px; display: flex; justify-content: space-between; gap: 4px; }
+  .alloc-tile .used b { color: #fff; font-weight: 700; }
+  .alloc-tile .used b.over { color: #fecaca; }
+  .alloc-tile .mini { height: 6px; border-radius: 999px; background: rgba(255,255,255,.18); overflow: hidden; margin-top: 8px; }
+  .alloc-tile .mini span { display: block; height: 100%; background: #fff; border-radius: 999px; }
+  .alloc-tile .mini span.over { background: #fca5a5; }
+  .alloc-tile input { width: 100%; font-size: 22px; font-weight: 700; padding: 6px 8px; border-radius: 10px; border: 0; margin-top: 4px; color: var(--ink); }
+  .alloc-total { margin-top: 12px; font-size: 14px; color: #ccfbf1; text-align: right; }
+  .alloc-save { display: none; margin-top: 12px; gap: 8px; }
+  .alloc.editing .alloc-save { display: flex; }
+  .alloc-save button { flex: 1; padding: 11px; border-radius: 12px; background: #fff; color: var(--main); font-weight: 700; }
+  .alloc-save button.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+
+  /* 월 이동 */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; }
+  .month-nav .label { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+  .month-nav button { width: 42px; height: 42px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow); font-size: 20px; }
+  .month-nav button:disabled { opacity: .35; }
+
+  /* 이번 달 요약 */
+  .total-row { display: flex; align-items: baseline; justify-content: space-between; }
+  .total-row .big { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+  .total-row .of { color: var(--sub); font-size: 14px; }
+  .bar { height: 12px; background: #eee9df; border-radius: 999px; overflow: hidden; display: flex; margin: 10px 0 14px; }
+  .bar span { height: 100%; }
+  .people { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 14px; }
+  .people div { display: flex; align-items: center; gap: 7px; font-size: 14.5px; }
+  .people b { margin-left: auto; font-weight: 700; }
+  .people .cnt { color: var(--sub); font-size: 12.5px; }
+
+  /* 기록 목록 */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-top: 1px solid var(--line); }
+  .list li:first-child { border-top: 0; }
+  .day { width: 46px; height: 46px; border-radius: 13px; background: var(--main-soft); color: var(--main); display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 17px; line-height: 1; flex: none; }
+  .day small { display: block; font-size: 10.5px; font-weight: 600; margin-top: 2px; }
+  .day.unknown { background: #f1ede5; color: var(--sub); font-size: 12px; }
+  .li-main { flex: 1; min-width: 0; }
+  .li-who { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .li-memo { font-size: 12.5px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .li-amt { font-weight: 800; font-size: 17px; }
+  .li-del { color: #b8b2a7; font-size: 18px; width: 34px; height: 34px; border-radius: 50%; }
+  .li-del:hover { background: #f4f1ea; color: var(--warn); }
+  .empty { text-align: center; color: var(--sub); padding: 18px 0 8px; font-size: 14.5px; }
+
+  /* 연간 막대 */
+  .year { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; align-items: end; height: 130px; }
+  .year button { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; padding: 0; border-radius: 6px; }
+  .year .stack { display: flex; flex-direction: column-reverse; border-radius: 6px 6px 3px 3px; overflow: hidden; min-height: 3px; background: #eee9df; }
+  .year button.on .stack { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .year-labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: 5px; font-size: 11px; color: var(--sub); text-align: center; margin-top: 6px; }
+  .year-labels .on { color: var(--ink); font-weight: 800; }
+
+  /* 기록 추가 버튼 */
+  .fab { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom)); background: var(--main); color: #fff; font-weight: 800; font-size: 17px; padding: 16px 30px; border-radius: 999px; box-shadow: 0 8px 24px rgba(15,118,110,.35); display: flex; align-items: center; gap: 8px; z-index: 5; }
+
+  /* 바텀시트 */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(17,24,39,.4); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 10; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 24px 24px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .25s ease; z-index: 11; max-height: 92vh; overflow-y: auto; }
+  .sheet-inner { max-width: 560px; margin: 0 auto; }
+  .open .sheet-bg { opacity: 1; pointer-events: auto; }
+  .open .sheet { transform: none; }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: #ddd6ca; margin: 0 auto 12px; }
+  .sheet h3 { margin: 0 0 6px; font-size: 19px; }
+  .field { margin-top: 16px; }
+  .field > label { display: block; font-size: 13.5px; color: var(--sub); margin-bottom: 7px; font-weight: 600; }
+  .who-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .who-btns button, .chips button { padding: 13px 4px; border-radius: 14px; background: #f4f1ea; font-weight: 700; font-size: 16px; border: 2px solid transparent; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .who-btns button.on { background: #fff; border-color: var(--c, var(--main)); color: var(--c, var(--main)); }
+  .who-unknown { margin-top: 8px; font-size: 13px; color: var(--sub); text-decoration: underline; }
+  .who-unknown.on { color: var(--warn); font-weight: 700; }
+  .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chips button { padding: 11px 4px; font-size: 15px; }
+  .chips button.on { background: var(--main-soft); border-color: var(--main); color: var(--main); }
+  .amt-input { position: relative; margin-top: 8px; }
+  .amt-input input { width: 100%; font-size: 24px; font-weight: 800; padding: 12px 40px 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: #fff; }
+  .amt-input span { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--sub); font-weight: 700; }
+  .txt { width: 100%; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line); background: #fff; font-size: 16px; }
+  input:focus { outline: none; border-color: var(--main); }
+  .save { width: 100%; margin-top: 20px; padding: 16px; border-radius: 16px; background: var(--main); color: #fff; font-weight: 800; font-size: 17px; }
+  .save:disabled { opacity: .5; }
+  .form-err { color: var(--warn); font-size: 14px; margin-top: 10px; min-height: 1em; }
+
+  /* 잠금 화면 */
+  .lock { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; z-index: 20; padding: 16px; }
+  .lock-box { width: 100%; max-width: 340px; text-align: center; }
+  .lock-box .logo { width: 64px; height: 64px; border-radius: 20px; background: var(--main); color: #fff; display: grid; place-items: center; font-size: 32px; margin: 0 auto 14px; }
+  .lock-box h2 { margin: 0 0 4px; font-size: 22px; }
+  .lock-box p { margin: 0 0 18px; color: var(--sub); font-size: 14.5px; }
+  .lock-box input { width: 100%; text-align: center; font-size: 28px; letter-spacing: .4em; padding: 14px; border-radius: 16px; border: 2px solid var(--line); background: #fff; }
+  .lock-box .save { margin-top: 12px; }
+  .hidden { display: none !important; }
+  .demo { background: #fff7ed; color: #9a3412; font-size: 13px; padding: 9px 12px; border-radius: 12px; margin-top: 10px; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: #1f2933; color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 14.5px; opacity: 0; transition: .2s; pointer-events: none; z-index: 30; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+
+<div class="lock hidden" id="lock">
+  <form class="lock-box" id="lockForm">
+    <div class="logo">⛽</div>
+    <h2>우리집 주유카드</h2>
+    <p>가족 암호를 입력하세요</p>
+    <input id="pwInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12">
+    <div class="form-err" id="pwErr"></div>
+    <button class="save" type="submit">들어가기</button>
+  </form>
+</div>
+
+<div class="wrap">
+  <header>
+    <h1><span class="logo">⛽</span>우리집 주유카드</h1>
+    <span class="sync" id="sync"></span>
+  </header>
+  <div class="demo hidden" id="demo">미리보기예요. 아직 구글 시트와 연결되지 않아서 저장되지 않아요.</div>
+
+  <section class="card alloc" id="allocCard">
+    <h2><span>💳 <b>고정지출 할당액</b><br><span style="font-size:12.5px;font-weight:500">한 달에 각자 쓸 수 있는 금액</span></span><button class="edit" id="allocEdit">수정</button></h2>
+    <div class="alloc-grid" id="allocGrid"></div>
+    <div class="alloc-total" id="allocTotal"></div>
+    <div class="alloc-save">
+      <button class="ghost" id="allocCancel">취소</button>
+      <button id="allocSave">저장</button>
+    </div>
+  </section>
+
+  <div class="month-nav">
+    <button id="prev" aria-label="이전 달">‹</button>
+    <div class="label" id="monthLabel"></div>
+    <button id="next" aria-label="다음 달">›</button>
+  </div>
+
+  <section class="card">
+    <h2>이번 달 주유</h2>
+    <div class="total-row"><span class="big" id="monthTotal"></span><span class="of" id="monthOf"></span></div>
+    <div class="bar" id="monthBar"></div>
+    <div class="people" id="people"></div>
+  </section>
+
+  <section class="card">
+    <h2><span>기록</span><span id="cnt" style="font-weight:500"></span></h2>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <section class="card">
+    <h2><span id="yearLabel"></span><span style="font-weight:500;font-size:13px">막대를 누르면 그 달로 가요</span></h2>
+    <div class="year" id="year"></div>
+    <div class="year-labels" id="yearLabels"></div>
+  </section>
+</div>
+
+<button class="fab" id="fab">＋ 주유 기록하기</button>
+
+<div id="sheetWrap">
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" role="dialog" aria-label="주유 기록하기">
+    <form class="sheet-inner" id="form">
+      <div class="grab"></div>
+      <h3>⛽ 주유 기록하기</h3>
+      <div class="field">
+        <label>누가 넣었나요?</label>
+        <div class="who-btns" id="whoBtns"></div>
+        <button type="button" class="who-unknown" id="whoUnknown">누군지 모르겠어요</button>
+      </div>
+      <div class="field">
+        <label>얼마 넣었나요?</label>
+        <div class="chips" id="chips"></div>
+        <div class="amt-input"><input id="amount" inputmode="numeric" placeholder="직접 입력" autocomplete="off"><span>원</span></div>
+      </div>
+      <div class="field">
+        <label>언제?</label>
+        <input class="txt" type="date" id="date">
+      </div>
+      <div class="field">
+        <label>메모 (선택)</label>
+        <input class="txt" id="memo" placeholder="예: 셀프주유소, 장거리" maxlength="60">
+      </div>
+      <div class="form-err" id="formErr"></div>
+      <button class="save" type="submit" id="saveBtn">저장하기</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ▼ Apps Script 배포 후 받은 웹 앱 URL을 따옴표 안에 붙여넣으세요
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbzZOp97tmT7_19uQ_XQTGK4ID0ZwER9tdf1YLdKufi5EChfdgmqqQRbTZmIvsQw4G3IfQ/exec";
+
+  const PW_KEY = "family-fuel-pw";
+  const COLORS = ["#2563eb", "#e11d48", "#7c3aed", "#d97706", "#059669", "#0891b2"];
+  const UNKNOWN_COLOR = "#a8a29e";
+  const AMOUNTS = [50000, 60000, 70000, 80000, 90000, 100000];
+
+  let pw = "";
+  try { pw = localStorage.getItem(PW_KEY) || ""; } catch {}
+  let recs = [], alloc = [];
+  const today = new Date();
+  let viewY = today.getFullYear(), viewM = today.getMonth() + 1;
+  let form = { who: "", amount: 0 };
+
+  const $ = id => document.getElementById(id);
+  const won = n => Number(n || 0).toLocaleString("ko-KR");
+  const man = n => {
+    const v = n / 10000;
+    return (Number.isInteger(v) ? v : v.toFixed(1)) + "만";
+  };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const ym = (y, m) => y + "-" + String(m).padStart(2, "0");
+  const colorOf = name => {
+    const i = alloc.findIndex(a => a[0] === name);
+    return i < 0 ? UNKNOWN_COLOR : COLORS[i % COLORS.length];
+  };
+
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+  function setSync(msg, err) {
+    $("sync").textContent = msg;
+    $("sync").classList.toggle("err", !!err);
+  }
+
+  // ── 서버 ──
+  const demo = !SHEET_URL;
+  let demoData = {
+    recs: [
+      { id: "d1", date: ym(viewY, viewM) + "-01", amount: 80000, who: "아빠", memo: "" },
+      { id: "d2", date: ym(viewY, viewM) + "-03", amount: 50000, who: "레", memo: "" },
+    ],
+    alloc: [["아빠", 160000], ["씸", 200000], ["레", 60000], ["원", 80000]],
+  };
+  async function call(body) {
+    if (demo) {
+      await new Promise(r => setTimeout(r, 250));
+      if (body.action === "add") demoData.recs.push({ id: "d" + Date.now(), ...body.rec });
+      if (body.action === "delete") demoData.recs = demoData.recs.filter(r => r.id !== body.id);
+      if (body.action === "setAlloc") demoData.alloc = body.alloc;
+      return { ok: true, ...JSON.parse(JSON.stringify(demoData)) };
+    }
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...body, pw }),
+    });
+    return res.json();
+  }
+  // 성공 true / 암호 틀림 "pw" / 실패 false
+  async function send(body, busyMsg) {
+    setSync(busyMsg || "불러오는 중…");
+    try {
+      const d = await call(body);
+      if (!d.ok) { setSync(""); return d.error === "pw" ? "pw" : false; }
+      recs = d.recs || [];
+      alloc = d.alloc || [];
+      setSync("");
+      render();
+      return true;
+    } catch {
+      setSync("연결 실패 — 다시 시도해 주세요", true);
+      return false;
+    }
+  }
+
+  // ── 화면 ──
+  function render() {
+    renderAlloc();
+    const key = ym(viewY, viewM);
+    const mine = recs.filter(r => r.date.slice(0, 7) === key)
+      .sort((a, b) => (b.date.length - a.date.length) || b.date.localeCompare(a.date));
+    $("monthLabel").textContent = viewY + "년 " + viewM + "월";
+    $("next").disabled = viewY > today.getFullYear() || (viewY === today.getFullYear() && viewM >= today.getMonth() + 1);
+
+    // 요약
+    const total = mine.reduce((s, r) => s + r.amount, 0);
+    const allocSum = alloc.reduce((s, a) => s + a[1], 0);
+    $("monthTotal").textContent = won(total) + "원";
+    $("monthOf").textContent = allocSum ? "할당액 합계 " + man(allocSum) + "원 중" : "";
+    const names = alloc.map(a => a[0]);
+    const byWho = {};
+    mine.forEach(r => {
+      const k = names.includes(r.who) ? r.who : "?";
+      byWho[k] = byWho[k] || { sum: 0, n: 0 };
+      byWho[k].sum += r.amount; byWho[k].n++;
+    });
+    const order = names.concat(byWho["?"] ? ["?"] : []);
+    const scale = Math.max(total, allocSum) || 1;
+    $("monthBar").innerHTML = order.filter(n => byWho[n])
+      .map(n => `<span style="width:${byWho[n].sum / scale * 100}%;background:${colorOf(n)}"></span>`).join("");
+    $("people").innerHTML = order.map(n => {
+      const b = byWho[n] || { sum: 0, n: 0 };
+      const lim = (alloc.find(a => a[0] === n) || [])[1];
+      return `<div><span class="dot" style="background:${colorOf(n)}"></span>${n === "?" ? "모름" : esc(n)} <span class="cnt">${b.n}회</span><b>${man(b.sum)}${lim ? `<span class="cnt"> / ${man(lim)}</span>` : ""}</b></div>`;
+    }).join("");
+
+    // 목록
+    $("cnt").textContent = mine.length ? mine.length + "건" : "";
+    $("list").innerHTML = mine.length ? mine.map(r => {
+      const d = r.date.length > 7 ? Number(r.date.slice(8)) : 0;
+      const dow = d ? "일월화수목금토"[new Date(viewY, viewM - 1, d).getDay()] : "";
+      return `<li>
+        <div class="day ${d ? "" : "unknown"}">${d ? d + `<small>${dow}</small>` : "날짜<br>모름"}</div>
+        <div class="li-main">
+          <div class="li-who"><span class="dot" style="background:${colorOf(r.who)}"></span>${r.who === "?" ? "모름" : esc(r.who)}</div>
+          ${r.memo ? `<div class="li-memo">${esc(r.memo)}</div>` : ""}
+        </div>
+        <div class="li-amt">${won(r.amount)}원</div>
+        <button class="li-del" data-id="${esc(r.id)}" aria-label="삭제">✕</button>
+      </li>`;
+    }).join("") : `<li class="empty">이 달에는 아직 기록이 없어요</li>`;
+
+    // 연간
+    $("yearLabel").textContent = viewY + "년 한눈에 보기";
+    const months = [];
+    for (let m = 1; m <= 12; m++) {
+      const rs = recs.filter(r => r.date.slice(0, 7) === ym(viewY, m));
+      const per = {};
+      rs.forEach(r => { const k = names.includes(r.who) ? r.who : "?"; per[k] = (per[k] || 0) + r.amount; });
+      months.push({ m, total: rs.reduce((s, r) => s + r.amount, 0), per });
+    }
+    const max = Math.max(allocSum, ...months.map(x => x.total)) || 1;
+    $("year").innerHTML = months.map(x => `<button data-m="${x.m}" class="${x.m === viewM ? "on" : ""}" aria-label="${x.m}월 ${won(x.total)}원">
+      <div class="stack" style="height:${x.total / max * 100}%">${order.filter(n => x.per[n]).map(n =>
+        `<span style="height:${x.per[n] / x.total * 100}%;background:${colorOf(n)}"></span>`).join("")}</div>
+    </button>`).join("");
+    $("yearLabels").innerHTML = months.map(x => `<span class="${x.m === viewM ? "on" : ""}">${x.m}</span>`).join("");
+
+    renderWhoBtns();
+  }
+
+  let editingAlloc = false;
+  function renderAlloc() {
+    const key = ym(viewY, viewM);
+    $("allocCard").classList.toggle("editing", editingAlloc);
+    $("allocEdit").classList.toggle("hidden", editingAlloc);
+    $("allocGrid").innerHTML = alloc.map((a, i) => {
+      const used = recs.filter(r => r.who === a[0] && r.date.slice(0, 7) === key).reduce((s, r) => s + r.amount, 0);
+      return `<div class="alloc-tile">
+        <div class="nm"><span class="dot" style="background:#fff;box-shadow:0 0 0 2px ${colorOf(a[0])}"></span>${esc(a[0])}</div>
+        ${editingAlloc
+          ? `<input data-i="${i}" inputmode="numeric" value="${won(a[1])}">`
+          : `<div class="amt">${man(a[1]).replace("만", "")}<small>만원</small></div>
+             <div class="mini"><span class="${used > a[1] ? "over" : ""}" style="width:${a[1] ? Math.min(used / a[1], 1) * 100 : (used ? 100 : 0)}%"></span></div>
+             <div class="used"><span>${viewM}월 ${man(used)} 씀</span>${used > a[1]
+               ? `<b class="over">${man(used - a[1])} 초과</b>`
+               : `<b>${man(a[1] - used)} 남음</b>`}</div>`}
+      </div>`;
+    }).join("");
+    const sum = alloc.reduce((s, a) => s + a[1], 0);
+    $("allocTotal").textContent = editingAlloc ? "" : "합계 " + won(sum) + "원";
+  }
+
+  function renderWhoBtns() {
+    $("whoBtns").innerHTML = alloc.map(a =>
+      `<button type="button" data-who="${esc(a[0])}" style="--c:${colorOf(a[0])}" class="${form.who === a[0] ? "on" : ""}"><span class="dot" style="background:${colorOf(a[0])}"></span>${esc(a[0])}</button>`
+    ).join("");
+    $("whoUnknown").classList.toggle("on", form.who === "?");
+    $("chips").innerHTML = AMOUNTS.map(v =>
+      `<button type="button" data-v="${v}" class="${form.amount === v ? "on" : ""}">${man(v)}원</button>`).join("");
+  }
+
+  // ── 기록 추가 ──
+  function localDate(d) { return ym(d.getFullYear(), d.getMonth() + 1) + "-" + String(d.getDate()).padStart(2, "0"); }
+  function openSheet() {
+    form = { who: "", amount: 0 };
+    $("amount").value = "";
+    $("memo").value = "";
+    $("formErr").textContent = "";
+    const isThisMonth = viewY === today.getFullYear() && viewM === today.getMonth() + 1;
+    $("date").value = isThisMonth ? localDate(new Date()) : ym(viewY, viewM) + "-01";
+    $("date").max = localDate(new Date());
+    renderWhoBtns();
+    document.body.classList.add("open");
+  }
+  function closeSheet() { document.body.classList.remove("open"); }
+
+  $("fab").onclick = openSheet;
+  $("sheetBg").onclick = closeSheet;
+  $("whoBtns").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    form.who = b.dataset.who; renderWhoBtns();
+  };
+  $("whoUnknown").onclick = () => { form.who = "?"; renderWhoBtns(); };
+  $("chips").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    form.amount = Number(b.dataset.v);
+    $("amount").value = won(form.amount);
+    renderWhoBtns();
+  };
+  $("amount").oninput = e => {
+    const n = Number(e.target.value.replace(/[^\d]/g, ""));
+    form.amount = n;
+    e.target.value = n ? won(n) : "";
+    renderWhoBtns();
+  };
+
+  $("form").onsubmit = async e => {
+    e.preventDefault();
+    if (!form.who) { $("formErr").textContent = "누가 넣었는지 골라 주세요"; return; }
+    if (!(form.amount > 0)) { $("formErr").textContent = "금액을 골라 주세요"; return; }
+    if (!$("date").value) { $("formErr").textContent = "날짜를 골라 주세요"; return; }
+    $("saveBtn").disabled = true;
+    $("saveBtn").textContent = "저장 중…";
+    const rec = { date: $("date").value, amount: form.amount, who: form.who, memo: $("memo").value.trim() };
+    const ok = await send({ action: "add", rec }, "저장 중…");
+    $("saveBtn").disabled = false;
+    $("saveBtn").textContent = "저장하기";
+    if (ok === true) {
+      closeSheet();
+      viewY = Number(rec.date.slice(0, 4)); viewM = Number(rec.date.slice(5, 7));
+      render();
+      toast("저장했어요 ⛽ " + won(rec.amount) + "원");
+    } else {
+      $("formErr").textContent = "저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    }
+  };
+
+  $("list").onclick = async e => {
+    const b = e.target.closest(".li-del"); if (!b) return;
+    const r = recs.find(x => x.id === b.dataset.id); if (!r) return;
+    if (!confirm(`${r.who === "?" ? "모름" : r.who} · ${won(r.amount)}원 기록을 지울까요?`)) return;
+    if (await send({ action: "delete", id: r.id }, "지우는 중…") === true) toast("지웠어요");
+  };
+
+  // ── 할당액 수정 ──
+  $("allocEdit").onclick = () => { editingAlloc = true; renderAlloc(); };
+  $("allocCancel").onclick = () => { editingAlloc = false; renderAlloc(); };
+  $("allocSave").onclick = async () => {
+    const next = alloc.map((a, i) => {
+      const inp = document.querySelector(`#allocGrid input[data-i="${i}"]`);
+      return [a[0], Number(inp.value.replace(/[^\d]/g, "")) || 0];
+    });
+    editingAlloc = false;
+    if (await send({ action: "setAlloc", alloc: next }, "저장 중…") === true) toast("할당액을 바꿨어요");
+    else renderAlloc();
+  };
+  $("allocGrid").oninput = e => {
+    if (e.target.tagName !== "INPUT") return;
+    const n = Number(e.target.value.replace(/[^\d]/g, ""));
+    e.target.value = n ? won(n) : "";
+  };
+
+  // ── 달 이동 ──
+  function move(d) {
+    viewM += d;
+    if (viewM < 1) { viewM = 12; viewY--; }
+    if (viewM > 12) { viewM = 1; viewY++; }
+    render();
+  }
+  $("prev").onclick = () => move(-1);
+  $("next").onclick = () => move(1);
+  $("year").onclick = e => {
+    const b = e.target.closest("button"); if (!b) return;
+    viewM = Number(b.dataset.m); render();
+  };
+
+  // ── 잠금 ──
+  async function start() {
+    if (demo) $("demo").classList.remove("hidden");
+    if (!pw && !demo) { $("lock").classList.remove("hidden"); $("pwInput").focus(); return; }
+    const r = await send({ action: "load" });
+    if (r === "pw") {
+      pw = "";
+      try { localStorage.removeItem(PW_KEY); } catch {}
+      $("lock").classList.remove("hidden");
+    }
+  }
+  $("lockForm").onsubmit = async e => {
+    e.preventDefault();
+    pw = $("pwInput").value.trim();
+    if (!pw) return;
+    $("pwErr").textContent = "확인 중…";
+    const r = await send({ action: "load" });
+    if (r === true) {
+      try { localStorage.setItem(PW_KEY, pw); } catch {}
+      $("lock").classList.add("hidden");
+      $("pwErr").textContent = "";
+    } else {
+      $("pwErr").textContent = r === "pw" ? "암호가 틀렸어요" : "연결에 실패했어요. 다시 시도해 주세요.";
+      $("pwInput").select();
+    }
+  };
+
+  render();
+  start();
+</script>
+</body>
+</html>
