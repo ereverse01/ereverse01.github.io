@@ -122,6 +122,14 @@
     color: var(--accent); font-weight: 600; border-radius: 10px;
   }
   .add:hover { border-color: var(--accent); }
+  .save {
+    width: 100%; margin-top: 8px; padding: 11px; font: inherit; font-weight: 700;
+    border-radius: 10px; cursor: pointer;
+    border: 1.5px solid var(--line); background: var(--bg); color: var(--muted);
+  }
+  .save:disabled { cursor: default; }
+  .save.need { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .save.bad { background: #fff; border-color: #c0392b; color: #c0392b; }
   .toolbar button {
     padding: 8px 16px; border: 1.5px solid var(--accent); white-space: nowrap;
     background: #fff; color: var(--accent); font-weight: 600;
@@ -277,32 +285,56 @@
     return opts.find(o => o === who) || opts.find(o => who && o.startsWith(who)) || who;
   }
 
-  // 목장 하나(그 달)나 목자 이름 하나만 보내서, 서로 다른 목장끼리 덮어쓰지 않게 함
-  const timers = {};
+  // 고친 내용은 목장 카드의 [저장하기] 버튼을 눌러야 시트에 보내짐
+  // 목장 하나(그 달)와 목자 이름만 보내서, 서로 다른 목장끼리 덮어쓰지 않게 함
+  const dirty = new Set();          // "2026-10|01", "목자|01"
+  const saveBtns = {};              // 화면에 있는 목장별 저장 버튼
+  const failed = new Set();
+  const saving = new Set();
+
   function save(month, g) {
-    const id = month + "|" + g;
-    clearTimeout(timers[id]);
-    setSync("저장 중…");
-    timers[id] = setTimeout(() => send(month, g), 800);
+    dirty.add(month + "|" + g);
+    failed.delete(g);
+    updateBtn(g);
   }
-  const pending = new Set();
+  const isDirty = g => dirty.has(cur() + "|" + g) || dirty.has("목자|" + g);
+
+  function updateBtn(g) {
+    const b = saveBtns[g];
+    if (!b) return;
+    b.className = "save";
+    if (saving.has(g)) { b.textContent = "저장 중…"; b.disabled = true; return; }
+    b.disabled = false;
+    if (failed.has(g)) { b.textContent = "저장 실패 · 다시 누르기"; b.classList.add("bad"); }
+    else if (isDirty(g)) { b.textContent = "저장하기"; b.classList.add("need"); }
+    else { b.textContent = "저장됨 ✓"; b.disabled = true; }
+  }
+
   async function send(month, g) {
-    const id = month + "|" + g;
-    delete timers[id];
-    pending.add(id);
     const value = month === "목자" ? data.leaders[g] : data.months[month][g];
-    try {
-      const r = await call({ action: "save", month, group: g, value });
-      if (!r.ok) throw 0;
-      pending.delete(id);
-      if (!pending.size && !Object.keys(timers).length) setSync("저장됨 ✓");
-    } catch {
-      pending.delete(id);
-      setSync("저장 실패 — 다시 시도해 주세요", true);
-    }
+    const r = await call({ action: "save", month, group: g, value });
+    if (!r.ok) throw 0;
   }
+
+  async function saveGroup(g) {
+    const keys = [cur(), "목자"].filter(m => dirty.has(m + "|" + g));
+    if (!keys.length) return;
+    saving.add(g); failed.delete(g); updateBtn(g);
+    try {
+      for (const m of keys) {
+        await send(m, g);
+        dirty.delete(m + "|" + g);
+      }
+      toast(LABELS[g] + " 저장했어요");
+    } catch {
+      failed.add(g);
+    }
+    saving.delete(g);
+    updateBtn(g);
+  }
+
   window.addEventListener("beforeunload", e => {
-    if (pending.size || Object.keys(timers).length) { e.preventDefault(); e.returnValue = ""; }
+    if (dirty.size || saving.size) { e.preventDefault(); e.returnValue = ""; }
   });
 
   function setSync(msg, bad) {
@@ -358,7 +390,10 @@
 
   document.getElementById("prevYear").onclick = () => { year--; render(); };
   document.getElementById("nextYear").onclick = () => { year++; render(); };
-  document.getElementById("refresh").onclick = async () => { if (await load() === true) render(); };
+  document.getElementById("refresh").onclick = async () => {
+    if (dirty.size && !confirm("저장하지 않은 내용이 있어요. 새로고침하면 사라져요. 계속할까요?")) return;
+    if (await load() === true) { dirty.clear(); failed.clear(); render(); }
+  };
 
   // 지난달에서 응답되지 않은 기도제목을 '계속 기도중'으로 가져옴
   carry.onclick = () => {
@@ -370,10 +405,11 @@
         .filter(it => it.text.trim() && it.status !== "ans")
         .map(it => ({ who: it.who || "", text: it.text, status: "pray" }));
       md[g] = kept.length ? kept : [{ text: "", status: "" }];
-      save(key, g);
+      dirty.add(key + "|" + g);
     });
     render();
-    toast("지난달 기도제목을 불러왔어요 (응답된 것은 제외)");
+    toast("지난달 기도제목을 불러와 저장하는 중…");
+    Promise.all(GROUPS.map(saveGroup));
   };
 
   function renderGroup(g, key, md) {
@@ -395,6 +431,7 @@
 
     const box = document.createElement("div");
     const onChange = () => save(key, g);
+    delete saveBtns[g];
     items.forEach(it => box.appendChild(renderItem(g, items, it, onChange)));
     sec.appendChild(box);
 
@@ -410,6 +447,12 @@
       el.querySelector("textarea").focus();
     };
     sec.appendChild(add);
+
+    const sb = document.createElement("button");
+    sb.onclick = () => saveGroup(g);
+    saveBtns[g] = sb;
+    updateBtn(g);
+    sec.appendChild(sb);
     return sec;
   }
 
