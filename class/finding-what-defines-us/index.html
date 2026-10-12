@@ -278,6 +278,7 @@
     <button data-tool="pen">✏️ 펜</button>
     <button data-tool="hl">🖍 형광펜</button>
     <button data-tool="eraser">🧽 지우개</button>
+    <button id="finger" title="켜면 손가락으로도 필기합니다 (화면 넘기기는 ✋ 이동에서)">☝️ 손가락 필기</button>
   </div>
   <div class="group" id="colors"></div>
   <div class="group" id="widths">
@@ -496,6 +497,9 @@ canvases.forEach((_, p) => redraw(p));
 
 /* ---------- 도구 상태 ---------- */
 let tool = "hand", colorIdx = 0, width = 3.5;
+// 손가락 필기: 켜면 손가락으로도 펜·형광펜·지우개를 쓴다 (이 기기에 기억)
+let fingerDraw = false;
+try { fingerDraw = localStorage.getItem("fingerDraw") === "1"; } catch (e) {}
 const history = [];                    // {p, add: stroke} 또는 {p, del: [strokes]}
 
 const colorsBox = document.getElementById("colors");
@@ -512,7 +516,15 @@ function refreshToolbar() {
     b.classList.toggle("on", i === colorIdx);
   });
   document.querySelectorAll("#widths button").forEach(b => b.classList.toggle("on", +b.dataset.w === width));
+  document.getElementById("finger").classList.toggle("on", fingerDraw);
 }
+document.getElementById("finger").addEventListener("click", () => {
+  fingerDraw = !fingerDraw;
+  try { localStorage.setItem("fingerDraw", fingerDraw ? "1" : "0"); } catch (e) {}
+  if (fingerDraw && tool === "hand") tool = "pen";
+  refreshToolbar();
+  toast(fingerDraw ? "손가락으로 필기할 수 있어요. 화면을 넘길 때는 ✋ 이동을 누르세요." : "손가락 필기를 껐어요. 손가락으로 화면을 넘길 수 있어요.");
+});
 document.getElementById("tools").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
   tool = b.dataset.tool; refreshToolbar();
@@ -629,14 +641,14 @@ document.querySelectorAll(".field").forEach(f => {
   const cv = f.closest(".page").querySelector("canvas"), p = canvases.indexOf(cv);
   f.addEventListener("pointerdown", e => {
     if (tool === "hand") return;
-    if (e.pointerType === "touch") startFinger(e);
-    else if (e.pointerType === "pen") startDraw(cv, p, e);
+    if (e.pointerType === "touch" && !fingerDraw) startFinger(e);
+    else if (e.pointerType !== "mouse") startDraw(cv, p, e);
   });
 });
 
 canvases.forEach((cv, p) => {
   cv.addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch") startFinger(e);
+    if (e.pointerType === "touch" && !fingerDraw) startFinger(e);
     else startDraw(cv, p, e);
   });
 
