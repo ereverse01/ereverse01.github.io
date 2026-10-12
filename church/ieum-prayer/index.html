@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이음교구 홀수목장 기도제목</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #2b2a27;
+    --muted: #8a867d;
+    --line: #e4e0d6;
+    --accent: #6b5b3e;
+    --c-pray: #3b7dd8;   /* 계속 기도중 */
+    --c-pray-bg: #e6f0fc;
+    --c-ans: #2e9d5b;    /* 응답됨 */
+    --c-ans-bg: #e3f5ea;
+    --c-new: #e07b1f;    /* 새 기도제목 */
+    --c-new-bg: #fdefe1;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    text-align: center;
+    padding: 32px 16px 16px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    letter-spacing: -0.02em;
+  }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 0.95rem; }
+  .legend {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    margin-top: 14px; font-size: 0.85rem;
+  }
+  .legend span { padding: 2px 10px; border-radius: 999px; }
+  .toolbar {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px;
+  }
+  main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 8px 16px 60px;
+    display: grid;
+    gap: 16px;
+  }
+  .group {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .group-head {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .badge {
+    background: var(--accent); color: #fff;
+    font-weight: 700; padding: 4px 12px; border-radius: 8px;
+    white-space: nowrap;
+  }
+  .leader {
+    flex: 1; min-width: 160px;
+    font-size: 1.05rem; font-weight: 600;
+    border: none; border-bottom: 2px solid var(--line);
+    padding: 6px 2px; background: transparent; color: var(--ink);
+  }
+  .leader:focus { outline: none; border-bottom-color: var(--accent); }
+  .item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    margin-bottom: 8px;
+    transition: background .15s, border-color .15s;
+  }
+  .item.s-pray { background: var(--c-pray-bg); border-color: var(--c-pray); }
+  .item.s-ans  { background: var(--c-ans-bg);  border-color: var(--c-ans); }
+  .item.s-new  { background: var(--c-new-bg);  border-color: var(--c-new); }
+  .item textarea {
+    grid-column: 1 / -1;
+    width: 100%; min-height: 56px; resize: vertical;
+    font: inherit; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff;
+  }
+  .item textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .status { display: flex; gap: 6px; flex-wrap: wrap; }
+  .status button, .del, .add, .toolbar button {
+    font: inherit; cursor: pointer; border-radius: 999px;
+  }
+  .status button {
+    padding: 5px 12px; font-size: 0.88rem;
+    border: 1.5px solid var(--line); background: #fff; color: var(--muted);
+  }
+  .status button[data-s="pray"].on { background: var(--c-pray); border-color: var(--c-pray); color: #fff; }
+  .status button[data-s="ans"].on  { background: var(--c-ans);  border-color: var(--c-ans);  color: #fff; }
+  .status button[data-s="new"].on  { background: var(--c-new);  border-color: var(--c-new);  color: #fff; }
+  .del {
+    border: none; background: transparent; color: var(--muted);
+    font-size: 0.85rem; padding: 4px 8px; align-self: center;
+  }
+  .del:hover { color: #c0392b; }
+  .add {
+    width: 100%; padding: 10px;
+    border: 1.5px dashed var(--line); background: transparent;
+    color: var(--accent); font-weight: 600; border-radius: 10px;
+  }
+  .add:hover { border-color: var(--accent); }
+  .toolbar button {
+    padding: 8px 16px; border: 1.5px solid var(--accent); white-space: nowrap;
+    background: #fff; color: var(--accent); font-weight: 600;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px;
+    opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .gate {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .gate[hidden] { display: none; }
+  .gate form {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 28px 24px; width: 100%; max-width: 360px; text-align: center;
+  }
+  .gate h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  .gate p { margin: 0 0 16px; color: var(--muted); }
+  .gate input {
+    width: 100%; font: inherit; padding: 10px 12px; border-radius: 10px;
+    border: 1.5px solid var(--line); margin-bottom: 10px;
+  }
+  .gate input:focus { outline: none; border-color: var(--accent); }
+  .gate button {
+    width: 100%; font: inherit; font-weight: 700; padding: 10px; border-radius: 10px;
+    border: none; background: var(--accent); color: #fff; cursor: pointer;
+  }
+  .pw-msg { min-height: 1.4em; margin-top: 10px; color: #c0392b; font-size: 0.9rem; }
+  .sync { min-height: 1.4em; margin-top: 8px; font-size: 0.85rem; color: var(--c-ans); }
+  .sync.bad { color: #c0392b; font-weight: 600; }
+  .months { max-width: 860px; margin: 18px auto 0; }
+  .year {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    font-size: 1.05rem;
+  }
+  .year button {
+    border: none; background: transparent; color: var(--accent);
+    font-size: 1rem; cursor: pointer; padding: 4px 8px;
+  }
+  .tabs {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+    margin-top: 10px;
+  }
+  .tabs button {
+    font: inherit; cursor: pointer; padding: 7px 0; border-radius: 10px;
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+    position: relative;
+  }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .tabs button.has::after {
+    content: ""; position: absolute; top: 5px; right: 6px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--c-new);
+  }
+  @media (min-width: 640px) { .tabs { grid-template-columns: repeat(12, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>이음교구 홀수목장 기도제목</h1>
+  <p>목장별로 기도제목을 적어 주세요</p>
+  <div class="legend">
+    <span style="background:var(--c-pray-bg);color:var(--c-pray)">● 계속 기도중</span>
+    <span style="background:var(--c-ans-bg);color:var(--c-ans)">● 응답됨</span>
+    <span style="background:var(--c-new-bg);color:var(--c-new)">● 새 기도제목</span>
+  </div>
+  <nav class="months">
+    <div class="year">
+      <button id="prevYear" aria-label="이전 해">◀</button>
+      <strong id="yearLabel"></strong>
+      <button id="nextYear" aria-label="다음 해">▶</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </nav>
+  <div class="toolbar">
+    <button id="carry" hidden>지난달 기도제목 불러오기</button>
+    <button id="copyAll">전체 복사</button>
+    <button id="refresh">새로고침</button>
+  </div>
+  <div class="sync" id="sync"></div>
+</header>
+<main id="list"></main>
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <h2>이음교구 홀수목장 기도제목</h2>
+    <p>교구 암호를 입력해 주세요</p>
+    <input id="pwInput" type="password" autocomplete="current-password" placeholder="암호">
+    <button type="submit">들어가기</button>
+    <div class="pw-msg" id="pwMsg"></div>
+  </form>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  // 구글 Apps Script 웹 앱 주소
+  const SHEET_URL = "";
+
+  // 목장 명단과 기도제목은 암호 확인 후 시트에서 받아 옴
+  let GROUPS = [], LABELS = {}, LEADERS = {};
+
+  const STATUS = { pray: "계속 기도중", ans: "응답됨", new: "새 기도제목" };
+  const PW_KEY = "ieum-odd-prayer-pw";
+
+  // data = { leaders: { 목장: 이름 }, months: { "2026-10": { 목장: [기도제목...] } } }
+  let data = { leaders: {}, months: {} };
+  let pw = "";
+  try { pw = localStorage.getItem(PW_KEY) || ""; } catch {}
+
+  async function call(body) {
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...body, pw }),
+    });
+    return res.json();
+  }
+
+  // 성공하면 true, 암호가 틀리면 "pw", 연결 실패면 false
+  async function load() {
+    setSync("불러오는 중…");
+    try {
+      const d = await call({ action: "load" });
+      if (!d.ok) { setSync(""); return d.error === "pw" ? "pw" : false; }
+      GROUPS = d.roster.map(r => r[0]);
+      LABELS = Object.fromEntries(d.roster.map(r => [r[0], r[1]]));
+      LEADERS = Object.fromEntries(d.roster.map(r => [r[0], r[2]]));
+      data = { leaders: d.leaders || {}, months: d.months || {} };
+      GROUPS.forEach(g => { if (data.leaders[g] == null) data.leaders[g] = LEADERS[g] || ""; });
+      setSync("");
+      return true;
+    } catch {
+      setSync("불러오기 실패 — 새로고침 해 주세요", true);
+      return false;
+    }
+  }
+
+  // 목장 하나(그 달)나 목자 이름 하나만 보내서, 서로 다른 목장끼리 덮어쓰지 않게 함
+  const timers = {};
+  function save(month, g) {
+    const id = month + "|" + g;
+    clearTimeout(timers[id]);
+    setSync("저장 중…");
+    timers[id] = setTimeout(() => send(month, g), 800);
+  }
+  const pending = new Set();
+  async function send(month, g) {
+    const id = month + "|" + g;
+    delete timers[id];
+    pending.add(id);
+    const value = month === "목자" ? data.leaders[g] : data.months[month][g];
+    try {
+      const r = await call({ action: "save", month, group: g, value });
+      if (!r.ok) throw 0;
+      pending.delete(id);
+      if (!pending.size && !Object.keys(timers).length) setSync("저장됨 ✓");
+    } catch {
+      pending.delete(id);
+      setSync("저장 실패 — 다시 시도해 주세요", true);
+    }
+  }
+  window.addEventListener("beforeunload", e => {
+    if (pending.size || Object.keys(timers).length) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  function setSync(msg, bad) {
+    const el = document.getElementById("sync");
+    el.textContent = msg;
+    el.classList.toggle("bad", !!bad);
+  }
+
+  const now = new Date();
+  let year = now.getFullYear();
+  let month = now.getMonth() + 1;
+  const ym = (y, m) => `${y}-${String(m).padStart(2, "0")}`;
+  const cur = () => ym(year, month);
+
+  function monthData(key) {
+    if (!data.months[key]) data.months[key] = {};
+    const md = data.months[key];
+    GROUPS.forEach(g => { if (!md[g] || !md[g].length) md[g] = [{ text: "", status: "" }]; });
+    return md;
+  }
+  const hasText = key => {
+    const md = data.months[key];
+    return !!md && GROUPS.some(g => (md[g] || []).some(it => it.text.trim()));
+  };
+  function prevKey() {
+    return month === 1 ? ym(year - 1, 12) : ym(year, month - 1);
+  }
+
+  const list = document.getElementById("list");
+  const tabs = document.getElementById("tabs");
+  const carry = document.getElementById("carry");
+
+  function renderTabs() {
+    document.getElementById("yearLabel").textContent = `${year}년`;
+    tabs.innerHTML = "";
+    for (let m = 1; m <= 12; m++) {
+      const b = document.createElement("button");
+      b.textContent = `${m}월`;
+      if (m === month) b.classList.add("on");
+      if (hasText(ym(year, m))) b.classList.add("has");
+      b.onclick = () => { month = m; render(); };
+      tabs.appendChild(b);
+    }
+  }
+
+  function render() {
+    renderTabs();
+    carry.hidden = hasText(cur()) || !hasText(prevKey());
+    list.innerHTML = "";
+    const md = monthData(cur());
+    GROUPS.forEach(g => list.appendChild(renderGroup(g, cur(), md)));
+  }
+
+  document.getElementById("prevYear").onclick = () => { year--; render(); };
+  document.getElementById("nextYear").onclick = () => { year++; render(); };
+  document.getElementById("refresh").onclick = async () => { if (await load() === true) render(); };
+
+  // 지난달에서 응답되지 않은 기도제목을 '계속 기도중'으로 가져옴
+  carry.onclick = () => {
+    const prev = data.months[prevKey()];
+    const key = cur();
+    const md = monthData(key);
+    GROUPS.forEach(g => {
+      const kept = (prev[g] || [])
+        .filter(it => it.text.trim() && it.status !== "ans")
+        .map(it => ({ text: it.text, status: "pray" }));
+      md[g] = kept.length ? kept : [{ text: "", status: "" }];
+      save(key, g);
+    });
+    render();
+    toast("지난달 기도제목을 불러왔어요 (응답된 것은 제외)");
+  };
+
+  function renderGroup(g, key, md) {
+    const items = md[g];
+    const sec = document.createElement("section");
+    sec.className = "group";
+
+    const head = document.createElement("div");
+    head.className = "group-head";
+    head.innerHTML = `<span class="badge">${LABELS[g]}</span>`;
+    const leader = document.createElement("input");
+    leader.className = "leader";
+    leader.placeholder = "목자 이름";
+    leader.value = data.leaders[g];
+    leader.oninput = () => { data.leaders[g] = leader.value; save("목자", g); };
+    head.appendChild(leader);
+    sec.appendChild(head);
+
+    const box = document.createElement("div");
+    const onChange = () => save(key, g);
+    items.forEach(it => box.appendChild(renderItem(items, it, onChange)));
+    sec.appendChild(box);
+
+    const add = document.createElement("button");
+    add.className = "add";
+    add.textContent = "+ 기도제목 추가";
+    add.onclick = () => {
+      const it = { text: "", status: "" };
+      items.push(it);
+      onChange();
+      const el = renderItem(items, it, onChange);
+      box.appendChild(el);
+      el.querySelector("textarea").focus();
+    };
+    sec.appendChild(add);
+    return sec;
+  }
+
+  function renderItem(arr, it, onChange) {
+    const row = document.createElement("div");
+    row.className = "item" + (it.status ? " s-" + it.status : "");
+
+    const ta = document.createElement("textarea");
+    ta.placeholder = "기도제목을 적어 주세요";
+    ta.value = it.text;
+    ta.oninput = () => { it.text = ta.value; onChange(); renderTabs(); };
+
+    const st = document.createElement("div");
+    st.className = "status";
+    Object.entries(STATUS).forEach(([k, label]) => {
+      const b = document.createElement("button");
+      b.dataset.s = k;
+      b.textContent = label;
+      if (it.status === k) b.classList.add("on");
+      b.onclick = () => {
+        it.status = it.status === k ? "" : k;   // 다시 누르면 해제
+        onChange();
+        row.className = "item" + (it.status ? " s-" + it.status : "");
+        st.querySelectorAll("button").forEach(x => x.classList.toggle("on", x.dataset.s === it.status));
+      };
+      st.appendChild(b);
+    });
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "삭제";
+    del.onclick = () => {
+      if (it.text && !confirm("이 기도제목을 삭제할까요?")) return;
+      arr.splice(arr.indexOf(it), 1);
+      onChange();
+      row.remove();
+    };
+
+    row.append(ta, st, del);
+    return row;
+  }
+
+  document.getElementById("copyAll").onclick = async () => {
+    const md = monthData(cur());
+    const lines = [`[이음교구 홀수목장 기도제목 - ${year}년 ${month}월]`, ""];
+    GROUPS.forEach(g => {
+      const leader = data.leaders[g];
+      const filled = md[g].filter(it => it.text.trim());
+      if (!filled.length) return;
+      lines.push(`■ ${LABELS[g]}${leader ? " (" + leader + ")" : ""}`);
+      filled.forEach(it => {
+        lines.push(`- ${it.text.trim()}${it.status ? " [" + STATUS[it.status] + "]" : ""}`);
+      });
+      lines.push("");
+    });
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast("복사했어요. 카톡 등에 붙여넣기 하세요");
+    } catch {
+      toast("복사에 실패했어요");
+    }
+  };
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2000);
+  }
+
+  const gate = document.getElementById("gate");
+  const pwInput = document.getElementById("pwInput");
+  const pwMsg = document.getElementById("pwMsg");
+
+  async function start() {
+    const r = await load();
+    if (r === true) { gate.hidden = true; render(); return; }
+    gate.hidden = false;
+    if (r === "pw") {
+      if (pw) pwMsg.textContent = "암호가 맞지 않아요";
+      pw = "";
+      try { localStorage.removeItem(PW_KEY); } catch {}
+      pwInput.focus();
+    } else {
+      pwMsg.textContent = "연결에 실패했어요. 잠시 후 다시 시도해 주세요";
+    }
+  }
+  document.getElementById("gateForm").onsubmit = e => {
+    e.preventDefault();
+    pw = pwInput.value.trim();
+    if (!pw) return;
+    try { localStorage.setItem(PW_KEY, pw); } catch {}
+    pwMsg.textContent = "확인 중…";
+    start();
+  };
+
+  if (!SHEET_URL) {
+    gate.hidden = false;
+    pwMsg.textContent = "아직 시트가 연결되지 않았어요";
+  } else if (pw) start();
+  else gate.hidden = false;
+</script>
+</body>
+</html>
