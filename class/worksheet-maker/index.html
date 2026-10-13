@@ -3175,7 +3175,31 @@ zoo=동물원
   }
   const findWord = (tok, keys) => { for (const c of candidates(tok)) if (keys.has(c)) return keys.get(c); return -1; };
 
+  // 단어 목록을 지문에 처음 나온 순서대로 정렬한다. 지문에서 못 찾은 단어는 맨 뒤에.
+  function sortWords() {
+    const text = paragraphs().join('\n');
+    const keys = wordKeys();
+    const first = state.words.map(() => Infinity);
+    const re = /[A-Za-z]+(?:['’][A-Za-z]+)*/g;
+    let m;
+    while ((m = re.exec(text))) {
+      const i = findWord(m[0], keys);
+      if (i >= 0 && first[i] === Infinity) first[i] = m.index;
+    }
+    // 숙어처럼 여러 단어로 된 것은 글자 그대로 찾는다
+    const lower = text.toLowerCase();
+    state.words.forEach((w, i) => {
+      if (first[i] === Infinity && w.base.includes(' ')) {
+        const p = lower.indexOf(w.base.toLowerCase());
+        if (p >= 0) first[i] = p;
+      }
+    });
+    const order = state.words.map((w, i) => i).sort((a, b) => (first[a] - first[b]) || (a - b));
+    state.words = order.map((i) => state.words[i]);
+  }
+
   function renderWordsView() {
+    sortWords();
     const keys = wordKeys();
     const html = paragraphs().map((p) => '<p>' + p.split(TOKEN).map((part, i) => {
       if (i % 2 === 0) return esc(part);
@@ -3402,6 +3426,7 @@ zoo=동물원
   // 함초롬바탕이 없는 기기(갤럭시 탭 등)에서는 비슷한 명조체 Noto Serif KR로 보인다
   const HCR = '"함초롬바탕", "HCR Batang", "Noto Serif KR", serif';
   function buildSheet() {
+    sortWords();
     const o = state.opts;
     const font = o.font === 'hcr' ? HCR : o.font === 'serif' ? 'Georgia, "Times New Roman", serif' : '"Malgun Gothic", "Pretendard", sans-serif';
     const pStyle = `font-family:${font}; font-size:${o.size}pt; line-height:${o.lh}`;
