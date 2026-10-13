@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>지문 학습지 만들기</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap">
 <style>
   :root {
     --bg: #f4f5f7; --card: #fff; --ink: #1d2433; --muted: #6b7385; --line: #dde1e8;
@@ -110,6 +111,7 @@
   .sheet .vside div:last-child { border-bottom: none; }
   .sheet .vside b { font-family: Georgia, "Times New Roman", serif; }
   .sheet .vside .blank { display: inline-block; border-bottom: 1px solid #333; width: 26mm; height: 4mm; vertical-align: bottom; }
+  .sheet.hcr, .sheet.hcr * { font-family: "함초롬바탕", "HCR Batang", "Noto Serif KR", serif !important; }
   .sheet .empty { color: #999; font-size: 10pt; padding: 4mm 0; }
 
   @page { size: A4; margin: 13mm 12mm; }
@@ -232,8 +234,8 @@
           <select id="oSize"><option value="10">작게</option><option value="11" selected>보통</option><option value="12">크게</option><option value="13.5">아주 크게</option></select></div>
         <div><label class="f">줄 간격</label>
           <select id="oLh"><option value="1.6">보통</option><option value="2.1" selected>넓게 (필기 공간)</option><option value="2.7">아주 넓게</option></select></div>
-        <div><label class="f">지문 글꼴</label>
-          <select id="oFont"><option value="serif">명조 (Times)</option><option value="sans">고딕</option></select></div>
+        <div><label class="f">글꼴</label>
+          <select id="oFont"><option value="hcr">함초롬바탕 (학습지 전체)</option><option value="serif">지문만 명조 (Times)</option><option value="sans">지문만 고딕</option></select></div>
         <label class="chk"><input type="checkbox" id="oPn" checked>문단 번호</label>
         <label class="chk"><input type="checkbox" id="oMark" checked>지문 속 단어 표시</label>
         <label class="chk"><input type="checkbox" id="oTrans">문단마다 해석 쓰는 줄</label>
@@ -3072,7 +3074,7 @@ zoo=동물원
   }
 
   // ---------- 상태 ----------
-  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'serif', pn: true, mark: true, trans: false, quiz: false, key: false };
+  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: true, mark: true, trans: false, quiz: false, key: false };
   const saved = store.get('wsheet.v1') || {};
   const state = {
     title: saved.title || '',
@@ -3080,6 +3082,8 @@ zoo=동물원
     words: saved.words || [], // [{base, meaning}]
     opts: Object.assign({}, DEFAULT_OPTS, saved.opts),
   };
+  // 함초롬바탕이 생기기 전에 저장된 설정은 한 번만 함초롬바탕으로 바꾼다
+  if (!saved.hcr) { state.opts.font = 'hcr'; state.hcr = true; }
   const save = () => store.set('wsheet.v1', state);
 
   // ---------- 단계 이동 ----------
@@ -3618,10 +3622,12 @@ zoo=동물원
     return a;
   }
 
+  // 함초롬바탕이 없는 기기(갤럭시 탭 등)에서는 비슷한 명조체 Noto Serif KR로 보인다
+  const HCR = '"함초롬바탕", "HCR Batang", "Noto Serif KR", serif';
   function buildSheet() {
     const o = state.opts;
     const title = state.title.trim() || 'Reading Worksheet';
-    const font = o.font === 'serif' ? 'Georgia, "Times New Roman", serif' : '"Malgun Gothic", "Pretendard", sans-serif';
+    const font = o.font === 'hcr' ? HCR : o.font === 'serif' ? 'Georgia, "Times New Roman", serif' : '"Malgun Gothic", "Pretendard", sans-serif';
     const pStyle = `font-family:${font}; font-size:${o.size}pt; line-height:${o.lh}`;
     let page1;
     if (o.layout === 'side') {
@@ -3636,7 +3642,7 @@ zoo=동물원
     const quizList = shuffled(state.words);
     if (o.quiz) pages.push(`${header(title + ' · 단어 시험')}<div class="sec">뜻을 쓰세요</div>${vocabTable(quizList, 'blankKo')}`);
     if (o.key) pages.push(`${header(title + ' · 정답')}<div class="sec">${o.quiz ? '단어 시험 정답' : '단어 목록'}</div>${vocabTable(o.quiz ? quizList : state.words, 'show')}`);
-    return `<div class="sheet">${pages.map((p) => `<div class="page">${p}</div>`).join('')}</div>`;
+    return `<div class="sheet${o.font === 'hcr' ? ' hcr' : ''}">${pages.map((p) => `<div class="page">${p}</div>`).join('')}</div>`;
   }
 
   function renderSheet() {
