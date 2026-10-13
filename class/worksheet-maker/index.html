@@ -155,10 +155,10 @@
       </div>
     </div>
     <div class="card">
-      <h2>🤖 ChatGPT로 읽기 <span style="font-size:14px; color:var(--muted); font-weight:400">(더 정확해요)</span></h2>
-      <p class="hint">① [요청문 복사하고 ChatGPT 열기]를 눌러요. ② ChatGPT에 요청문을 붙여넣고 지문 사진을 첨부해 보내요. ③ ChatGPT 답을 <b>통째로 복사</b>해서 아래 칸에 붙여넣고 [가져오기]를 누르세요. 제목·지문·단어 뜻이 한 번에 들어가요.</p>
-      <button id="btnGptPrompt">📋 요청문 복사하고 ChatGPT 열기</button>
-      <textarea id="gptIn" rows="7" style="margin-top:10px" placeholder="여기에 ChatGPT 답을 붙여넣으세요"></textarea>
+      <h2>🤖 Claude로 읽기 <span style="font-size:14px; color:var(--muted); font-weight:400">(더 정확해요)</span></h2>
+      <p class="hint">① [요청문 복사하고 Claude 열기]를 눌러요. ② Claude에 요청문을 붙여넣고 지문 사진을 첨부해 보내요. ③ Claude 답을 <b>통째로 복사</b>해서 아래 칸에 붙여넣고 [가져오기]를 누르세요. 제목·지문·단어 뜻이 한 번에 들어가요.</p>
+      <button id="btnGptPrompt">📋 요청문 복사하고 Claude 열기</button>
+      <textarea id="gptIn" rows="7" style="margin-top:10px" placeholder="여기에 Claude 답을 붙여넣으세요"></textarea>
       <div class="row" style="margin-top:8px; justify-content:flex-end">
         <button id="btnGptApply" class="primary">가져오기 →</button>
       </div>
@@ -198,8 +198,8 @@
         <p class="hint">뜻은 자동으로 채워져요. 문맥에 맞게 고쳐 쓰세요. 빨간 칸은 뜻을 못 찾은 단어예요.</p>
         <table class="vlist"><tbody id="vlist"></tbody></table>
         <details>
-          <summary>ChatGPT·Claude로 문맥상 뜻 받아서 넣기</summary>
-          <p class="hint">① 아래 버튼으로 요청문을 복사해 ChatGPT나 Claude에 붙여넣어요. ② 받은 답을 아래 칸에 붙여넣고 [목록에 넣기]를 누르세요. (형식: <code>word = 뜻</code>, 한 줄에 하나)</p>
+          <summary>Claude로 문맥상 뜻 받아서 넣기</summary>
+          <p class="hint">① 아래 버튼으로 요청문을 복사해 Claude에 붙여넣어요. ② 받은 답을 아래 칸에 붙여넣고 [목록에 넣기]를 누르세요. (형식: <code>word = 뜻</code>, 한 줄에 하나)</p>
           <button id="btnPrompt">요청문 복사</button>
           <textarea id="glossIn" rows="6" style="margin-top:8px" placeholder="habit = 습관&#10;reinforce = 강화하다"></textarea>
           <div class="row" style="margin-top:6px"><button id="btnGloss">목록에 넣기</button></div>
@@ -3319,7 +3319,7 @@ zoo=동물원
   });
   $('#btnSkipOcr').addEventListener('click', () => go(2));
 
-  // ---------- ChatGPT로 읽기 ----------
+  // ---------- Claude로 읽기 ----------
   const GPT_PROMPT = `첨부한 사진 속 영어 지문으로 학습지를 만들려고 해. 아래 형식 그대로만 답해 줘. 다른 말은 쓰지 마.
 
 [제목]
@@ -3333,10 +3333,10 @@ zoo=동물원
 
   $('#btnGptPrompt').addEventListener('click', () => {
     copyText(GPT_PROMPT);
-    window.open('https://chatgpt.com/', '_blank');
+    window.open('https://claude.ai/new', '_blank');
   });
 
-  // ChatGPT 답을 [제목]·[지문]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
+  // Claude 답을 [제목]·[지문]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
   function parseGpt(text) {
     const parts = { 제목: '', 지문: '', 단어: '' };
     let cur = null, found = false;
@@ -3352,7 +3352,7 @@ zoo=동물원
 
   $('#btnGptApply').addEventListener('click', () => {
     const raw = $('#gptIn').value;
-    if (!raw.trim()) { toast('ChatGPT 답을 먼저 붙여넣어 주세요'); return; }
+    if (!raw.trim()) { toast('Claude 답을 먼저 붙여넣어 주세요'); return; }
     const { title, passage, gloss } = parseGpt(raw);
     if (!passage) { toast('[지문] 부분을 찾지 못했어요'); return; }
     if (state.passage.trim() && !confirm('지금 있는 지문과 단어를 새 내용으로 바꿀까요?')) return;
