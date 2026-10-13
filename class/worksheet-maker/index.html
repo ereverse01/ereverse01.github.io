@@ -75,6 +75,8 @@
   .sheet .passage { text-align: justify; hyphens: auto; }
   .sheet .passage p { margin: 0 0 2.5mm; }
   .sheet p.choices { text-align: left; }
+  .sheet .q { font-weight: 700; margin: 0 0 3mm; }
+  .sheet .q .qno { font-size: 2em; font-weight: 800; margin-right: 2mm; vertical-align: -0.12em; }
   .sheet .passage .pn, .sheet .kopage .pn { display: inline-block; min-width: 5mm; height: 5mm; line-height: 5mm; text-align: center; border: 1px solid #333; border-radius: 50%;
                         font-size: 7.5pt; font-family: "Malgun Gothic", sans-serif; margin-right: 1.5mm; vertical-align: 1px; text-indent: 0; }
   .sheet .passage u { text-decoration: none; border-bottom: 1.2px solid #111; font-weight: 700; }
@@ -142,9 +144,11 @@
   <section data-panel="2" hidden>
     <div class="card">
       <h2>지문·해석 확인하고 고치기</h2>
-      <p class="hint">Claude가 읽은 지문과 해석이 여기에 들어가요. 틀린 곳이 있으면 고쳐 주세요. 지문과 해석 모두 <b>문단 사이는 빈 줄 하나</b>로 나눠요. 해석은 같은 순서의 문단 밑에 들어가요.</p>
+      <p class="hint">Claude가 읽은 발문·지문·해석이 여기에 들어가요. 틀린 곳이 있으면 고쳐 주세요. 지문과 해석 모두 <b>문단 사이는 빈 줄 하나</b>로 나눠요. 해석은 같은 순서의 문단 밑에 들어가요.</p>
       <label class="f">파일 이름 (인쇄·PDF 저장용, 학습지에는 안 나와요)</label>
       <input type="text" id="title" placeholder="예: 3월 모의고사 31번">
+      <label class="f">문항 번호와 발문 (번호는 크게 나와요)</label>
+      <input type="text" id="q" placeholder="예: 31. 다음 글의 주제로 가장 적절한 것은?">
       <label class="f">지문</label>
       <textarea id="passage" placeholder="여기에 지문이 들어갑니다. 직접 붙여넣어도 돼요."></textarea>
       <label class="f">한국어 해석</label>
@@ -3043,6 +3047,7 @@ zoo=동물원
   const state = {
     title: saved.title || '',
     passage: saved.passage || '',
+    q: saved.q || '', // 한국어 발문
     ko: saved.ko || '', // 한국어 해석 (문단 사이 빈 줄)
     words: saved.words || [], // [{base, meaning}]
     opts: Object.assign({}, DEFAULT_OPTS, saved.opts),
@@ -3069,8 +3074,11 @@ zoo=동물원
   $('#btnManual').addEventListener('click', () => go(2));
   const GPT_PROMPT = `첨부한 사진 속 영어 지문으로 학습지를 만들려고 해. 아래 형식 그대로만 답해 줘. 다른 말은 쓰지 마.
 
+[발문]
+사진 속 문항 번호와 한국어 발문을 그대로 옮겨 적기. (예: 31. 다음 글의 주제로 가장 적절한 것은?)
+
 [지문]
-사진 속 영어 지문을 한 글자도 바꾸지 말고 그대로 옮겨 적기. 줄 끝에서 끊긴 단어는 이어 쓰고, 문단 사이는 빈 줄 하나. 제목·쪽 번호·문제 번호·한글 설명·각주는 빼기. 보기(①②③…)가 있으면 지문 아래에 빈 줄 하나 띄고, 보기 하나를 한 줄에 하나씩.
+사진 속 영어 지문을 한 글자도 바꾸지 말고 그대로 옮겨 적기. 줄 끝에서 끊긴 단어는 이어 쓰고, 문단 사이는 빈 줄 하나. 발문·제목·쪽 번호·문제 번호·각주는 지문에 넣지 않기. 보기(①②③…)가 있으면 지문 아래에 빈 줄 하나 띄고, 보기 하나를 한 줄에 하나씩.
 
 [해석]
 지문 전체를 자연스러운 한국어로 해석. 영어 지문과 같은 문단 순서로, 문단 사이는 빈 줄 하나. 보기가 있으면 보기 해석도 마지막에 빈 줄 하나 띄고 한 줄에 하나씩.
@@ -3085,33 +3093,35 @@ zoo=동물원
 
   // Claude 답을 [제목]·[지문]·[해석]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
   function parseGpt(text) {
-    const parts = { 제목: '', 지문: '', 해석: '', 단어: '' };
+    const parts = { 제목: '', 발문: '', 지문: '', 해석: '', 단어: '' };
     let cur = null, found = false;
     text.replace(/\r/g, '').split('\n').forEach((raw) => {
       const line = raw.replace(/[*`#]/g, '');
-      const m = line.match(/^\s*\[?\s*(제목|지문|해석|단어)\s*\]?\s*:?\s*$/);
+      const m = line.match(/^\s*\[?\s*(제목|발문|지문|해석|단어)\s*\]?\s*:?\s*$/);
       if (m) { cur = m[1]; found = true; return; }
       if (cur) parts[cur] += raw.replace(/^```.*$/, '') + '\n';
     });
     if (!found) parts.지문 = text;
-    return { title: parts.제목.replace(/[*#`]/g, '').trim().split('\n')[0] || '', passage: parts.지문.trim(), ko: parts.해석.trim(), gloss: parts.단어 };
+    return { title: parts.제목.replace(/[*#`]/g, '').trim().split('\n')[0] || '', q: parts.발문.trim(), passage: parts.지문.trim(), ko: parts.해석.trim(), gloss: parts.단어 };
   }
 
   $('#btnGptApply').addEventListener('click', () => {
     const raw = $('#gptIn').value;
     if (!raw.trim()) { toast('Claude 답을 먼저 붙여넣어 주세요'); return; }
-    const { title, passage, ko, gloss } = parseGpt(raw);
+    const { title, q, passage, ko, gloss } = parseGpt(raw);
     if (!passage) { toast('[지문] 부분을 찾지 못했어요'); return; }
     if (state.passage.trim() && !confirm('지금 있는 지문과 단어를 새 내용으로 바꿀까요?')) return;
     // 빈 줄 없이 사진의 줄바꿈 그대로 왔으면 문단을 다시 맞춘다
     state.passage = /\n\s*\n/.test(passage) ? passage : tidy(passage);
     if (title) state.title = title;
     state.ko = ko;
+    state.q = q;
     state.words = [];
     const n = addGloss(gloss);
     $('#title').value = state.title;
     $('#passage').value = state.passage;
     $('#ko').value = state.ko;
+    $('#q').value = state.q;
     $('#gptIn').value = '';
     save();
     toast(`지문${ko ? '·해석' : ''}${n ? `과 단어 ${n}개를` : '을'} 가져왔어요`);
@@ -3147,6 +3157,7 @@ zoo=동물원
   $('#title').addEventListener('input', (e) => { state.title = e.target.value; save(); });
   $('#passage').addEventListener('input', (e) => { state.passage = e.target.value; save(); });
   $('#ko').addEventListener('input', (e) => { state.ko = e.target.value; save(); });
+  $('#q').addEventListener('input', (e) => { state.q = e.target.value; save(); });
 
   const paragraphs = () => state.passage.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
   const TOKEN = /([A-Za-z]+(?:['’][A-Za-z]+)*)/;
@@ -3394,13 +3405,17 @@ zoo=동물원
     const o = state.opts;
     const font = o.font === 'hcr' ? HCR : o.font === 'serif' ? 'Georgia, "Times New Roman", serif' : '"Malgun Gothic", "Pretendard", sans-serif';
     const pStyle = `font-family:${font}; font-size:${o.size}pt; line-height:${o.lh}`;
+    // 발문 앞의 문항 번호(31. 등)는 크게
+    const qm = state.q.trim().match(/^(\d+)\s*[.)]?\s*([\s\S]*)$/);
+    const qText = qm ? `<span class="qno">${qm[1]}.</span>${esc(qm[2])}` : esc(state.q.trim());
+    const qHtml = state.q.trim() ? `<div class="q" style="font-size:${o.size}pt">${qText}</div>` : '';
     let page1;
     if (o.layout === 'side') {
       page1 = `${header('')}<div class="gridside">
-        <div><div class="sec">Reading</div><div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div></div>
+        <div><div class="sec">Reading</div>${qHtml}<div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div></div>
         <div><div class="sec">Words</div><div class="vside">${vocabSide(state.words, o.mode)}</div></div></div>`;
     } else {
-      page1 = `${header('')}<div class="sec">Reading</div><div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div>
+      page1 = `${header('')}<div class="sec">Reading</div>${qHtml}<div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div>
         <div class="sec" style="margin-top:5mm">Vocabulary</div>${vocabTable(state.words, o.mode)}`;
     }
     const pages = [page1];
@@ -3438,8 +3453,8 @@ zoo=동물원
 
   $('#btnNew').addEventListener('click', () => {
     if (!confirm('지금 학습지를 지우고 새로 시작할까요?')) return;
-    state.title = ''; state.passage = ''; state.ko = ''; state.words = [];
-    $('#title').value = ''; $('#passage').value = ''; $('#ko').value = '';
+    state.title = ''; state.passage = ''; state.ko = ''; state.q = ''; state.words = [];
+    $('#title').value = ''; $('#passage').value = ''; $('#ko').value = ''; $('#q').value = '';
     save(); go(1);
   });
 
@@ -3447,6 +3462,7 @@ zoo=동물원
   $('#title').value = state.title;
   $('#passage').value = state.passage;
   $('#ko').value = state.ko;
+  $('#q').value = state.q;
   if (state.passage.trim()) go(state.words.length ? 3 : 2);
 })();
 </script>
