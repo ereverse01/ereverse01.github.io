@@ -3371,7 +3371,10 @@ zoo=동물원
     const keys = wordKeys();
     const numbered = new Set();
     const lines = Math.max(2, Math.round(3 * (11 / o.size)));
-    return paras.map((p, pi) => {
+    const koDiv = (k) => `<div class="ko" lang="ko" style="${koStyle}">${choiceBreaks(esc(k), k)}</div>`;
+    // 보기가 있는 문제는 지문 → 보기 → 해석 순서로: 해석을 모아 보기 아래에 둔다
+    const hasChoices = paras.some((p) => CIRCLED.test(p));
+    const html = paras.map((p, pi) => {
       const body = p.split(TOKEN).map((part, i) => {
         if (i % 2 === 0) return esc(part);
         const hit = o.mark ? findWord(part, keys) : -1;
@@ -3380,10 +3383,11 @@ zoo=동물원
         numbered.add(hit);
         return `<u>${esc(part)}</u>${sup}`;
       }).join('');
-      const tr = o.trans ? '<div class="trans"></div>'.repeat(lines) : '';
-      const kp = ko[pi] ? `<div class="ko" lang="ko" style="${koStyle}">${choiceBreaks(esc(ko[pi]), ko[pi])}</div>` : '';
+      const tr = o.trans && !CIRCLED.test(p) ? '<div class="trans"></div>'.repeat(lines) : '';
+      const kp = !hasChoices && ko[pi] ? koDiv(ko[pi]) : '';
       return `${pTag(p)}${o.pn ? `<span class="pn">${pi + 1}</span>` : ''}${choiceBreaks(body, p)}</p>${kp}${tr}`;
     }).join('');
+    return html + (hasChoices ? ko.map(koDiv).join('') : '');
   }
 
   // 두 묶음으로 나란히 놓은 단어표
