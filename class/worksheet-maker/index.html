@@ -28,18 +28,6 @@
   .card h2 { font-size: 17px; margin: 0 0 10px; }
   .hint { color: var(--muted); font-size: 14px; margin: 4px 0 12px; line-height: 1.5; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .big-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .big-btns label { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 26px 10px; border: 2px dashed var(--line); border-radius: 14px; cursor: pointer; font-weight: 600; background: #fafbfc; }
-  .big-btns label span.ic { font-size: 34px; }
-  .big-btns input { display: none; }
-  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
-  .thumb { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fafbfc; }
-  .thumb canvas { display: block; width: 100%; height: 190px; object-fit: contain; background: #eee; }
-  .thumb .row { padding: 6px; gap: 4px; justify-content: space-between; }
-  .thumb button { padding: 6px 8px; font-size: 13px; }
-  .progress { height: 10px; background: #e9ecf2; border-radius: 6px; overflow: hidden; margin-top: 12px; display: none; }
-  .progress div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-  .status { font-size: 14px; color: var(--muted); margin-top: 6px; min-height: 20px; }
   textarea, input[type=text] { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff; }
   textarea#passage { min-height: 360px; line-height: 1.6; font-family: Georgia, "Times New Roman", serif; font-size: 16px; }
   label.f { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 4px; }
@@ -65,12 +53,6 @@
   .preview-wrap { background: #c9ced8; border-radius: 14px; padding: 16px; overflow: hidden; }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
   .toast.show { opacity: .92; }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 40; padding: 12px; }
-  .modal.show { display: flex; }
-  .modal-box { background: #fff; border-radius: 14px; padding: 14px; max-width: 96vw; max-height: 96vh; display: flex; flex-direction: column; gap: 10px; }
-  .crop-area { position: relative; touch-action: none; user-select: none; line-height: 0; align-self: center; }
-  .crop-area img { max-width: 90vw; max-height: 74vh; display: block; }
-  #cropRect { position: absolute; border: 2px solid #2f6fde; background: rgba(47,111,222,.15); box-shadow: 0 0 0 9999px rgba(0,0,0,.35); display: none; }
   [hidden] { display: none !important; }
   @media (max-width: 760px) {
     .split { grid-template-columns: 1fr; }
@@ -92,12 +74,14 @@
   .sheet .sec::before { content: ""; width: 3mm; height: 3mm; background: #222; display: inline-block; }
   .sheet .passage { text-align: justify; hyphens: auto; }
   .sheet .passage p { margin: 0 0 2.5mm; }
-  .sheet .passage .pn { display: inline-block; min-width: 5mm; height: 5mm; line-height: 5mm; text-align: center; border: 1px solid #333; border-radius: 50%;
+  .sheet .passage .pn, .sheet .kopage .pn { display: inline-block; min-width: 5mm; height: 5mm; line-height: 5mm; text-align: center; border: 1px solid #333; border-radius: 50%;
                         font-size: 7.5pt; font-family: "Malgun Gothic", sans-serif; margin-right: 1.5mm; vertical-align: 1px; text-indent: 0; }
   .sheet .passage u { text-decoration: none; border-bottom: 1.2px solid #111; font-weight: 700; }
   .sheet .passage sup { font-size: 6.5pt; font-family: "Malgun Gothic", sans-serif; color: #444; margin-left: .3mm; }
   .sheet .trans { border-bottom: 1px solid #aaa; height: 7mm; }
   .sheet .trans:last-of-type { margin-bottom: 3mm; }
+  .sheet .ko { font-family: "Malgun Gothic", "Pretendard", sans-serif; color: #444; line-height: 1.65; margin: -1mm 0 3.5mm; text-align: left; }
+  .sheet .kopage p { margin: 0 0 4mm; line-height: 1.9; font-size: 10.5pt; }
   .sheet .vt { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 1mm; }
   .sheet .vt th { background: #eee; font-weight: 700; font-size: 9pt; border: 1px solid #555; padding: 1.2mm 2mm; }
   .sheet .vt td { border: 1px solid #555; padding: 1.4mm 2mm; height: 7.5mm; }
@@ -133,7 +117,7 @@
   </header>
 
   <nav class="steps">
-    <button data-step="1" class="on"><span class="n">1</span>사진</button>
+    <button data-step="1" class="on"><span class="n">1</span>Claude로 읽기</button>
     <button data-step="2"><span class="n">2</span>지문 확인</button>
     <button data-step="3"><span class="n">3</span>단어 고르기</button>
     <button data-step="4"><span class="n">4</span>학습지</button>
@@ -142,26 +126,12 @@
   <!-- 1. 사진 -->
   <section data-panel="1">
     <div class="card">
-      <h2>지문 사진 찍기</h2>
-      <p class="hint">지문이 여러 쪽이면 사진을 차례대로 여러 장 넣으세요. 사진을 누르면 지문 부분만 잘라낼 수 있어요. 글씨가 화면을 꽉 채우고 반듯하게 찍힐수록 정확해요.</p>
-      <div class="big-btns">
-        <label><span class="ic">📷</span>카메라로 찍기<input type="file" id="inCamera" accept="image/*" capture="environment"></label>
-        <label><span class="ic">🖼️</span>사진 불러오기<input type="file" id="inFiles" accept="image/*" multiple></label>
-      </div>
-      <div class="thumbs" id="thumbs"></div>
-      <div class="progress" id="prog"><div></div></div>
-      <div class="status" id="ocrStatus"></div>
-      <div class="row" style="margin-top:12px; justify-content:flex-end">
-        <button id="btnSkipOcr" class="ghost">사진 없이 지문 붙여넣기 →</button>
-        <button id="btnOcr" class="primary" disabled>글자 읽기 →</button>
-      </div>
-    </div>
-    <div class="card">
-      <h2>🤖 Claude로 읽기 <span style="font-size:14px; color:var(--muted); font-weight:400">(더 정확해요)</span></h2>
-      <p class="hint">① [요청문 복사하고 Claude 열기]를 눌러요. ② Claude에 요청문을 붙여넣고 지문 사진을 첨부해 보내요. ③ Claude 답을 <b>통째로 복사</b>해서 아래 칸에 붙여넣고 [가져오기]를 누르세요. 제목·지문·단어 뜻이 한 번에 들어가요.</p>
+      <h2>🤖 Claude로 지문 읽기</h2>
+      <p class="hint">① [요청문 복사하고 Claude 열기]를 눌러요. ② Claude에 요청문을 붙여넣고 지문 사진을 첨부해 보내요. ③ Claude 답을 <b>통째로 복사</b>해서 아래 칸에 붙여넣고 [가져오기]를 누르세요. 제목·지문·해석·단어 뜻이 한 번에 들어가요.</p>
       <button id="btnGptPrompt">📋 요청문 복사하고 Claude 열기</button>
       <textarea id="gptIn" rows="7" style="margin-top:10px" placeholder="여기에 Claude 답을 붙여넣으세요"></textarea>
       <div class="row" style="margin-top:8px; justify-content:flex-end">
+        <button id="btnManual" class="ghost">Claude 없이 직접 넣기 →</button>
         <button id="btnGptApply" class="primary">가져오기 →</button>
       </div>
     </div>
@@ -170,12 +140,14 @@
   <!-- 2. 지문 확인 -->
   <section data-panel="2" hidden>
     <div class="card">
-      <h2>읽은 지문 확인·고치기</h2>
-      <p class="hint">사진에서 읽은 글자가 여기에 들어가요. 틀린 글자나 필요 없는 부분(쪽 번호, 문제 번호 등)을 고쳐 주세요. <b>문단 사이는 빈 줄 하나</b>로 나눠요.</p>
+      <h2>지문·해석 확인하고 고치기</h2>
+      <p class="hint">Claude가 읽은 지문과 해석이 여기에 들어가요. 틀린 곳이 있으면 고쳐 주세요. 지문과 해석 모두 <b>문단 사이는 빈 줄 하나</b>로 나눠요. 해석은 같은 순서의 문단 밑에 들어가요.</p>
       <label class="f">학습지 제목</label>
       <input type="text" id="title" placeholder="예: Lesson 3 · The Power of Habits">
       <label class="f">지문</label>
       <textarea id="passage" placeholder="여기에 지문이 들어갑니다. 직접 붙여넣어도 돼요."></textarea>
+      <label class="f">한국어 해석</label>
+      <textarea id="ko" rows="10" style="line-height:1.7" placeholder="문단 순서대로, 문단 사이는 빈 줄 하나"></textarea>
       <div class="row" style="margin-top:10px; justify-content:space-between">
         <button id="btnTidy">줄바꿈 정리</button>
         <button class="primary" data-go="3">단어 고르기 →</button>
@@ -238,7 +210,9 @@
           <select id="oFont"><option value="hcr">함초롬바탕 (학습지 전체)</option><option value="serif">지문만 명조 (Times)</option><option value="sans">지문만 고딕</option></select></div>
         <label class="chk"><input type="checkbox" id="oPn" checked>문단 번호</label>
         <label class="chk"><input type="checkbox" id="oMark" checked>지문 속 단어 표시</label>
-        <label class="chk"><input type="checkbox" id="oTrans">문단마다 해석 쓰는 줄</label>
+        <div><label class="f">한국어 해석</label>
+          <select id="oKo"><option value="para">문단마다 아래에</option><option value="page">따로 한 쪽에</option><option value="none">넣지 않기</option></select></div>
+        <label class="chk"><input type="checkbox" id="oTrans">문단마다 해석 쓰는 빈 줄</label>
         <label class="chk"><input type="checkbox" id="oQuiz">단어 시험지 쪽 추가</label>
         <label class="chk"><input type="checkbox" id="oKey">정답지 쪽 추가</label>
       </div>
@@ -251,17 +225,6 @@
 </div>
 
 <div id="printArea"></div>
-
-<div class="modal" id="cropModal">
-  <div class="modal-box">
-    <div style="font-weight:600">지문 부분을 손가락이나 펜으로 끌어서 네모로 고르세요</div>
-    <div class="crop-area" id="cropArea"><img id="cropImg" alt=""><div id="cropRect"></div></div>
-    <div class="row" style="justify-content:flex-end">
-      <button id="cropAll" class="ghost">자르지 않기</button>
-      <button id="cropDone" class="primary">완료</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -3074,11 +3037,12 @@ zoo=동물원
   }
 
   // ---------- 상태 ----------
-  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: true, mark: true, trans: false, quiz: false, key: false };
+  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: true, mark: true, ko: 'para', trans: false, quiz: false, key: false };
   const saved = store.get('wsheet.v1') || {};
   const state = {
     title: saved.title || '',
     passage: saved.passage || '',
+    ko: saved.ko || '', // 한국어 해석 (문단 사이 빈 줄)
     words: saved.words || [], // [{base, meaning}]
     opts: Object.assign({}, DEFAULT_OPTS, saved.opts),
   };
@@ -3099,231 +3063,8 @@ zoo=동물원
   $$('.steps button').forEach((b) => b.addEventListener('click', () => go(+b.dataset.step)));
   $$('[data-go]').forEach((b) => b.addEventListener('click', () => go(+b.dataset.go)));
 
-  // ---------- 1. 사진 ----------
-  const images = []; // {img, rot, crop:{x,y,w,h} 비율 | null}
-
-  function addFiles(files) {
-    [...files].forEach((file) => {
-      const img = new Image();
-      img.onload = () => { images.push({ img, rot: 0, crop: null }); renderThumbs(); };
-      img.onerror = () => toast('사진을 열 수 없어요');
-      img.src = URL.createObjectURL(file);
-    });
-  }
-  $('#inCamera').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
-  $('#inFiles').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
-
-  // 회전한 사진을 긴 변이 maxSide 이하인 캔버스로
-  function rotatedCanvas(item, maxSide) {
-    const { img, rot } = item;
-    const w0 = img.naturalWidth, h0 = img.naturalHeight;
-    const s = Math.min(1, maxSide / Math.max(w0, h0));
-    const w = Math.round(w0 * s), h = Math.round(h0 * s);
-    const c = document.createElement('canvas');
-    const side = rot % 180 !== 0;
-    c.width = side ? h : w; c.height = side ? w : h;
-    const ctx = c.getContext('2d');
-    ctx.translate(c.width / 2, c.height / 2);
-    ctx.rotate((rot * Math.PI) / 180);
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
-    return c;
-  }
-
-  function croppedCanvas(item, maxSide) {
-    const src = rotatedCanvas(item, maxSide);
-    if (!item.crop) return src;
-    const { x, y, w, h } = item.crop;
-    const c = document.createElement('canvas');
-    c.width = Math.max(1, Math.round(src.width * w));
-    c.height = Math.max(1, Math.round(src.height * h));
-    c.getContext('2d').drawImage(src, src.width * x, src.height * y, c.width, c.height, 0, 0, c.width, c.height);
-    return c;
-  }
-
-  function renderThumbs() {
-    const box = $('#thumbs');
-    box.innerHTML = '';
-    images.forEach((item, i) => {
-      const d = document.createElement('div');
-      d.className = 'thumb';
-      const cv = croppedCanvas(item, 500);
-      cv.title = '눌러서 자르기';
-      cv.style.cursor = 'pointer';
-      cv.addEventListener('click', () => openCrop(i));
-      d.appendChild(cv);
-      const r = document.createElement('div');
-      r.className = 'row';
-      r.innerHTML = `<b style="font-size:13px">${i + 1}쪽</b><span><button data-a="crop">✂️</button> <button data-a="rot">↻</button> <button data-a="up">◀</button> <button data-a="del">✕</button></span>`;
-      r.addEventListener('click', (e) => {
-        const a = e.target.dataset.a;
-        if (a === 'crop') openCrop(i);
-        if (a === 'rot') { item.rot = (item.rot + 90) % 360; item.crop = null; }
-        if (a === 'up' && i > 0) [images[i - 1], images[i]] = [images[i], images[i - 1]];
-        if (a === 'del') images.splice(i, 1);
-        if (a && a !== 'crop') renderThumbs();
-      });
-      d.appendChild(r);
-      box.appendChild(d);
-    });
-    $('#btnOcr').disabled = images.length === 0;
-  }
-
-  // 자르기 창
-  let cropIdx = -1, cropSel = null;
-  function openCrop(i) {
-    cropIdx = i;
-    cropSel = images[i].crop ? { ...images[i].crop } : null;
-    $('#cropImg').src = rotatedCanvas(images[i], 1400).toDataURL('image/jpeg', .85);
-    $('#cropModal').classList.add('show');
-    $('#cropImg').onload = drawCropRect;
-  }
-  function drawCropRect() {
-    const r = $('#cropRect'), im = $('#cropImg');
-    if (!cropSel) { r.style.display = 'none'; return; }
-    r.style.display = 'block';
-    r.style.left = cropSel.x * im.clientWidth + 'px';
-    r.style.top = cropSel.y * im.clientHeight + 'px';
-    r.style.width = cropSel.w * im.clientWidth + 'px';
-    r.style.height = cropSel.h * im.clientHeight + 'px';
-  }
-  (() => {
-    const area = $('#cropArea');
-    let start = null;
-    const pos = (e) => {
-      const b = $('#cropImg').getBoundingClientRect();
-      return { x: Math.min(1, Math.max(0, (e.clientX - b.left) / b.width)), y: Math.min(1, Math.max(0, (e.clientY - b.top) / b.height)) };
-    };
-    area.addEventListener('pointerdown', (e) => { e.preventDefault(); area.setPointerCapture(e.pointerId); start = pos(e); cropSel = null; drawCropRect(); });
-    area.addEventListener('pointermove', (e) => {
-      if (!start) return;
-      const p = pos(e);
-      cropSel = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
-      drawCropRect();
-    });
-    area.addEventListener('pointerup', () => { start = null; if (cropSel && (cropSel.w < .03 || cropSel.h < .03)) { cropSel = null; drawCropRect(); } });
-  })();
-  $('#cropAll').addEventListener('click', () => { images[cropIdx].crop = null; $('#cropModal').classList.remove('show'); renderThumbs(); });
-  $('#cropDone').addEventListener('click', () => { images[cropIdx].crop = cropSel; $('#cropModal').classList.remove('show'); renderThumbs(); });
-
-  // 글자 인식용 사진 다듬기
-  // ① 글씨가 작으면 키운다 ② 흑백 ③ 그림자·조명 얼룩을 지운다(종이 밝기로 나누기) ④ 대비 늘리기
-  function ocrCanvas(item) {
-    let c = croppedCanvas(item, 3400);
-    const long = Math.max(c.width, c.height);
-    if (long < 2000) {
-      const k = 2000 / long, up = document.createElement('canvas');
-      up.width = Math.round(c.width * k); up.height = Math.round(c.height * k);
-      const uctx = up.getContext('2d');
-      uctx.imageSmoothingQuality = 'high';
-      uctx.drawImage(c, 0, 0, up.width, up.height);
-      c = up;
-    }
-    const W = c.width, H = c.height;
-    const ctx = c.getContext('2d', { willReadFrequently: true });
-    const d = ctx.getImageData(0, 0, W, H);
-    const px = d.data;
-    for (let i = 0; i < px.length; i += 4) px[i] = px[i + 1] = px[i + 2] = px[i] * .299 + px[i + 1] * .587 + px[i + 2] * .114;
-    ctx.putImageData(d, 0, 0);
-
-    // 종이 밝기 지도: 작게 줄인 뒤 주변에서 가장 밝은 값(글씨 빼기)을 골라 다시 키운다
-    const sw = Math.max(4, Math.round(W / 28)), sh = Math.max(4, Math.round(H / 28));
-    const small = document.createElement('canvas');
-    small.width = sw; small.height = sh;
-    const sctx = small.getContext('2d', { willReadFrequently: true });
-    sctx.imageSmoothingQuality = 'high';
-    sctx.drawImage(c, 0, 0, sw, sh);
-    let sd = sctx.getImageData(0, 0, sw, sh);
-    for (let pass = 0; pass < 2; pass++) {
-      const src = new Uint8ClampedArray(sd.data), dst = sd.data;
-      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
-        let m = 0;
-        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-          const yy = Math.min(sh - 1, Math.max(0, y + dy)), xx = Math.min(sw - 1, Math.max(0, x + dx));
-          m = Math.max(m, src[(yy * sw + xx) * 4]);
-        }
-        const o = (y * sw + x) * 4;
-        dst[o] = dst[o + 1] = dst[o + 2] = m;
-      }
-    }
-    sctx.putImageData(sd, 0, 0);
-    const bgc = document.createElement('canvas');
-    bgc.width = W; bgc.height = H;
-    const bctx = bgc.getContext('2d', { willReadFrequently: true });
-    bctx.imageSmoothingQuality = 'high';
-    bctx.drawImage(small, 0, 0, W, H);
-    const bg = bctx.getImageData(0, 0, W, H).data;
-
-    const n = W * H, norm = new Uint8ClampedArray(n), hist = new Uint32Array(256);
-    for (let i = 0, j = 0; j < n; i += 4, j++) {
-      norm[j] = (px[i] * 255) / Math.max(1, bg[i]);
-      hist[norm[j]]++;
-    }
-    // 가장 어두운 1%를 검정으로, 종이는 흰색으로
-    let lo = 0, acc = 0;
-    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > n * .01) { lo = v; break; } }
-    const hi = 235, span = Math.max(1, hi - lo);
-    for (let i = 0, j = 0; j < n; i += 4, j++) px[i] = px[i + 1] = px[i + 2] = ((norm[j] - lo) * 255) / span;
-    ctx.putImageData(d, 0, 0);
-    return c;
-  }
-
-  let tessLoading = null;
-  function loadTesseract() {
-    if (window.Tesseract) return Promise.resolve();
-    if (!tessLoading) {
-      tessLoading = new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-        s.onload = res;
-        s.onerror = () => { tessLoading = null; rej(new Error('load')); };
-        document.head.appendChild(s);
-      });
-    }
-    return tessLoading;
-  }
-
-  $('#btnOcr').addEventListener('click', async () => {
-    const btn = $('#btnOcr'), prog = $('#prog'), bar = prog.firstElementChild, st = $('#ocrStatus');
-    btn.disabled = true;
-    prog.style.display = 'block'; bar.style.width = '0';
-    let page = 0;
-    const setP = (p) => { bar.style.width = (((page + p) / images.length) * 100).toFixed(1) + '%'; };
-    try {
-      st.textContent = '글자 읽기 도구를 불러오는 중… (처음 한 번은 조금 걸려요)';
-      await loadTesseract();
-      const worker = await Tesseract.createWorker('eng', 1, {
-        logger: (m) => { if (m.status === 'recognizing text') setP(m.progress); },
-      });
-      const texts = [];
-      for (page = 0; page < images.length; page++) {
-        st.textContent = `${page + 1} / ${images.length}쪽 읽는 중…`;
-        const { data } = await worker.recognize(ocrCanvas(images[page]));
-        texts.push(data.text);
-      }
-      await worker.terminate();
-      bar.style.width = '100%';
-      st.textContent = '다 읽었어요!';
-      const text = tidy(texts.join('\n\n'));
-      if (state.passage.trim() && !confirm('지금 있는 지문을 새로 읽은 글로 바꿀까요?\n(취소하면 뒤에 이어 붙여요)')) {
-        state.passage = state.passage.trim() + '\n\n' + text;
-      } else {
-        state.passage = text;
-        state.words = [];
-      }
-      $('#passage').value = state.passage;
-      save();
-      go(2);
-    } catch (err) {
-      console.error(err);
-      st.textContent = '글자를 읽지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.';
-    } finally {
-      btn.disabled = images.length === 0;
-      setTimeout(() => { prog.style.display = 'none'; }, 800);
-    }
-  });
-  $('#btnSkipOcr').addEventListener('click', () => go(2));
-
   // ---------- Claude로 읽기 ----------
+  $('#btnManual').addEventListener('click', () => go(2));
   const GPT_PROMPT = `첨부한 사진 속 영어 지문으로 학습지를 만들려고 해. 아래 형식 그대로만 답해 줘. 다른 말은 쓰지 마.
 
 [제목]
@@ -3332,44 +3073,49 @@ zoo=동물원
 [지문]
 사진 속 영어 지문을 한 글자도 바꾸지 말고 그대로 옮겨 적기. 줄 끝에서 끊긴 단어는 이어 쓰고, 문단 사이는 빈 줄 하나. 쪽 번호·문제 번호·한글 설명·각주는 빼기.
 
+[해석]
+지문 전체를 자연스러운 한국어로 해석. 영어 지문과 같은 문단 순서로, 문단 사이는 빈 줄 하나.
+
 [단어]
-고등학생이 어려워할 단어 15개를 원형으로 골라, 이 지문 문맥에 맞는 짧은 한국어 뜻과 함께 한 줄에 하나씩 "word = 뜻" 형식으로.`;
+고등학생 기준으로 조금 어려운 단어를 개수 제한 없이 모두 골라, 원형으로 쓰고 이 지문 문맥에 맞는 짧은 한국어 뜻과 함께 한 줄에 하나씩 "word = 뜻" 형식으로. 지문에 나온 순서대로.`;
 
   $('#btnGptPrompt').addEventListener('click', () => {
     copyText(GPT_PROMPT);
     window.open('https://claude.ai/new', '_blank');
   });
 
-  // Claude 답을 [제목]·[지문]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
+  // Claude 답을 [제목]·[지문]·[해석]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
   function parseGpt(text) {
-    const parts = { 제목: '', 지문: '', 단어: '' };
+    const parts = { 제목: '', 지문: '', 해석: '', 단어: '' };
     let cur = null, found = false;
     text.replace(/\r/g, '').split('\n').forEach((raw) => {
       const line = raw.replace(/[*`#]/g, '');
-      const m = line.match(/^\s*\[?\s*(제목|지문|단어)\s*\]?\s*:?\s*$/);
+      const m = line.match(/^\s*\[?\s*(제목|지문|해석|단어)\s*\]?\s*:?\s*$/);
       if (m) { cur = m[1]; found = true; return; }
       if (cur) parts[cur] += raw.replace(/^```.*$/, '') + '\n';
     });
     if (!found) parts.지문 = text;
-    return { title: parts.제목.replace(/[*#`]/g, '').trim().split('\n')[0] || '', passage: parts.지문.trim(), gloss: parts.단어 };
+    return { title: parts.제목.replace(/[*#`]/g, '').trim().split('\n')[0] || '', passage: parts.지문.trim(), ko: parts.해석.trim(), gloss: parts.단어 };
   }
 
   $('#btnGptApply').addEventListener('click', () => {
     const raw = $('#gptIn').value;
     if (!raw.trim()) { toast('Claude 답을 먼저 붙여넣어 주세요'); return; }
-    const { title, passage, gloss } = parseGpt(raw);
+    const { title, passage, ko, gloss } = parseGpt(raw);
     if (!passage) { toast('[지문] 부분을 찾지 못했어요'); return; }
     if (state.passage.trim() && !confirm('지금 있는 지문과 단어를 새 내용으로 바꿀까요?')) return;
     // 빈 줄 없이 사진의 줄바꿈 그대로 왔으면 문단을 다시 맞춘다
     state.passage = /\n\s*\n/.test(passage) ? passage : tidy(passage);
     if (title) state.title = title;
+    state.ko = ko;
     state.words = [];
     const n = addGloss(gloss);
     $('#title').value = state.title;
     $('#passage').value = state.passage;
+    $('#ko').value = state.ko;
     $('#gptIn').value = '';
     save();
-    toast(n ? `지문과 단어 ${n}개를 가져왔어요` : '지문을 가져왔어요');
+    toast(`지문${ko ? '·해석' : ''}${n ? `과 단어 ${n}개를` : '을'} 가져왔어요`);
     go(3);
   });
 
@@ -3401,6 +3147,7 @@ zoo=동물원
   });
   $('#title').addEventListener('input', (e) => { state.title = e.target.value; save(); });
   $('#passage').addEventListener('input', (e) => { state.passage = e.target.value; save(); });
+  $('#ko').addEventListener('input', (e) => { state.ko = e.target.value; save(); });
 
   const paragraphs = () => state.passage.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
   const TOKEN = /([A-Za-z]+(?:['’][A-Za-z]+)*)/;
@@ -3520,7 +3267,7 @@ zoo=동물원
   }
   $('#btnPrompt').addEventListener('click', () => {
     const list = state.words.length ? `\n\n특히 다음 단어는 꼭 넣어 주세요: ${state.words.map((w) => w.base).join(', ')}` : '';
-    copyText(`다음 영어 지문에서 고등학생이 어려워할 단어를 15개 골라, 이 지문의 문맥에 맞는 한국어 뜻을 짧게 써 주세요. 단어는 원형으로 쓰고, 설명 없이 한 줄에 하나씩 "word = 뜻" 형식으로만 답해 주세요.${list}\n\n${state.passage.trim()}`);
+    copyText(`다음 영어 지문에서 고등학생 기준으로 조금 어려운 단어를 개수 제한 없이 모두 골라, 이 지문의 문맥에 맞는 한국어 뜻을 짧게 써 주세요. 단어는 원형으로 쓰고, 설명 없이 한 줄에 하나씩 "word = 뜻" 형식으로만 답해 주세요.${list}\n\n${state.passage.trim()}`);
   });
   // "word = 뜻" 줄들을 단어 목록에 넣고, 넣은 개수를 돌려준다
   function addGloss(text) {
@@ -3547,7 +3294,7 @@ zoo=동물원
   });
 
   // ---------- 4. 학습지 ----------
-  const optIds = { sub: 'oSub', layout: 'oLayout', mode: 'oMode', size: 'oSize', lh: 'oLh', font: 'oFont', pn: 'oPn', mark: 'oMark', trans: 'oTrans', quiz: 'oQuiz', key: 'oKey' };
+  const optIds = { sub: 'oSub', layout: 'oLayout', mode: 'oMode', size: 'oSize', lh: 'oLh', font: 'oFont', pn: 'oPn', mark: 'oMark', ko: 'oKo', trans: 'oTrans', quiz: 'oQuiz', key: 'oKey' };
   Object.entries(optIds).forEach(([k, id]) => {
     const el = document.getElementById(id);
     if (el.type === 'checkbox') el.checked = !!state.opts[k]; else el.value = state.opts[k];
@@ -3566,12 +3313,22 @@ zoo=동물원
     </div>`;
   };
 
+  // 해석 문단. 영어 문단보다 많으면 남는 것은 마지막 문단에 붙인다.
+  function koParas(count) {
+    const k = state.ko.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
+    if (count && k.length > count) k.splice(count - 1, k.length, k.slice(count - 1).join(' '));
+    return k;
+  }
+
   function passageHtml() {
     const o = state.opts;
+    const paras = paragraphs();
+    const ko = o.ko === 'para' ? koParas(paras.length) : [];
+    const koStyle = `font-size:${Math.max(8.5, o.size - 1.5)}pt`;
     const keys = wordKeys();
     const numbered = new Set();
     const lines = Math.max(2, Math.round(3 * (11 / o.size)));
-    return paragraphs().map((p, pi) => {
+    return paras.map((p, pi) => {
       const body = p.split(TOKEN).map((part, i) => {
         if (i % 2 === 0) return esc(part);
         const hit = o.mark ? findWord(part, keys) : -1;
@@ -3581,7 +3338,8 @@ zoo=동물원
         return `<u>${esc(part)}</u>${sup}`;
       }).join('');
       const tr = o.trans ? '<div class="trans"></div>'.repeat(lines) : '';
-      return `<p>${o.pn ? `<span class="pn">${pi + 1}</span>` : ''}${body}</p>${tr}`;
+      const kp = ko[pi] ? `<div class="ko" lang="ko" style="${koStyle}">${esc(ko[pi])}</div>` : '';
+      return `<p>${o.pn ? `<span class="pn">${pi + 1}</span>` : ''}${body}</p>${kp}${tr}`;
     }).join('');
   }
 
@@ -3639,6 +3397,10 @@ zoo=동물원
         <div class="sec" style="margin-top:5mm">Vocabulary</div>${vocabTable(state.words, o.mode)}`;
     }
     const pages = [page1];
+    const kos = koParas(paragraphs().length);
+    if (o.ko === 'page' && kos.length) {
+      pages.push(`${header(title + ' · 해석')}<div class="sec">해석</div><div class="kopage">${kos.map((k, i) => `<p>${o.pn ? `<span class="pn">${i + 1}</span>` : ''}${esc(k)}</p>`).join('')}</div>`);
+    }
     const quizList = shuffled(state.words);
     if (o.quiz) pages.push(`${header(title + ' · 단어 시험')}<div class="sec">뜻을 쓰세요</div>${vocabTable(quizList, 'blankKo')}`);
     if (o.key) pages.push(`${header(title + ' · 정답')}<div class="sec">${o.quiz ? '단어 시험 정답' : '단어 목록'}</div>${vocabTable(o.quiz ? quizList : state.words, 'show')}`);
@@ -3669,16 +3431,15 @@ zoo=동물원
 
   $('#btnNew').addEventListener('click', () => {
     if (!confirm('지금 학습지를 지우고 새로 시작할까요?')) return;
-    state.title = ''; state.passage = ''; state.words = [];
-    images.length = 0; renderThumbs();
-    $('#title').value = ''; $('#passage').value = '';
+    state.title = ''; state.passage = ''; state.ko = ''; state.words = [];
+    $('#title').value = ''; $('#passage').value = ''; $('#ko').value = '';
     save(); go(1);
   });
 
   // ---------- 시작 ----------
   $('#title').value = state.title;
   $('#passage').value = state.passage;
-  renderThumbs();
+  $('#ko').value = state.ko;
   if (state.passage.trim()) go(state.words.length ? 3 : 2);
 })();
 </script>
