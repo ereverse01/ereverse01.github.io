@@ -74,6 +74,7 @@
   .sheet .sec::before { content: ""; width: 3mm; height: 3mm; background: #222; display: inline-block; }
   .sheet .passage { text-align: justify; hyphens: auto; }
   .sheet .passage p { margin: 0 0 2.5mm; }
+  .sheet p.choices { text-align: left; }
   .sheet .passage .pn, .sheet .kopage .pn { display: inline-block; min-width: 5mm; height: 5mm; line-height: 5mm; text-align: center; border: 1px solid #333; border-radius: 50%;
                         font-size: 7.5pt; font-family: "Malgun Gothic", sans-serif; margin-right: 1.5mm; vertical-align: 1px; text-indent: 0; }
   .sheet .passage u { text-decoration: none; border-bottom: 1.2px solid #111; font-weight: 700; }
@@ -142,8 +143,8 @@
     <div class="card">
       <h2>지문·해석 확인하고 고치기</h2>
       <p class="hint">Claude가 읽은 지문과 해석이 여기에 들어가요. 틀린 곳이 있으면 고쳐 주세요. 지문과 해석 모두 <b>문단 사이는 빈 줄 하나</b>로 나눠요. 해석은 같은 순서의 문단 밑에 들어가요.</p>
-      <label class="f">학습지 제목</label>
-      <input type="text" id="title" placeholder="예: Lesson 3 · The Power of Habits">
+      <label class="f">파일 이름 (인쇄·PDF 저장용, 학습지에는 안 나와요)</label>
+      <input type="text" id="title" placeholder="예: 3월 모의고사 31번">
       <label class="f">지문</label>
       <textarea id="passage" placeholder="여기에 지문이 들어갑니다. 직접 붙여넣어도 돼요."></textarea>
       <label class="f">한국어 해석</label>
@@ -3037,7 +3038,7 @@ zoo=동물원
   }
 
   // ---------- 상태 ----------
-  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: true, mark: true, ko: 'para', trans: false, quiz: false, key: false };
+  const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: false, mark: true, ko: 'para', trans: false, quiz: false, key: false };
   const saved = store.get('wsheet.v1') || {};
   const state = {
     title: saved.title || '',
@@ -3048,6 +3049,7 @@ zoo=동물원
   };
   // 함초롬바탕이 생기기 전에 저장된 설정은 한 번만 함초롬바탕으로 바꾼다
   if (!saved.hcr) { state.opts.font = 'hcr'; state.hcr = true; }
+  if (!saved.noPn) { state.opts.pn = false; state.noPn = true; } // 문단 번호는 기본으로 끔
   const save = () => store.set('wsheet.v1', state);
 
   // ---------- 단계 이동 ----------
@@ -3067,14 +3069,11 @@ zoo=동물원
   $('#btnManual').addEventListener('click', () => go(2));
   const GPT_PROMPT = `첨부한 사진 속 영어 지문으로 학습지를 만들려고 해. 아래 형식 그대로만 답해 줘. 다른 말은 쓰지 마.
 
-[제목]
-지문 제목 (사진에 없으면 내용에 맞게 짧은 영어 제목)
-
 [지문]
-사진 속 영어 지문을 한 글자도 바꾸지 말고 그대로 옮겨 적기. 줄 끝에서 끊긴 단어는 이어 쓰고, 문단 사이는 빈 줄 하나. 쪽 번호·문제 번호·한글 설명·각주는 빼기.
+사진 속 영어 지문을 한 글자도 바꾸지 말고 그대로 옮겨 적기. 줄 끝에서 끊긴 단어는 이어 쓰고, 문단 사이는 빈 줄 하나. 제목·쪽 번호·문제 번호·한글 설명·각주는 빼기. 보기(①②③…)가 있으면 지문 아래에 빈 줄 하나 띄고, 보기 하나를 한 줄에 하나씩.
 
 [해석]
-지문 전체를 자연스러운 한국어로 해석. 영어 지문과 같은 문단 순서로, 문단 사이는 빈 줄 하나.
+지문 전체를 자연스러운 한국어로 해석. 영어 지문과 같은 문단 순서로, 문단 사이는 빈 줄 하나. 보기가 있으면 보기 해석도 마지막에 빈 줄 하나 띄고 한 줄에 하나씩.
 
 [단어]
 고등학생 기준으로 조금 어려운 단어를 개수 제한 없이 모두 골라, 원형으로 쓰고 이 지문 문맥에 맞는 짧은 한국어 뜻과 함께 한 줄에 하나씩 "word = 뜻" 형식으로. 지문에 나온 순서대로.`;
@@ -3308,7 +3307,7 @@ zoo=동물원
     const o = state.opts;
     return `<div class="hd">
       ${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}
-      <div class="ttl">${esc(title)}</div>
+      ${title ? `<div class="ttl">${esc(title)}</div>` : ''}
       <div class="who"><span>Class<i></i></span><span>No.<i></i></span><span>Name<i class="wide"></i></span></div>
     </div>`;
   };
@@ -3319,6 +3318,15 @@ zoo=동물원
     if (count && k.length > count) k.splice(count - 1, k.length, k.slice(count - 1).join(' '));
     return k;
   }
+
+  // 보기 문단(①로 시작)은 번호마다 줄을 바꾼다. 지문 속 ①(어법 문제 등)은 그대로.
+  const CIRCLED = /^\s*[①-⑳]/;
+  function choiceBreaks(html, raw) {
+    if (!CIRCLED.test(raw)) return html;
+    let first = true;
+    return html.replace(/\s*([①-⑳])/g, (m, c) => (first ? ((first = false), c) : '<br>' + c));
+  }
+  const pTag = (raw) => (CIRCLED.test(raw) ? '<p class="choices">' : '<p>');
 
   function passageHtml() {
     const o = state.opts;
@@ -3338,8 +3346,8 @@ zoo=동물원
         return `<u>${esc(part)}</u>${sup}`;
       }).join('');
       const tr = o.trans ? '<div class="trans"></div>'.repeat(lines) : '';
-      const kp = ko[pi] ? `<div class="ko" lang="ko" style="${koStyle}">${esc(ko[pi])}</div>` : '';
-      return `<p>${o.pn ? `<span class="pn">${pi + 1}</span>` : ''}${body}</p>${kp}${tr}`;
+      const kp = ko[pi] ? `<div class="ko" lang="ko" style="${koStyle}">${choiceBreaks(esc(ko[pi]), ko[pi])}</div>` : '';
+      return `${pTag(p)}${o.pn ? `<span class="pn">${pi + 1}</span>` : ''}${choiceBreaks(body, p)}</p>${kp}${tr}`;
     }).join('');
   }
 
@@ -3384,26 +3392,25 @@ zoo=동물원
   const HCR = '"함초롬바탕", "HCR Batang", "Noto Serif KR", serif';
   function buildSheet() {
     const o = state.opts;
-    const title = state.title.trim() || 'Reading Worksheet';
     const font = o.font === 'hcr' ? HCR : o.font === 'serif' ? 'Georgia, "Times New Roman", serif' : '"Malgun Gothic", "Pretendard", sans-serif';
     const pStyle = `font-family:${font}; font-size:${o.size}pt; line-height:${o.lh}`;
     let page1;
     if (o.layout === 'side') {
-      page1 = `${header(title)}<div class="gridside">
+      page1 = `${header('')}<div class="gridside">
         <div><div class="sec">Reading</div><div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div></div>
         <div><div class="sec">Words</div><div class="vside">${vocabSide(state.words, o.mode)}</div></div></div>`;
     } else {
-      page1 = `${header(title)}<div class="sec">Reading</div><div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div>
+      page1 = `${header('')}<div class="sec">Reading</div><div class="passage" lang="en" style="${pStyle}">${passageHtml()}</div>
         <div class="sec" style="margin-top:5mm">Vocabulary</div>${vocabTable(state.words, o.mode)}`;
     }
     const pages = [page1];
     const kos = koParas(paragraphs().length);
     if (o.ko === 'page' && kos.length) {
-      pages.push(`${header(title + ' · 해석')}<div class="sec">해석</div><div class="kopage">${kos.map((k, i) => `<p>${o.pn ? `<span class="pn">${i + 1}</span>` : ''}${esc(k)}</p>`).join('')}</div>`);
+      pages.push(`${header('해석')}<div class="sec">해석</div><div class="kopage">${kos.map((k, i) => `${pTag(k)}${o.pn ? `<span class="pn">${i + 1}</span>` : ''}${choiceBreaks(esc(k), k)}</p>`).join('')}</div>`);
     }
     const quizList = shuffled(state.words);
-    if (o.quiz) pages.push(`${header(title + ' · 단어 시험')}<div class="sec">뜻을 쓰세요</div>${vocabTable(quizList, 'blankKo')}`);
-    if (o.key) pages.push(`${header(title + ' · 정답')}<div class="sec">${o.quiz ? '단어 시험 정답' : '단어 목록'}</div>${vocabTable(o.quiz ? quizList : state.words, 'show')}`);
+    if (o.quiz) pages.push(`${header('단어 시험')}<div class="sec">뜻을 쓰세요</div>${vocabTable(quizList, 'blankKo')}`);
+    if (o.key) pages.push(`${header('정답')}<div class="sec">${o.quiz ? '단어 시험 정답' : '단어 목록'}</div>${vocabTable(o.quiz ? quizList : state.words, 'show')}`);
     return `<div class="sheet${o.font === 'hcr' ? ' hcr' : ''}">${pages.map((p) => `<div class="page">${p}</div>`).join('')}</div>`;
   }
 
