@@ -348,6 +348,7 @@
     <button data-view="question">질문별</button>
     <button id="subsLatest" class="on" title="같은 학생이 여러 번 내면 마지막 것만">최신 제출만</button>
     <button id="subsReload">↻ 새로고침</button>
+    <button id="subsNew" style="background:#fff4e6;border-color:#e8590c;color:#e8590c;font-weight:bold">🆕 새 반 시작</button>
     <button id="subsClose">닫기 ✕</button>
   </div>
   <div id="subsBody"><div class="msg">불러오는 중…</div></div>
@@ -1049,11 +1050,22 @@ window.addEventListener("resize", fitToolbar);
    Apps Script v4 이상이 필요하다 (비밀번호가 맞을 때만 답을 돌려준다). */
 const subsEl = document.getElementById("subs"), subsBody = document.getElementById("subsBody");
 let subsView = "student", subsLatest = true, subsRows = null, subsTimer = 0;
+// 새 반 시작: 그때까지의 제출 줄 수를 이 기기에 기억하고, 그 뒤 줄만 보여 준다 (시트 기록은 그대로)
+let subsSince = 0, subsShowOld = false;
+try { subsSince = +localStorage.getItem("subsSince") || 0; } catch (e) {}
 
 function renderSubs() {
   if (!subsRows) return;
-  const [head, ...all] = subsRows;
-  if (!head || !all.length) { subsBody.innerHTML = `<div class="msg">아직 제출한 학생이 없어요.</div>`; return; }
+  const [head, ...every] = subsRows;
+  if (subsSince > every.length) subsSince = 0;   // 시트에서 줄을 지웠으면 처음부터
+  const hidden = subsShowOld ? 0 : subsSince;
+  const all = every.slice(hidden);
+  const oldNote = subsSince
+    ? ` · <a href="#" id="subsOld">${subsShowOld ? "이번 반만 보기" : `이전 반 ${subsSince}건 숨김 · 보기`}</a>` : "";
+  if (!head || !all.length) {
+    subsBody.innerHTML = `<div class="meta">${oldNote.slice(3)}</div><div class="msg">아직 제출한 학생이 없어요.</div>`;
+    return;
+  }
   // 같은 학생(학번+이름)이 여러 번 냈으면 마지막 제출만 남긴다
   let rows = all;
   if (subsLatest) {
@@ -1064,7 +1076,7 @@ function renderSubs() {
   rows = rows.slice().sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko", { numeric: true }));
   const qcols = head.slice(3);
   const cell = v => v ? esc(String(v)) : `<span class="empty">—</span>`;
-  let html = `<div class="meta">${rows.length}명${subsLatest ? "" : ` (제출 ${all.length}건)`} · 20초마다 자동 새로고침</div>`;
+  let html = `<div class="meta">${rows.length}명${subsLatest ? "" : ` (제출 ${all.length}건)`} · 20초마다 자동 새로고침${oldNote}</div>`;
   if (subsView === "student") {
     html += `<div class="cards">` + rows.map(r => `<div class="card">
       <div class="who"><b>${esc(String(r[1]))} ${esc(String(r[2]))}</b><span>${esc(String(r[0]))}</span></div>
@@ -1112,6 +1124,23 @@ if (TEACHER) {
   });
   document.getElementById("subsClose").addEventListener("click", closeSubs);
   document.getElementById("subsReload").addEventListener("click", loadSubs);
+  // 이전 반 보기 / 이번 반만 보기
+  subsBody.addEventListener("click", e => {
+    if (e.target.id !== "subsOld") return;
+    e.preventDefault();
+    subsShowOld = !subsShowOld; renderSubs();
+  });
+  // 새 반 시작: 지금까지의 제출은 화면에서 숨기고, 공개했던 질문·해석도 모두 숨긴다
+  document.getElementById("subsNew").addEventListener("click", async () => {
+    if (!confirm("새 반 수업을 시작할까요?\n\n· 지금까지 제출한 답은 이 화면에서 숨겨요 (구글 시트 기록은 그대로)\n· 공개했던 질문과 해석을 모두 다시 숨겨요")) return;
+    await loadSubs();
+    if (!subsRows) return;               // 불러오지 못했으면 그대로 둔다
+    subsSince = Math.max(0, subsRows.length - 1);
+    subsShowOld = false;
+    try { localStorage.setItem("subsSince", subsSince); } catch (e) {}
+    renderSubs();
+    if (await sendOpen([])) toast("새 반 시작! 질문과 해석을 모두 숨겼어요");
+  });
   document.getElementById("subsLatest").addEventListener("click", e => {
     subsLatest = !subsLatest; e.target.classList.toggle("on", subsLatest); renderSubs();
   });
