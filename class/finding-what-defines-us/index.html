@@ -242,7 +242,7 @@
   #subs .qblock { background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
   #subs .qblock h3 { margin: 0 0 8px; font-size: 15px; }
   #subs .qblock h3 b { color: #1c7ed6; margin-right: 6px; }
-  #subs .qblock .ans { grid-template-columns: 110px 1fr; font-size: 14px; }
+  #subs .qblock .ans { grid-template-columns: 130px 1fr; font-size: 14px; }
   #subs .qblock .ans b { color: #495057; font-size: 13px; }
 
   /* ---------- PDF(인쇄) ---------- */
@@ -1143,14 +1143,15 @@ function renderSubs() {
   if (subsLatest) {
     const last = new Map();
     all.forEach(r => last.set(`${r[1]}|${r[2]}`, r));
-    rows = [...last.values()];
+    rows = all.filter(r => last.get(`${r[1]}|${r[2]}`) === r);   // 시트 순서(= 제출한 순서) 그대로
   }
-  rows = rows.slice().sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko", { numeric: true }));
+  // 학생별은 학번 순서, 질문별은 제출한 순서
+  const byId = rows.slice().sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko", { numeric: true }));
   const qcols = head.slice(3);
   const cell = v => v ? esc(String(v)) : `<span class="empty">—</span>`;
   let html = `<div class="meta">${rows.length}명${subsLatest ? "" : ` (제출 ${all.length}건)`} · 20초마다 자동 새로고침${oldNote}</div>`;
   if (subsView === "student") {
-    html += `<div class="cards">` + rows.map(r => `<div class="card">
+    html += `<div class="cards">` + byId.map(r => `<div class="card">
       <div class="who"><b>${esc(String(r[1]))} ${esc(String(r[2]))}</b><span>${esc(String(r[0]))}</span></div>
       <div class="ans">${qcols.map((q, i) => `<b>${esc(String(q))}</b><div>${cell(r[3 + i])}</div>`).join("")}</div>
     </div>`).join("") + `</div>`;
@@ -1159,7 +1160,7 @@ function renderSubs() {
       const qi = LABELS.indexOf(String(q));
       const text = qi >= 0 ? esc(QUESTIONS[qi].q).replace(/_{3,}/g, "　　　") : "";
       return `<div class="qblock"><h3><b>${esc(String(q))}</b>${text}</h3>
-        <div class="ans">${rows.map(r => `<b>${esc(String(r[1]))} ${esc(String(r[2]))}</b><div>${cell(r[3 + i])}</div>`).join("")}</div>
+        <div class="ans">${rows.map((r, n) => `<b>${n + 1}. ${esc(String(r[1]))} ${esc(String(r[2]))}</b><div>${cell(r[3 + i])}</div>`).join("")}</div>
       </div>`;
     }).join("");
   }
