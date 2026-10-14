@@ -246,6 +246,7 @@
         <label class="chk"><input type="checkbox" id="oKey">정답지 쪽 추가</label>
       </div>
       <div class="row" style="margin-top:16px; justify-content:flex-end">
+        <button id="btnIdeas">🎓 수업 활동 추천받기</button>
         <button id="btnSend">📤 다른 기기로 보내기</button>
         <button class="primary" id="btnPrint">🖨️ 인쇄 / PDF 저장</button>
       </div>
@@ -3146,6 +3147,34 @@ zoo=동물원
   $('#btnGptPrompt').addEventListener('click', () => {
     copyText(GPT_PROMPT);
     window.open('https://claude.ai/new', '_blank');
+  });
+
+  // 학습지 내용으로 수업 활동을 추천받는 요청문 (Claude에 붙여넣기)
+  $('#btnIdeas').addEventListener('click', () => {
+    if (!state.passage.trim()) { toast('지문을 먼저 넣어 주세요'); return; }
+    const words = state.words.map((w) => `${w.base} = ${w.meaning}`).join('\n');
+    copyText(`나는 고등학교 영어 교사야. 아래 학습지로 50분 수업을 하려고 해. 학생들은 수업 시간에 갤럭시 탭과 S펜을 쓸 수 있어.
+이 지문 내용과 문제 유형에 꼭 맞는 교수·학습 활동을 추천해 줘. 일반론 말고 이 지문의 실제 문장·단어를 써서 구체적으로.
+
+1. 수업 목표 (2~3개)
+2. 도입 (5분): 배경지식을 끌어내는 질문이나 활동
+3. 어휘 활동: 아래 단어를 활용한 활동 1~2개
+4. 독해 활동: 이 문제 유형(발문)을 푸는 전략을 가르치는 단계별 활동, 근거 문장 찾기 포함
+5. 내용 이해 확인 질문 (영어 3~5개, 답 포함)
+6. 짝·모둠 활동 1개 (말하기나 쓰기로 이어지게)
+7. 정리와 형성평가 (5분)
+각 활동에 걸리는 시간을 적어 줘.
+
+[발문]
+${state.q.trim() || '(없음)'}
+
+[지문]
+${state.passage.trim()}
+
+[단어]
+${words || '(없음)'}`);
+    window.open('https://claude.ai/new', '_blank');
+    toast('요청문을 복사했어요. Claude에 붙여넣으세요');
   });
 
   // Claude 답을 [제목]·[지문]·[해석]·[단어] 부분으로 나눈다. 표시가 없으면 전부 지문으로 본다.
