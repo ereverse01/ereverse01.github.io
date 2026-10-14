@@ -527,6 +527,7 @@ document.querySelectorAll("textarea[data-q]").forEach(t => {
 /* ---------- 그리기 ---------- */
 /* 도장: 별·하트·고양이. pts = [가운데 x, y], w = 크기 */
 const STAMPS = ["star", "heart", "cat"];
+const STAMP_SIZE = { 2: 14, 3.5: 18, 6: 24 };
 function drawStamp(ctx, s) {
   const [x, y] = s.pts, r = s.w / 2;
   ctx.save();
@@ -721,7 +722,8 @@ function startDraw(cv, p, e) {
   drawing = { p, id: e.pointerId, type: e.pointerType, erased: [], drawn: 0, raf: 0 };
   if (tool === "eraser") { eraseAt(p, x, y); return; }
   if (STAMPS.includes(tool)) {          // 도장: 누른 자리에 찍고, 떼기 전까지 옮길 수 있다
-    drawing.stroke = { k: tool, w: width * 6 + 12, pts: [x, y] };
+    // 크기: 글자 크기 정도 (얇게 14 · 보통 18 · 굵게 24)
+    drawing.stroke = { k: tool, w: STAMP_SIZE[width] || 18, pts: [x, y] };
     drawStamp(cv.getContext("2d"), drawing.stroke);
     return;
   }
