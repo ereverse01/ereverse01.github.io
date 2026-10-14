@@ -271,6 +271,18 @@
   #lectureBar #sentNext { background: #ffd43b; }
   #lectureBar #sentNo { min-width: 64px; text-align: center; font-weight: bold; color: #495057; }
 
+  /* ---------- 지문 탭 ---------- */
+  #lessonTabs {
+    flex-basis: 100%; display: flex; gap: 4px; overflow-x: auto; touch-action: pan-x;
+    margin: -8px -12px 2px; padding: 6px 12px 0; background: #e9ecef;
+  }
+  #lessonTabs[hidden] { display: none; }
+  #lessonTabs a {
+    flex: none; padding: 6px 14px; border-radius: 8px 8px 0 0;
+    font-size: 14px; color: #495057; text-decoration: none; white-space: nowrap;
+  }
+  #lessonTabs a.on { background: #fff; color: #1c7ed6; font-weight: bold; }
+
   /* ---------- PDF(인쇄) ---------- */
   @page { size: A4; margin: 0; }
   @media print {
@@ -335,6 +347,7 @@
 </div>
 
 <div id="toolbar">
+  <div id="lessonTabs" hidden></div>
   <div class="group" id="tools">
     <button data-tool="hand" title="화면 이동·키보드 입력">✋ 이동</button>
     <button data-tool="pen">✏️ 펜</button>
@@ -364,6 +377,7 @@
   </div>
   <div class="group" id="teacherBar" hidden>
     <b style="color:#e8590c">선생님 화면</b>
+    <button id="shareBtn" title="켜면 선생님 필기가 몇 초 뒤 학생 화면에도 보여요">📡 학생에게 보이기</button>
     <button id="lectureBtn">🔦 강의 모드</button>
     <button id="showKo">해석 모두 공개</button>
     <button id="hideAll">모두 숨기기</button>
@@ -403,7 +417,7 @@
    type: "내용 이해" | "어휘" | "문법" | "적용"
    q 안의 ___ 는 빈칸으로 보인다.
    ============================================================ */
-const QUESTIONS = [
+const FIND_QUESTIONS = [
   { p: 1, type: "내용 이해", q: "우리의 정체성은 우리가 (___)할 때 발달한다." },
   { p: 2, type: "내용 이해", q: "문화적 관습의 예시로 언급된 것을 우리말로 쓰시오." },
   { p: 2, type: "적용",     q: "어떤 음식이 위와 같은 문화적 관습을 낳았을까?" },
@@ -415,11 +429,6 @@ const QUESTIONS = [
   { p: 6, type: "어휘",     q: "본문의 괄호에 알맞은 단어는? ① remove ② generate ③ recognize" },
   { p: 7, type: "문법",     q: "본문의 괄호에 가장 적절한 전치사는? ① at ② along ③ with ④ despite" }
 ];
-// 질문 번호 표시: 문단에 질문이 하나면 Q2, 여럿이면 Q2-1, Q2-2
-const LABELS = QUESTIONS.map((Q, i) => {
-  const same = QUESTIONS.filter(x => x.p === Q.p);
-  return same.length > 1 ? `Q${Q.p}-${same.indexOf(Q) + 1}` : `Q${Q.p}`;
-});
 
 /* ============================================================
    선생님이 바꾸는 곳 ②: 구글 시트 제출 주소
@@ -428,7 +437,7 @@ const LABELS = QUESTIONS.map((Q, i) => {
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyh3DgLo5VzLIa8QmNcZ4sp0VvLAmpZ-WmZFBUR2j0-fnx7JibiMk1Ge7bYVoHa5ktj/exec";
 
 /* ---------- 지문 ---------- */
-const PARAS = [
+const FIND_PARAS = [
   "Our identity is our sense of who we are. It defines us and our existence. The formation of our identity begins from the moment we are born. However, it is developed further every time we interact socially. These interactions may take place with individuals—such as family members, friends, and teachers—or in formal or informal groups. Cultural identity is a major component of our identity, as it teaches us about ourselves and gives us a sense of belonging.",
   "Food can be important to our sense of cultural identity because many kinds of food are closely tied to particular cultures. Some kinds of food are also often accompanied by specific cultural practices, such as using chopsticks. Still, food can easily travel across cultures. And when it does, it can develop into something new. One example is Mexican food in America. It is a mixture of Mexican recipes and common American ingredients. <u>Despite its adaptability, food is a stable source of cultural identity for people.</u> This is because food allows them to distinguish themselves from other cultural groups. All aspects of food—including the way it is prepared, cooked, served, and consumed—are part of cultural identity.",
   "A unique food related word is sometimes an identifier of a certain culture. Take Korea as an example. Korean culture is becoming increasingly popular around the world. More and more people are trying Korean food and enjoying its healthy ingredients and unique flavors. As a result, non-Koreans are becoming familiar with <u>Korean words related to food</u>. Some of these terms have even been added to the Oxford English Dictionary. In fact, 9 of the 26 newly listed Korean words in the dictionary are related to food, including <i>banchan</i>, <i>galbi</i>, <i>samgyeopsal</i>, and <i>mukbang</i>.",
@@ -439,7 +448,7 @@ const PARAS = [
 ];
 
 /* 선생님이 바꾸는 곳 ③: 문단별 단어 (질문의 답이 되는 단어는 넣지 않는다) */
-const VOCAB = [
+const FIND_VOCAB = [
   [["identity", "정체성"], ["formation", "형성"], ["interact", "상호작용하다"], ["component", "구성 요소"], ["belonging", "소속감"]],
   [["be tied to", "~와 연결되다"], ["accompany", "동반하다"], ["ingredient", "재료"], ["distinguish", "구별하다"], ["consume", "먹다, 소비하다"]],
   [["identifier", "식별 표지"], ["increasingly", "점점 더"], ["flavor", "맛"], ["familiar with", "~에 익숙한"], ["term", "용어"]],
@@ -450,7 +459,7 @@ const VOCAB = [
 ];
 
 // 문단별 우리말 해석
-const KO = [
+const FIND_KO = [
   "우리의 정체성은 우리가 누구인지에 대한 인식이다. 그것은 우리와 우리의 존재를 규정한다. 정체성의 형성은 우리가 태어나는 순간부터 시작된다. 하지만 정체성은 우리가 사회적으로 상호작용할 때마다 더 발달한다. 이러한 상호작용은 가족, 친구, 선생님 같은 개인들과 이루어질 수도 있고, 공식적이거나 비공식적인 집단 안에서 이루어질 수도 있다. 문화적 정체성은 우리 정체성의 주요 구성 요소인데, 그것이 우리 자신에 대해 알려 주고 소속감을 주기 때문이다.",
   "많은 음식이 특정 문화와 밀접하게 연결되어 있기 때문에, 음식은 우리의 문화적 정체성에 중요할 수 있다. 어떤 음식은 젓가락 사용과 같은 특정한 문화적 관습을 동반하기도 한다. 그런데도 음식은 문화를 넘어 쉽게 이동할 수 있다. 그리고 그럴 때 음식은 새로운 무언가로 발전할 수 있다. 한 예가 미국의 멕시코 음식이다. 그것은 멕시코 요리법과 흔한 미국 식재료가 섞인 것이다. 이러한 적응성에도 불구하고, 음식은 사람들에게 안정적인 문화적 정체성의 원천이다. 음식이 사람들로 하여금 자신을 다른 문화 집단과 구별할 수 있게 해 주기 때문이다. 음식이 준비되고, 조리되고, 차려지고, 소비되는 방식을 포함한 음식의 모든 측면이 문화적 정체성의 일부이다.",
   "음식과 관련된 독특한 단어는 때때로 어떤 문화를 나타내는 표지가 된다. 한국을 예로 들어 보자. 한국 문화는 전 세계에서 점점 더 인기를 얻고 있다. 점점 더 많은 사람들이 한국 음식을 먹어 보고 그 건강한 재료와 독특한 맛을 즐기고 있다. 그 결과, 한국인이 아닌 사람들도 음식과 관련된 한국어 단어에 익숙해지고 있다. 이 단어들 중 일부는 옥스퍼드 영어 사전에 추가되기까지 했다. 실제로 사전에 새로 등재된 한국어 단어 26개 중 9개가 음식과 관련된 것으로, 반찬, 갈비, 삼겹살, 먹방 등이 있다.",
@@ -467,7 +476,7 @@ function sentences(html) {
 }
 
 // 종이 각 장에 무엇을 놓을지: 숫자 = 문단 번호(0부터), 문자열 = 쪽수 표시
-const LAYOUT = [
+const FIND_LAYOUT = [
   ["header", 0, "notes"],
   ["101p", 1, "notes"],
   [2, "notes"],
@@ -476,9 +485,32 @@ const LAYOUT = [
   ["103p", 5, "notes"],
   ["104p", 6, "notes"]
 ];
-const QUOTE = 4;                       // 인용문 문단
+
+/* ============================================================
+   지문 목록: 지문을 더하려면 여기에 하나씩 추가한다 (2개 이상이면 맨 위에 탭이 생긴다)
+   id는 영어 소문자로, 학생 저장·구글 시트 탭 이름에 쓰인다.
+   ============================================================ */
+const LESSONS = [
+  { id: "finding", tab: "Finding What Defines Us",
+    unit: "One-of-a-kind Self", title: "Finding What Defines Us", tag: "음식과 문화 속에서 나를 찾는 시간",
+    paras: FIND_PARAS, ko: FIND_KO, questions: FIND_QUESTIONS, vocab: FIND_VOCAB, layout: FIND_LAYOUT,
+    quote: 4, cite: "Adapted from Michelle Zauner, <i>Crying in H Mart</i>" }
+];
+// 주소의 ?lesson=… 으로 지문을 고른다 (없으면 첫 지문)
+const LESSON = LESSONS.find(l => l.id === new URLSearchParams(location.search).get("lesson")) || LESSONS[0];
+const FIRST = LESSON === LESSONS[0];   // 첫 지문은 예전 저장 이름을 그대로 쓴다
+const PARAS = LESSON.paras, KO = LESSON.ko, QUESTIONS = LESSON.questions,
+      VOCAB = LESSON.vocab, LAYOUT = LESSON.layout, QUOTE = LESSON.quote;
+// 질문 번호 표시: 문단에 질문이 하나면 Q2, 여럿이면 Q2-1, Q2-2
+const LABELS = QUESTIONS.map((Q, i) => {
+  const same = QUESTIONS.filter(x => x.p === Q.p);
+  return same.length > 1 ? `Q${Q.p}-${same.indexOf(Q) + 1}` : `Q${Q.p}`;
+});
+const TEACHER = location.hash === "#teacher" || /[?&]teacher\b/.test(location.search);
+let teacherMarks = [];                 // 학생 화면: 선생님이 공유한 필기 (쪽마다)
+document.title = LESSON.title;
 const PAGE_W = 794, PAGE_H = 1123;
-const STORE = "finding-what-defines-us-v2";
+const STORE = "finding-what-defines-us-v2" + (FIRST ? "" : ":" + LESSON.id);
 const TYPE_CLASS = { "어휘": "vocab", "문법": "grammar", "적용": "apply" };
 const COLORS = [                       // [펜 색, 형광펜 색]
   ["#1a1a1a", "#ffd43b"], ["#e03131", "#ff8787"], ["#1c7ed6", "#74c0fc"], ["#2f9e44", "#8ce99a"], ["#e64980", "#f783ac"]
@@ -489,8 +521,10 @@ const OLD_HL = { "#fff27a": "#ffd43b", "#ffc9c9": "#ff8787", "#a5d8ff": "#74c0fc
 /* ---------- 저장된 내용 불러오기 ---------- */
 let data = { sid: "", name: "", answers: [], strokes: [] };
 try { Object.assign(data, JSON.parse(localStorage.getItem(STORE)) || {}); } catch (e) {}
+if (!TEACHER && Array.isArray(data.tm)) teacherMarks = data.tm;
 let saveTimer;
 function save() {
+  if (TEACHER && typeof scheduleShare === "function") scheduleShare();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try { localStorage.setItem(STORE, JSON.stringify(data)); } catch (e) {}
@@ -508,7 +542,7 @@ LAYOUT.forEach((items, p) => {
     if (it === "header") {
       html += `<header>
         <div class="unit">READING</div>
-        <h1>Finding What Defines Us</h1>
+        <h1>${LESSON.title}</h1>
         <div class="who">
           <label>학번 <input id="sid" class="field" autocomplete="off"></label>
           <label>이름 <input id="name" class="field" autocomplete="off"></label>
@@ -521,7 +555,7 @@ LAYOUT.forEach((items, p) => {
     } else {
       const num = `<span class="n">${it + 1}</span>`;
       const en = it === QUOTE
-        ? `<blockquote class="para">${num}${sentences(PARAS[it])}<cite>Adapted from Michelle Zauner, <i>Crying in H Mart</i></cite></blockquote>`
+        ? `<blockquote class="para">${num}${sentences(PARAS[it])}<cite>${LESSON.cite || ""}</cite></blockquote>`
         : `<p class="para">${num}${sentences(PARAS[it])}</p>`;
       html += `<div class="row">${en}<p class="ko" data-k="${it}">${KO[it]}</p></div>`;
       QUESTIONS.forEach((Q, qi) => {
@@ -642,9 +676,12 @@ function drawStroke(ctx, s) {
 function redraw(p) {
   const ctx = canvases[p].getContext("2d");
   ctx.clearRect(0, 0, PAGE_W, PAGE_H);
-  // 형광펜을 먼저 깔고 그 위에 펜 글씨를 그린다
-  data.strokes[p].forEach(s => { if (s.hl) drawStroke(ctx, s); });
-  data.strokes[p].forEach(s => { if (!s.hl) drawStroke(ctx, s); });
+  // 선생님이 공유한 필기를 맨 아래에, 그 위에 내 형광펜, 맨 위에 내 펜 글씨
+  const mine = data.strokes[p], shared = teacherMarks[p] || [];
+  shared.forEach(s => { if (s.hl) drawStroke(ctx, s); });
+  shared.forEach(s => { if (!s.hl) drawStroke(ctx, s); });
+  mine.forEach(s => { if (s.hl) drawStroke(ctx, s); });
+  mine.forEach(s => { if (!s.hl) drawStroke(ctx, s); });
 }
 canvases.forEach((_, p) => redraw(p));
 
@@ -1021,6 +1058,7 @@ document.getElementById("copy").addEventListener("click", async () => {
 document.getElementById("submit").addEventListener("click", async () => {
   if (!SHEET_URL) { alert("아직 제출 주소가 설정되지 않았어요. 선생님께 알려 주세요."); return; }
   if (needName()) return;
+  if (!FIRST && scriptVersion < 5) { alert("이 지문은 아직 제출을 받을 수 없어요. 선생님께 알려 주세요."); return; }
   if (!confirm("지금 쓴 답을 선생님께 제출할까요?")) return;
   try {
     // 응답을 읽을 수 없는 방식(no-cors)이라 전송 여부만 확인한다
@@ -1028,7 +1066,7 @@ document.getElementById("submit").addEventListener("click", async () => {
       method: "POST", mode: "no-cors",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({
-        sid: data.sid.trim(), name: data.name.trim(),
+        sid: data.sid.trim(), name: data.name.trim(), lesson: LESSON.id,
         labels: LABELS,
         answers: QUESTIONS.map((_, i) => (data.answers[i] || "").trim())
       })
@@ -1042,7 +1080,6 @@ document.getElementById("submit").addEventListener("click", async () => {
 /* ---------- 질문 공개: 선생님이 누르면 학생 화면에 열림 ----------
    선생님은 index.html#teacher (또는 선생님용.html)로 연다.
    공개 상태는 구글 Apps Script에 저장되고, 학생 화면은 5초마다 확인한다. */
-const TEACHER = location.hash === "#teacher" || /[?&]teacher\b/.test(location.search);
 // 공개할 수 있는 것: 질문 카드(번호 0~6)와 해석(번호 100~106)을 한 목록으로 관리한다
 const KO_ID = 100;
 const items = [
@@ -1067,11 +1104,18 @@ let scriptVersion = 0;                 // Apps Script 코드 버전 (v4부터 �
 async function poll() {
   if (!SHEET_URL) return;
   try {
-    const res = await fetch(SHEET_URL + "?t=" + Date.now());
+    const res = await fetch(SHEET_URL + "?lesson=" + LESSON.id + "&t=" + Date.now());
     const j = await res.json();
     if (!Array.isArray(j.open)) throw new Error("no open list");
     openList = j.open; data.open = j.open; everLoaded = true; failCount = 0; save();
     scriptVersion = j.v || 0;
+    // 선생님 필기가 바뀌었으면 받아 온다
+    if (!TEACHER && j.marksV && j.marksV !== data.tmV) {
+      const m = await (await fetch(SHEET_URL + "?lesson=" + LESSON.id + "&marks=1&t=" + Date.now())).json();
+      teacherMarks = Array.isArray(m.marks) ? m.marks : [];
+      data.tm = teacherMarks; data.tmV = j.marksV; save();
+      canvases.forEach((_, p) => redraw(p));
+    }
   } catch (err) {
     failCount++;
   }
@@ -1093,7 +1137,7 @@ async function sendOpen(list) {
   const key = getKey();
   if (!key) return;
   try {
-    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "open", key, open: list }) });
+    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "open", key, lesson: LESSON.id, open: list }) });
     const j = await res.json();
     if (!j.ok) { forgetKey(); alert("비밀번호가 맞지 않아요."); return; }
     rememberKey(key);
@@ -1145,13 +1189,17 @@ setInterval(() => { if (document.visibilityState === "visible") poll(); }, TEACH
     fp.appendChild(e);
   }
   const cover = document.getElementById("cover");
+  const words = LESSON.unit.split(" ");
+  cover.querySelector("h1").innerHTML = `${esc(words.slice(0, -1).join(" "))} <span class="self">${esc(words.at(-1))}</span>`;
+  cover.querySelector(".lesson").textContent = LESSON.title;
+  cover.querySelector(".tag").textContent = LESSON.tag || "";
   // 같은 탭에서 한 번 시작했으면 새로고침해도 표지를 건너뛴다
   let started = false;
-  try { started = sessionStorage.getItem("started") === "1"; } catch (e) {}
+  try { started = sessionStorage.getItem("started:" + LESSON.id) === "1"; } catch (e) {}
   if (started) cover.classList.add("gone");
   document.getElementById("start").addEventListener("click", () => {
     cover.classList.add("gone");
-    try { sessionStorage.setItem("started", "1"); } catch (e) {}
+    try { sessionStorage.setItem("started:" + LESSON.id, "1"); } catch (e) {}
   });
 })();
 
@@ -1166,7 +1214,8 @@ const subsEl = document.getElementById("subs"), subsBody = document.getElementBy
 let subsView = "student", subsLatest = true, subsRows = null, subsTimer = 0;
 // 새 반 시작: 그때까지의 제출 줄 수를 이 기기에 기억하고, 그 뒤 줄만 보여 준다 (시트 기록은 그대로)
 let subsSince = 0, subsShowOld = false;
-try { subsSince = +localStorage.getItem("subsSince") || 0; } catch (e) {}
+const SUBS_KEY = "subsSince" + (FIRST ? "" : ":" + LESSON.id);
+try { subsSince = +localStorage.getItem(SUBS_KEY) || 0; } catch (e) {}
 
 function renderSubs() {
   if (!subsRows) return;
@@ -1216,7 +1265,7 @@ async function loadSubs() {
   }
   const key = getKey(); if (!key) return;
   try {
-    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "list", key }) });
+    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "list", key, lesson: LESSON.id }) });
     const j = await res.json();
     if (!j.ok) { forgetKey(); subsBody.innerHTML = `<div class="msg">비밀번호가 맞지 않아요. ↻ 새로고침을 눌러 다시 입력하세요.</div>`; return; }
     rememberKey(key);
@@ -1252,7 +1301,7 @@ if (TEACHER) {
     if (!subsRows) return;               // 불러오지 못했으면 그대로 둔다
     subsSince = Math.max(0, subsRows.length - 1);
     subsShowOld = false;
-    try { localStorage.setItem("subsSince", subsSince); } catch (e) {}
+    try { localStorage.setItem(SUBS_KEY, subsSince); } catch (e) {}
     renderSubs();
     if (await sendOpen([])) toast("새 반 시작! 질문과 해석을 모두 숨겼어요");
   });
@@ -1319,6 +1368,64 @@ if (TEACHER) {
     if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { e.preventDefault(); showSent(sentIdx + 1); }
     else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); showSent(sentIdx - 1); }
     else if (e.key === "Escape") setLecture(false);
+  });
+}
+
+/* ---------- 선생님: 지문 탭 ---------- */
+if (LESSONS.length > 1) {
+  const tabs = document.getElementById("lessonTabs");
+  tabs.innerHTML = LESSONS.map(l =>
+    `<a href="?lesson=${l.id}${TEACHER ? "&teacher" : ""}" class="${l === LESSON ? "on" : ""}">${esc(l.tab || l.title)}</a>`).join("");
+  tabs.hidden = false;
+  fitToolbar();
+}
+
+/* ---------- 선생님: 필기를 학생 화면에 보이기 ----------
+   선생님 화면에서 긋고 1.5초 뒤 Apps Script(v5)에 올리면, 학생 화면이 5초마다 확인해 받아 간다. */
+let shareInk = true, shareTimer = 0, lastShared = "";
+try { shareInk = localStorage.getItem("shareInk") !== "0"; } catch (e) {}
+// 점을 줄여 보낸다 (정수 좌표, 1.5px보다 가까운 점은 생략)
+function compactInk() {
+  if (!shareInk) return [];
+  return data.strokes.map(list => list.map(s => {
+    const pts = [];
+    for (let i = 0; i < s.pts.length; i += 2) {
+      const x = Math.round(s.pts[i]), y = Math.round(s.pts[i + 1]), n = pts.length;
+      if (n && i < s.pts.length - 2 && Math.abs(x - pts[n - 2]) + Math.abs(y - pts[n - 1]) < 1.5) continue;
+      pts.push(x, y);
+    }
+    return { ...s, pts };
+  }));
+}
+function scheduleShare() {
+  clearTimeout(shareTimer);
+  shareTimer = setTimeout(async () => {
+    if (scriptVersion < 5) return;       // 새 Apps Script가 아니면 보내지 않는다
+    const marks = compactInk(), body = JSON.stringify(marks);
+    if (body === lastShared) return;
+    // 공유할 필기가 없고 비밀번호도 모르면 묻지 않고 넘어간다 (화면을 열자마자 묻지 않게)
+    let known = null;
+    try { known = localStorage.getItem("teacherKey"); } catch (e) {}
+    if (!known && marks.every(p => !p.length)) { lastShared = body; return; }
+    const key = getKey(); if (!key) return;
+    try {
+      const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "marks", key, lesson: LESSON.id, marks }) });
+      const j = await res.json();
+      if (!j.ok) { forgetKey(); toast("비밀번호가 맞지 않아 필기를 공유하지 못했어요"); return; }
+      rememberKey(key); lastShared = body;
+    } catch (err) { /* 다음 필기 때 다시 보낸다 */ }
+  }, 1500);
+}
+if (TEACHER) {
+  const btn = document.getElementById("shareBtn");
+  btn.classList.toggle("on", shareInk);
+  btn.addEventListener("click", () => {
+    shareInk = !shareInk;
+    try { localStorage.setItem("shareInk", shareInk ? "1" : "0"); } catch (e) {}
+    btn.classList.toggle("on", shareInk);
+    if (scriptVersion < 5) { toast("Apps Script를 새 버전(v5)으로 바꿔야 필기를 공유할 수 있어요"); return; }
+    toast(shareInk ? "선생님 필기를 학생 화면에 보여 줘요" : "선생님 필기를 학생 화면에서 지웠어요");
+    scheduleShare();
   });
 }
 </script>
