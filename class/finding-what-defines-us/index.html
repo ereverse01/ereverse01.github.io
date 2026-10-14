@@ -214,11 +214,41 @@
   }
   #cover .start:active { transform: scale(.97); }
 
+  /* ---------- 선생님: 제출 현황 ---------- */
+  #subs {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; z-index: 9;
+    width: 794px; max-width: 100%; overflow: auto;
+    background: #f8f9fa; border-top: 2px solid #2f9e44;
+    padding: 12px 16px 40px;
+    touch-action: pan-x pan-y;            /* 목록은 손가락으로 바로 스크롤 */
+  }
+  #subs .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  #subs .bar h2 { margin: 0 auto 0 0; font-size: 18px; }
+  #subs .bar button {
+    font: inherit; font-size: 14px; height: 34px; padding: 0 12px;
+    border: 1px solid #ced4da; border-radius: 8px; background: #fff; cursor: pointer;
+  }
+  #subs .bar button.on { background: #1c7ed6; border-color: #1c7ed6; color: #fff; }
+  #subs .msg { padding: 30px; text-align: center; color: #868e96; }
+  #subs .meta { font-size: 13px; color: #868e96; margin-bottom: 8px; }
+  #subs .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  #subs .card { background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  #subs .card .who { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  #subs .card .who span { color: #868e96; font-size: 12px; }
+  #subs .ans { display: grid; grid-template-columns: 46px 1fr; gap: 2px 6px; line-height: 1.5; }
+  #subs .ans b { color: #1c7ed6; font-size: 12px; padding-top: 2px; }
+  #subs .empty { color: #ced4da; }
+  #subs .qblock { background: #fff; border: 1px solid #dee2e6; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  #subs .qblock h3 { margin: 0 0 8px; font-size: 15px; }
+  #subs .qblock h3 b { color: #1c7ed6; margin-right: 6px; }
+  #subs .qblock .ans { grid-template-columns: 110px 1fr; font-size: 14px; }
+  #subs .qblock .ans b { color: #495057; font-size: 13px; }
+
   /* ---------- PDF(인쇄) ---------- */
   @page { size: A4; margin: 0; }
   @media print {
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    #toolbar, #toast, .reveal, #cover { display: none; }
+    #toolbar, #toast, .reveal, #cover, #subs { display: none !important; }
     body { padding-top: 0 !important; }
     #sheet { transform: none !important; }
     .page { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; height: 1122px; }
@@ -306,7 +336,21 @@
     <b style="color:#e8590c">선생님 화면</b>
     <button id="showKo">해석 모두 공개</button>
     <button id="hideAll">모두 숨기기</button>
+    <button id="subsOpen" style="background:#2f9e44;border-color:#2f9e44;color:#fff;font-weight:bold">📋 제출 현황</button>
   </div>
+</div>
+
+<!-- 선생님 화면: 구글 시트에 쌓인 답을 여기서 본다 -->
+<div id="subs" hidden>
+  <div class="bar">
+    <h2>📋 제출 현황</h2>
+    <button data-view="student" class="on">학생별</button>
+    <button data-view="question">질문별</button>
+    <button id="subsLatest" class="on" title="같은 학생이 여러 번 내면 마지막 것만">최신 제출만</button>
+    <button id="subsReload">↻ 새로고침</button>
+    <button id="subsClose">닫기 ✕</button>
+  </div>
+  <div id="subsBody"><div class="msg">불러오는 중…</div></div>
 </div>
 
 <main id="sheet"></main>
@@ -709,7 +753,7 @@ document.getElementById("zoomReset").addEventListener("click", () => {
 document.addEventListener("pointerdown", e => {
   const moveOnly = tool === "hand";
   if (e.pointerType !== "touch" && !(e.pointerType === "pen" && moveOnly)) return;
-  if (e.target.closest("#toolbar, #cover")) return;      // 버튼은 그대로 눌리게
+  if (e.target.closest("#toolbar, #cover, #subs")) return;   // 버튼·제출 목록은 그대로 눌리고 스크롤되게
   if (touchDown(e)) { e.preventDefault(); return; }
   const page = e.target.closest(".page");
   if (fingerDraw && !moveOnly && e.pointerType === "touch" && page) {
@@ -905,6 +949,7 @@ function applyOpen() {
     if (b) b.textContent = on ? "공개 중 · 숨기기" : (id >= KO_ID ? "해석 공개" : "학생에게 공개");
   });
 }
+let scriptVersion = 0;                 // Apps Script 코드 버전 (v4부터 제출 현황 지원)
 async function poll() {
   if (!SHEET_URL) return;
   try {
@@ -912,24 +957,32 @@ async function poll() {
     const j = await res.json();
     if (!Array.isArray(j.open)) throw new Error("no open list");
     openList = j.open; data.open = j.open; everLoaded = true; failCount = 0; save();
+    scriptVersion = j.v || 0;
   } catch (err) {
     failCount++;
   }
   applyOpen();
 }
 
-async function sendOpen(list) {
+// 선생님 비밀번호: 한 번 맞으면 이 기기에 기억한다
+function getKey() {
   let key;
   try { key = localStorage.getItem("teacherKey"); } catch (e) {}
   key = key || prompt("선생님 비밀번호를 입력하세요 (Apps Script에 정한 것)");
   // 전각 숫자(２９６６)·앞뒤 공백을 일반 글자로 바꿔 입력 실수를 줄인다
-  key = (key || "").normalize("NFKC").trim();
+  return (key || "").normalize("NFKC").trim();
+}
+function rememberKey(key) { try { localStorage.setItem("teacherKey", key); } catch (e) {} }
+function forgetKey() { try { localStorage.removeItem("teacherKey"); } catch (e) {} }
+
+async function sendOpen(list) {
+  const key = getKey();
   if (!key) return;
   try {
     const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "open", key, open: list }) });
     const j = await res.json();
-    if (!j.ok) { try { localStorage.removeItem("teacherKey"); } catch (e) {} alert("비밀번호가 맞지 않아요."); return; }
-    try { localStorage.setItem("teacherKey", key); } catch (e) {}
+    if (!j.ok) { forgetKey(); alert("비밀번호가 맞지 않아요."); return; }
+    rememberKey(key);
     openList = j.open; everLoaded = true; applyOpen();
     return true;
   } catch (err) {
@@ -991,6 +1044,83 @@ setInterval(() => { if (document.visibilityState === "visible") poll(); }, TEACH
 function fitToolbar() { document.body.style.paddingTop = document.getElementById("toolbar").offsetHeight + "px"; }
 fitToolbar();
 window.addEventListener("resize", fitToolbar);
+
+/* ---------- 선생님: 제출 현황 (구글 시트의 답을 이 화면에서 본다) ----------
+   Apps Script v4 이상이 필요하다 (비밀번호가 맞을 때만 답을 돌려준다). */
+const subsEl = document.getElementById("subs"), subsBody = document.getElementById("subsBody");
+let subsView = "student", subsLatest = true, subsRows = null, subsTimer = 0;
+
+function renderSubs() {
+  if (!subsRows) return;
+  const [head, ...all] = subsRows;
+  if (!head || !all.length) { subsBody.innerHTML = `<div class="msg">아직 제출한 학생이 없어요.</div>`; return; }
+  // 같은 학생(학번+이름)이 여러 번 냈으면 마지막 제출만 남긴다
+  let rows = all;
+  if (subsLatest) {
+    const last = new Map();
+    all.forEach(r => last.set(`${r[1]}|${r[2]}`, r));
+    rows = [...last.values()];
+  }
+  rows = rows.slice().sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ko", { numeric: true }));
+  const qcols = head.slice(3);
+  const cell = v => v ? esc(String(v)) : `<span class="empty">—</span>`;
+  let html = `<div class="meta">${rows.length}명${subsLatest ? "" : ` (제출 ${all.length}건)`} · 20초마다 자동 새로고침</div>`;
+  if (subsView === "student") {
+    html += `<div class="cards">` + rows.map(r => `<div class="card">
+      <div class="who"><b>${esc(String(r[1]))} ${esc(String(r[2]))}</b><span>${esc(String(r[0]))}</span></div>
+      <div class="ans">${qcols.map((q, i) => `<b>${esc(String(q))}</b><div>${cell(r[3 + i])}</div>`).join("")}</div>
+    </div>`).join("") + `</div>`;
+  } else {
+    html += qcols.map((q, i) => {
+      const qi = LABELS.indexOf(String(q));
+      const text = qi >= 0 ? esc(QUESTIONS[qi].q).replace(/_{3,}/g, "　　　") : "";
+      return `<div class="qblock"><h3><b>${esc(String(q))}</b>${text}</h3>
+        <div class="ans">${rows.map(r => `<b>${esc(String(r[1]))} ${esc(String(r[2]))}</b><div>${cell(r[3 + i])}</div>`).join("")}</div>
+      </div>`;
+    }).join("");
+  }
+  subsBody.innerHTML = html;
+}
+
+async function loadSubs() {
+  if (scriptVersion < 4) {
+    subsBody.innerHTML = `<div class="msg">구글 Apps Script를 새 코드로 바꾸고 <b>배포 관리 → 새 버전</b>으로 배포해야 볼 수 있어요.<br>(구글시트_설정.md 참고)</div>`;
+    return;
+  }
+  const key = getKey(); if (!key) return;
+  try {
+    const res = await fetch(SHEET_URL, { method: "POST", body: JSON.stringify({ action: "list", key }) });
+    const j = await res.json();
+    if (!j.ok) { forgetKey(); subsBody.innerHTML = `<div class="msg">비밀번호가 맞지 않아요. ↻ 새로고침을 눌러 다시 입력하세요.</div>`; return; }
+    rememberKey(key);
+    subsRows = j.rows; renderSubs();
+  } catch (err) {
+    subsBody.innerHTML = `<div class="msg">불러오지 못했어요. 인터넷 연결을 확인해 주세요.</div>`;
+  }
+}
+function closeSubs() { subsEl.hidden = true; clearInterval(subsTimer); }
+
+if (TEACHER) {
+  document.getElementById("subsOpen").addEventListener("click", async () => {
+    if (!subsEl.hidden) { closeSubs(); return; }
+    subsEl.style.top = document.getElementById("toolbar").offsetHeight + "px";
+    subsEl.hidden = false;
+    if (!scriptVersion) await poll();    // 스크립트 버전을 아직 모르면 먼저 확인
+    loadSubs();
+    clearInterval(subsTimer);
+    subsTimer = setInterval(loadSubs, 20000);
+  });
+  document.getElementById("subsClose").addEventListener("click", closeSubs);
+  document.getElementById("subsReload").addEventListener("click", loadSubs);
+  document.getElementById("subsLatest").addEventListener("click", e => {
+    subsLatest = !subsLatest; e.target.classList.toggle("on", subsLatest); renderSubs();
+  });
+  subsEl.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
+    subsView = b.dataset.view;
+    subsEl.querySelectorAll("[data-view]").forEach(x => x.classList.toggle("on", x === b));
+    renderSubs();
+  }));
+}
 </script>
 </body>
 </html>
