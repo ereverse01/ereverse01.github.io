@@ -223,7 +223,13 @@
     padding: 12px 16px 40px;
     touch-action: pan-x pan-y;            /* 목록은 손가락으로 바로 스크롤 */
   }
-  #subs .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  /* 메뉴 줄은 목록을 내려도 위에 붙어 있다 */
+  #subs .bar {
+    position: sticky; top: -12px; z-index: 1;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: -12px -16px 10px; padding: 12px 16px 8px;
+    background: #f8f9fa; border-bottom: 1px solid #dee2e6;
+  }
   #subs .bar h2 { margin: 0 auto 0 0; font-size: 18px; }
   #subs .bar button {
     font: inherit; font-size: 14px; height: 34px; padding: 0 12px;
