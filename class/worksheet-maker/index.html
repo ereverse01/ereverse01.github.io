@@ -51,6 +51,15 @@
   .opts .chk input { width: 20px; height: 20px; }
   select { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: #fff; }
   .preview-wrap { background: #c9ced8; border-radius: 14px; padding: 16px; overflow: hidden; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: flex-start; justify-content: center; z-index: 40; padding: 40px 12px; overflow: auto; }
+  .modal.show { display: flex; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 18px; width: 100%; max-width: 620px; }
+  .lib-item { display: flex; align-items: center; gap: 8px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+  .lib-item.cur { background: var(--accent-soft); border-radius: 8px; }
+  .lib-item .nm { flex: 1; min-width: 0; }
+  .lib-item .nm b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lib-item .nm small { color: var(--muted); }
+  .lib-item button { padding: 7px 10px; font-size: 14px; }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 50; }
   .toast.show { opacity: .92; }
   [hidden] { display: none !important; }
@@ -130,7 +139,8 @@
 <div class="app">
   <header class="top">
     <h1>📄 지문 학습지 만들기</h1>
-    <button class="ghost" id="btnNew">새 학습지</button>
+    <button id="btnLib">📚 보관함</button>
+    <button class="ghost" id="btnNew">＋ 새 학습지</button>
   </header>
 
   <nav class="steps">
@@ -236,6 +246,7 @@
         <label class="chk"><input type="checkbox" id="oKey">정답지 쪽 추가</label>
       </div>
       <div class="row" style="margin-top:16px; justify-content:flex-end">
+        <button id="btnSend">📤 다른 기기로 보내기</button>
         <button class="primary" id="btnPrint">🖨️ 인쇄 / PDF 저장</button>
       </div>
     </div>
@@ -244,6 +255,17 @@
 </div>
 
 <div id="printArea"></div>
+
+<div class="modal" id="libModal">
+  <div class="modal-box">
+    <div class="row" style="justify-content:space-between; margin-bottom:6px">
+      <h2 style="margin:0; font-size:18px">📚 보관함</h2>
+      <button id="libClose" class="ghost">닫기</button>
+    </div>
+    <p class="hint">만든 학습지는 이 기기에 자동으로 저장돼요. 다른 기기에서 보려면 [보내기]로 링크를 보내세요.</p>
+    <div id="libList"></div>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -3059,6 +3081,7 @@ zoo=동물원
   const DEFAULT_OPTS = { sub: '', layout: 'stack', mode: 'show', size: '11', lh: '2.1', font: 'hcr', pn: false, mark: true, ko: 'para', trans: false, quiz: false, key: false };
   const saved = store.get('wsheet.v1') || {};
   const state = {
+    id: saved.id || null, // 보관함 속 이 학습지의 번호
     title: saved.title || '',
     passage: saved.passage || '',
     q: saved.q || '', // 한국어 발문
@@ -3069,7 +3092,20 @@ zoo=동물원
   // 함초롬바탕이 생기기 전에 저장된 설정은 한 번만 함초롬바탕으로 바꾼다
   if (!saved.hcr) { state.opts.font = 'hcr'; state.hcr = true; }
   if (!saved.noPn) { state.opts.pn = false; state.noPn = true; } // 문단 번호는 기본으로 끔
-  const save = () => store.set('wsheet.v1', state);
+  // 보관함: 지문이 있는 학습지는 모두 자동으로 보관함에 저장된다
+  const LIB_KEY = 'wsheet.v1.lib';
+  let lib = store.get(LIB_KEY) || [];
+  const sheetData = () => { const { title, q, passage, ko, words, opts } = state; return { title, q, passage, ko, words, opts }; };
+  function save() {
+    if (state.passage.trim()) {
+      if (!state.id) state.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const entry = { id: state.id, at: Date.now(), data: sheetData() };
+      const i = lib.findIndex((x) => x.id === state.id);
+      if (i >= 0) lib[i] = entry; else lib.unshift(entry);
+      store.set(LIB_KEY, lib);
+    }
+    store.set('wsheet.v1', state);
+  }
 
   // ---------- 단계 이동 ----------
   let step = 1;
@@ -3494,19 +3530,138 @@ zoo=동물원
   });
 
   $('#btnNew').addEventListener('click', () => {
-    if (!confirm('지금 학습지를 지우고 새로 시작할까요?')) return;
-    state.title = ''; state.passage = ''; state.ko = ''; state.q = ''; state.words = [];
-    $('#title').value = ''; $('#passage').value = ''; $('#ko').value = ''; $('#q').value = '';
-    save(); go(1);
+    if (state.passage.trim() && !confirm('새 학습지를 시작할까요?\n(지금 학습지는 📚 보관함에 저장돼 있어요)')) return;
+    save();
+    state.id = null; state.title = ''; state.passage = ''; state.ko = ''; state.q = ''; state.words = [];
+    fillInputs(); save(); go(1);
   });
 
+  // ---------- 다른 기기로 보내기: 학습지를 주소(#w=...) 안에 압축해서 담는다 ----------
+  function toB64(bytes) {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function fromB64(str) {
+    const s = atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(s, (c) => c.charCodeAt(0));
+  }
+  async function encode(obj) {
+    const bytes = new TextEncoder().encode(JSON.stringify(obj));
+    if ('CompressionStream' in window) {
+      const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+      return 'z' + toB64(new Uint8Array(await new Response(stream).arrayBuffer()));
+    }
+    return 'b' + toB64(bytes);
+  }
+  async function decode(str) {
+    let bytes = fromB64(str.slice(1));
+    if (str[0] === 'z') {
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  // 링크 만들기. 앱 주소가 아닌 곳(내 컴퓨터 파일 등)에서 열었으면 GitHub 주소로.
+  const APP_URL = 'https://ereyang.github.io/worksheet-maker/';
+  async function shareSheet(data) {
+    const base = /^https?:/.test(location.protocol) ? location.origin + location.pathname : APP_URL;
+    const url = base + '#w=' + (await encode(data));
+    // 휴대폰·탭에서는 공유 창(카카오톡 등)을, 컴퓨터에서는 링크 복사
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      try { await navigator.share({ title: data.title || '학습지', url }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    copyText(url);
+    toast('링크를 복사했어요. 카카오톡 등으로 보내서 다른 기기에서 여세요');
+  }
+  $('#btnSend').addEventListener('click', () => { save(); shareSheet(sheetData()); });
+
+  // 입력 칸과 설정을 지금 학습지에 맞춘다
+  function fillInputs() {
+    $('#title').value = state.title;
+    $('#passage').value = state.passage;
+    $('#ko').value = state.ko;
+    $('#q').value = state.q;
+    Object.entries(optIds).forEach(([k, id]) => {
+      const el = document.getElementById(id);
+      if (el.type === 'checkbox') el.checked = !!state.opts[k]; else el.value = state.opts[k];
+    });
+  }
+
+  function openSheet(id, d) {
+    state.id = id;
+    state.title = d.title || ''; state.q = d.q || ''; state.passage = d.passage || ''; state.ko = d.ko || '';
+    state.words = d.words || [];
+    state.opts = Object.assign({}, DEFAULT_OPTS, d.opts);
+    fillInputs(); save();
+  }
+
+  // ---------- 보관함 ----------
+  function libName(d) {
+    if (d.title && d.title.trim()) return d.title.trim();
+    const qm = (d.q || '').trim().match(/^(\d+)/);
+    const words = (d.passage || '').trim().split(/\s+/).slice(0, 7).join(' ');
+    return (qm ? qm[1] + '번 · ' : '') + words + '…';
+  }
+  function renderLib() {
+    lib.sort((a, b) => b.at - a.at);
+    $('#libList').innerHTML = lib.map((x) => {
+      const t = new Date(x.at);
+      const when = `${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+      return `<div class="lib-item${x.id === state.id ? ' cur' : ''}" data-id="${x.id}">
+        <div class="nm"><b>${esc(libName(x.data))}</b><small>${when}${x.id === state.id ? ' · 지금 보는 학습지' : ''} · 단어 ${(x.data.words || []).length}개</small></div>
+        <button data-a="open">열기</button><button data-a="send">보내기</button><button data-a="del" style="color:var(--danger)">삭제</button>
+      </div>`;
+    }).join('') || '<p class="hint">아직 저장된 학습지가 없어요.</p>';
+  }
+  $('#btnLib').addEventListener('click', () => { save(); renderLib(); $('#libModal').classList.add('show'); });
+  $('#libClose').addEventListener('click', () => $('#libModal').classList.remove('show'));
+  $('#libModal').addEventListener('click', (e) => { if (e.target.id === 'libModal') $('#libModal').classList.remove('show'); });
+  $('#libList').addEventListener('click', (e) => {
+    const a = e.target.dataset.a;
+    if (!a) return;
+    const x = lib.find((y) => y.id === e.target.closest('.lib-item').dataset.id);
+    if (!x) return;
+    if (a === 'open') { save(); openSheet(x.id, x.data); $('#libModal').classList.remove('show'); go(4); toast('학습지를 열었어요'); }
+    if (a === 'send') shareSheet(x.data);
+    if (a === 'del') {
+      if (!confirm(`"${libName(x.data)}"\n이 학습지를 지울까요? 되돌릴 수 없어요.`)) return;
+      lib = lib.filter((y) => y.id !== x.id);
+      store.set(LIB_KEY, lib);
+      if (x.id === state.id) { state.id = null; state.title = ''; state.passage = ''; state.ko = ''; state.q = ''; state.words = []; fillInputs(); save(); go(1); }
+      renderLib();
+    }
+  });
+
+  // 받은 링크로 열었으면 그 학습지를 보관함에 새로 넣고 연다 (지금 학습지는 보관함에 남는다)
+  async function loadFromLink() {
+    const m = location.hash.match(/^#w=(.+)$/);
+    if (!m) return false;
+    history.replaceState(null, '', location.pathname);
+    try {
+      const d = await decode(m[1]);
+      const same = lib.find((x) => x.data.passage === d.passage && x.data.q === d.q);
+      save();
+      openSheet(same ? same.id : null, d);
+      toast('받은 학습지를 보관함에 넣고 열었어요');
+      return true;
+    } catch {
+      toast('링크가 잘렸거나 잘못됐어요');
+      return false;
+    }
+  }
+
   // ---------- 시작 ----------
-  $('#title').value = state.title;
-  $('#passage').value = state.passage;
-  $('#ko').value = state.ko;
-  $('#q').value = state.q;
-  if (state.passage.trim()) go(state.words.length ? 3 : 2);
+  (async () => {
+    const fromLink = await loadFromLink();
+    fillInputs();
+    if (state.passage.trim() && !state.id) save(); // 보관함이 생기기 전에 만들던 학습지도 넣는다
+    if (fromLink) go(4);
+    else if (state.passage.trim()) go(state.words.length ? 3 : 2);
+  })();
 })();
+
 </script>
 </body>
 </html>
