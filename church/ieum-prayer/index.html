@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>이음교구 홀수목장 기도제목</title>
+<title>이음교구 기도제목</title>
 <style>
   :root {
     --bg: #f6f4ef;
@@ -163,7 +163,17 @@
   .pw-msg { min-height: 1.4em; margin-top: 10px; color: #c0392b; font-size: 0.9rem; }
   .sync { min-height: 1.4em; margin-top: 8px; font-size: 0.85rem; color: var(--c-ans); }
   .sync.bad { color: #c0392b; font-weight: 600; }
-  .months { max-width: 860px; margin: 18px auto 0; }
+  .sides {
+    display: flex; max-width: 360px; margin: 18px auto 0;
+    background: var(--line); border-radius: 12px; padding: 4px; gap: 4px;
+  }
+  .sides button {
+    flex: 1; font: inherit; font-weight: 700; padding: 9px 0; border: none;
+    border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .sides button.on { background: var(--card); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  .months { max-width: 860px; margin: 14px auto 0; }
   .year {
     display: flex; align-items: center; justify-content: center; gap: 14px;
     font-size: 1.05rem;
@@ -191,12 +201,16 @@
 </head>
 <body>
 <header>
-  <h1>이음교구 홀수목장 기도제목</h1>
+  <h1>이음교구 기도제목</h1>
   <p>목장별로 기도제목을 적어 주세요</p>
   <div class="legend">
     <span style="background:var(--c-pray-bg);color:var(--c-pray)">● 계속 기도중</span>
     <span style="background:var(--c-ans-bg);color:var(--c-ans)">● 응답됨</span>
     <span style="background:var(--c-new-bg);color:var(--c-new)">● 새 기도제목</span>
+  </div>
+  <div class="sides" id="sides">
+    <button data-side="홀수">홀수목장</button>
+    <button data-side="짝수">짝수목장</button>
   </div>
   <nav class="months">
     <div class="year">
@@ -216,7 +230,7 @@
 <main id="list"></main>
 <div class="gate" id="gate" hidden>
   <form id="gateForm">
-    <h2>이음교구 홀수목장 기도제목</h2>
+    <h2>이음교구 기도제목</h2>
     <p>교구 암호를 입력해 주세요</p>
     <input id="pwInput" type="password" autocomplete="current-password" placeholder="암호">
     <button type="submit">들어가기</button>
@@ -230,7 +244,14 @@
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbw2R3nf_T05l8lzVoE2gpNixJiUfAGTP-63qacWwP0mAka_hQemdSPKK7eesbmEGlD4/exec";
 
   // 목장 명단과 기도제목은 암호 확인 후 시트에서 받아 옴
-  let GROUPS = [], LABELS = {}, LEADERS = {};
+  let ROSTER = [], GROUPS = [], LABELS = {}, LEADERS = {};
+  const SIDE_KEY = "ieum-prayer-side";
+  let side = "홀수";
+  try { side = localStorage.getItem(SIDE_KEY) || "홀수"; } catch {}
+  // 지금 고른 탭(홀수/짝수)의 목장만
+  function pickSide() {
+    GROUPS = ROSTER.filter(r => (r[3] || "홀수") === side).map(r => r[0]);
+  }
 
   const STATUS = { pray: "계속 기도중", ans: "응답됨", new: "새 기도제목" };
   const PW_KEY = "ieum-odd-prayer-pw";
@@ -255,12 +276,13 @@
     try {
       const d = await call({ action: "load" });
       if (!d.ok) { setSync(""); return d.error === "pw" ? "pw" : false; }
-      GROUPS = d.roster.map(r => r[0]);
+      ROSTER = d.roster;
+      pickSide();
       LABELS = Object.fromEntries(d.roster.map(r => [r[0], r[1]]));
       LEADERS = Object.fromEntries(d.roster.map(r => [r[0], r[2]]));
       data = { leaders: d.leaders || {}, months: d.months || {} };
       Object.values(data.months).forEach(md => Object.values(md).forEach(arr => arr.forEach(splitWho)));
-      GROUPS.forEach(g => { if (data.leaders[g] == null) data.leaders[g] = LEADERS[g] || ""; });
+      ROSTER.forEach(([g]) => { if (data.leaders[g] == null) data.leaders[g] = LEADERS[g] || ""; });
       setSync("");
       return true;
     } catch {
@@ -385,9 +407,17 @@
     carry.hidden = hasText(cur()) || !hasText(prevKey());
     list.innerHTML = "";
     const md = monthData(cur());
+    document.querySelectorAll("#sides button").forEach(b => b.classList.toggle("on", b.dataset.side === side));
+    if (!GROUPS.length) list.innerHTML = '<p class="empty">아직 명단이 없어요</p>';
     GROUPS.forEach(g => list.appendChild(renderGroup(g, cur(), md)));
   }
 
+  document.querySelectorAll("#sides button").forEach(b => b.onclick = () => {
+    side = b.dataset.side;
+    try { localStorage.setItem(SIDE_KEY, side); } catch {}
+    pickSide();
+    render();
+  });
   document.getElementById("prevYear").onclick = () => { year--; render(); };
   document.getElementById("nextYear").onclick = () => { year++; render(); };
   document.getElementById("refresh").onclick = async () => {
@@ -514,7 +544,7 @@
 
   document.getElementById("copyAll").onclick = async () => {
     const md = monthData(cur());
-    const lines = [`[이음교구 홀수목장 기도제목 - ${year}년 ${month}월]`, ""];
+    const lines = [`[이음교구 ${side}목장 기도제목 - ${year}년 ${month}월]`, ""];
     GROUPS.forEach(g => {
       const leader = data.leaders[g];
       const filled = md[g].filter(it => it.text.trim());
