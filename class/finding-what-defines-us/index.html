@@ -28,13 +28,14 @@
     user-select: none; -webkit-user-select: none;
   }
   .group { display: flex; align-items: center; gap: 4px; }
-  .group + .group { padding-left: 10px; border-left: 1px solid #dee2e6; }
+  .group + .group { padding-left: 8px; border-left: 1px solid #dee2e6; }
   #toolbar button {
     font: inherit; font-size: 14px;
-    height: 36px; min-width: 36px; padding: 0 10px;
+    height: 36px; min-width: 36px; padding: 0 8px;
     border: 1px solid #ced4da; border-radius: 8px;
     background: #fff; color: #1a1a1a; cursor: pointer;
   }
+  #toolbar button.stamp { padding: 0 4px; font-size: 18px; }
   #toolbar button.on { background: #1c7ed6; border-color: #1c7ed6; color: #fff; }
   #toolbar button.swatch { width: 30px; min-width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #adb5bd; }
   #toolbar button.swatch.on { box-shadow: 0 0 0 3px #1c7ed6; }
@@ -313,7 +314,10 @@
     <button data-tool="pen">✏️ 펜</button>
     <button data-tool="hl">🖍 형광펜</button>
     <button data-tool="eraser">🧽 지우개</button>
-    <button id="finger" title="켜면 한 손가락은 필기, 두 손가락은 화면 이동·확대">☝️ 손가락 필기</button>
+    <button data-tool="star" class="stamp" title="별 도장 (크기는 굵기 버튼으로)">⭐</button>
+    <button data-tool="heart" class="stamp" title="하트 도장 (크기는 굵기 버튼으로)">❤️</button>
+    <button data-tool="cat" class="stamp" title="고양이 도장 (크기는 굵기 버튼으로)">🐱</button>
+    <button id="finger" title="켜면 한 손가락은 필기, 두 손가락은 화면 이동·확대">☝️ 손가락</button>
   </div>
   <div class="group" id="colors"></div>
   <div class="group" id="widths">
@@ -521,7 +525,63 @@ document.querySelectorAll("textarea[data-q]").forEach(t => {
 });
 
 /* ---------- 그리기 ---------- */
+/* 도장: 별·하트·고양이. pts = [가운데 x, y], w = 크기 */
+const STAMPS = ["star", "heart", "cat"];
+function drawStamp(ctx, s) {
+  const [x, y] = s.pts, r = s.w / 2;
+  ctx.save();
+  ctx.globalAlpha = 1; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath();
+  if (s.k === "star") {
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r;
+      ctx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a));
+    }
+    ctx.closePath();
+    ctx.fillStyle = "#ffd43b"; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, r * 0.1); ctx.strokeStyle = "#f08c00"; ctx.stroke();
+  } else if (s.k === "heart") {
+    ctx.moveTo(x, y + r * 0.9);
+    ctx.bezierCurveTo(x - r * 1.25, y + r * 0.05, x - r * 0.85, y - r * 0.95, x, y - r * 0.35);
+    ctx.bezierCurveTo(x + r * 0.85, y - r * 0.95, x + r * 1.25, y + r * 0.05, x, y + r * 0.9);
+    ctx.closePath();
+    ctx.fillStyle = "#f06595"; ctx.fill();
+    ctx.lineWidth = Math.max(1.5, r * 0.1); ctx.strokeStyle = "#c2255c"; ctx.stroke();
+  } else if (s.k === "cat") {
+    const lw = Math.max(1.2, r * 0.08);
+    ctx.lineWidth = lw; ctx.strokeStyle = "#d9480f"; ctx.fillStyle = "#ffc078";
+    // 귀
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(x + side * r * 0.85, y - r * 0.15);
+      ctx.lineTo(x + side * r * 0.75, y - r * 1.0);
+      ctx.lineTo(x + side * r * 0.2, y - r * 0.7);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    // 얼굴
+    ctx.beginPath(); ctx.ellipse(x, y, r * 0.95, r * 0.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // 눈
+    ctx.fillStyle = "#212529";
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.arc(x + side * r * 0.35, y - r * 0.1, r * 0.1, 0, Math.PI * 2); ctx.fill(); }
+    // 코
+    ctx.fillStyle = "#e64980";
+    ctx.beginPath(); ctx.moveTo(x - r * 0.09, y + r * 0.1); ctx.lineTo(x + r * 0.09, y + r * 0.1); ctx.lineTo(x, y + r * 0.2); ctx.closePath(); ctx.fill();
+    // 웃는 입(ω)과 수염
+    ctx.strokeStyle = "#212529"; ctx.lineWidth = lw * 0.8;
+    ctx.beginPath();
+    ctx.arc(x - r * 0.1, y + r * 0.22, r * 0.1, 0, Math.PI);
+    ctx.moveTo(x + r * 0.2, y + r * 0.22); ctx.arc(x + r * 0.1, y + r * 0.22, r * 0.1, 0, Math.PI);
+    for (const side of [-1, 1]) for (const dy of [-0.06, 0.12]) {
+      ctx.moveTo(x + side * r * 0.5, y + r * 0.1 + dy * r * 0.5);
+      ctx.lineTo(x + side * r * 1.15, y + r * 0.02 + dy * r * 1.6);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawStroke(ctx, s) {
+  if (s.k) { drawStamp(ctx, s); return; }
   // 형광펜은 반투명으로 칠해 아래 글자가 비쳐 보이게 한다
   ctx.globalAlpha = s.hl ? 0.4 : 1;
   ctx.strokeStyle = ctx.fillStyle = s.hl ? (OLD_HL[s.c] || s.c) : s.c;
@@ -660,6 +720,11 @@ function startDraw(cv, p, e) {
   const [x, y] = pos(cv, e);
   drawing = { p, id: e.pointerId, type: e.pointerType, erased: [], drawn: 0, raf: 0 };
   if (tool === "eraser") { eraseAt(p, x, y); return; }
+  if (STAMPS.includes(tool)) {          // 도장: 누른 자리에 찍고, 떼기 전까지 옮길 수 있다
+    drawing.stroke = { k: tool, w: width * 6 + 12, pts: [x, y] };
+    drawStamp(cv.getContext("2d"), drawing.stroke);
+    return;
+  }
   const hl = tool === "hl";
   drawing.stroke = { c: COLORS[colorIdx][hl ? 1 : 0], w: hl ? width * 5 : width, hl: hl ? 1 : 0, pts: [x, y] };
 }
@@ -780,7 +845,7 @@ canvases.forEach((cv, p) => {
 
   // 아직 화면에 안 그린 점들을 한 번에 그린다
   const flush = () => {
-    const d = drawing; if (!d || !d.stroke || d.snapped) return;
+    const d = drawing; if (!d || !d.stroke || d.snapped || d.stroke.k) return;
     d.raf = 0;
     const pt = d.stroke.pts;
     if (pt.length <= d.drawn) return;
@@ -817,13 +882,18 @@ canvases.forEach((cv, p) => {
     for (const ev of evs.length ? evs : [e]) {
       x = Math.round((ev.clientX - r.left) * k * 10) / 10; y = Math.round((ev.clientY - r.top) * k * 10) / 10;
       if (!d.stroke) { eraseAt(p, x, y); continue; }
-      if (d.snapped) continue;
+      if (d.snapped || d.stroke.k) continue;
       const pt = d.stroke.pts, n = pt.length;
       // 너무 촘촘한 점은 건너뛴다 (S펜은 아주 자주 위치를 보낸다)
       if (Math.abs(x - pt[n - 2]) + Math.abs(y - pt[n - 1]) < 1) continue;
       pt.push(x, y);
     }
     if (!d.stroke) return;
+    if (d.stroke.k) {                      // 도장: 손을 떼기 전까지 따라 움직인다
+      d.stroke.pts = [x, y];
+      if (!d.raf) d.raf = requestAnimationFrame(showStraight);
+      return;
+    }
     if (d.snapped) {                       // 직선이 된 뒤: 끝점만 따라간다
       const pt = d.stroke.pts;
       d.stroke.pts = [pt[0], pt[1], ...straightEnd(pt[0], pt[1], x, y)];
@@ -843,7 +913,7 @@ canvases.forEach((cv, p) => {
     if (!drawing || e.pointerId !== drawing.id) return;
     clearTimeout(drawing.hold);
     if (drawing.raf) { cancelAnimationFrame(drawing.raf); drawing.raf = 0; }
-    if (drawing.snapped) showStraight();
+    if (drawing.snapped || (drawing.stroke && drawing.stroke.k)) showStraight();
     flush();
     const d = drawing; drawing = null;
     if (d.stroke) {
