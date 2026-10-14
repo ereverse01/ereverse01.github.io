@@ -262,7 +262,7 @@
       <h2 style="margin:0; font-size:18px">📚 보관함</h2>
       <button id="libClose" class="ghost">닫기</button>
     </div>
-    <p class="hint">만든 학습지는 이 기기에 자동으로 저장돼요. 다른 기기에서 보려면 [보내기]로 링크를 보내세요.</p>
+    <p class="hint">만든 학습지는 자동으로 저장돼요. <span id="syncStatus"></span></p>
     <div id="libList"></div>
   </div>
 </div>
@@ -3011,6 +3011,7 @@ zoo=동물원
   const store = {
     get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
   };
 
   // ---------- 사전 (단어장 앱과 같은 내장 사전) ----------
@@ -3099,10 +3100,16 @@ zoo=동물원
   function save() {
     if (state.passage.trim()) {
       if (!state.id) state.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const entry = { id: state.id, at: Date.now(), data: sheetData() };
+      const data = sheetData();
       const i = lib.findIndex((x) => x.id === state.id);
-      if (i >= 0) lib[i] = entry; else lib.unshift(entry);
-      store.set(LIB_KEY, lib);
+      const prev = i >= 0 ? lib[i] : null;
+      // 내용이 바뀌었을 때만 수정 시각을 새로 (다른 기기의 더 새 학습지를 덮어쓰지 않도록)
+      if (!prev || JSON.stringify(prev.data) !== JSON.stringify(data)) {
+        const entry = { id: state.id, at: Date.now(), data, synced: !!(prev && prev.synced) };
+        if (i >= 0) lib[i] = entry; else lib.unshift(entry);
+        store.set(LIB_KEY, lib);
+        queuePush(entry.id);
+      }
     }
     store.set('wsheet.v1', state);
   }
@@ -3597,6 +3604,99 @@ zoo=동물원
     fillInputs(); save();
   }
 
+  // ---------- 구글 시트 보관함: 여러 기기에서 같은 보관함 ----------
+  // 주소가 비어 있으면 이 기기에만 저장한다. 암호는 기기마다 처음 한 번 묻고 기억한다.
+  const SYNC_URL = '';
+  const PW_KEY = 'wsheet.v1.pw';
+  function setSync(msg, err) {
+    const el = $('#syncStatus');
+    if (el) { el.textContent = msg; el.style.color = err ? 'var(--danger)' : 'var(--muted)'; }
+  }
+  async function syncCall(body) {
+    let pw = store.get(PW_KEY);
+    if (!pw) {
+      pw = (prompt('보관함 암호를 입력하세요.\n(구글 시트 스크립트에 적은 암호, 이 기기에서는 한 번만 물어봐요)') || '').trim();
+      if (!pw) throw new Error('nopw');
+    }
+    const res = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...body, pw }) });
+    const d = await res.json();
+    if (d.error === 'pw') { store.del(PW_KEY); throw new Error('pw'); }
+    if (!d.ok) throw new Error(d.error || 'fail');
+    store.set(PW_KEY, pw);
+    return d;
+  }
+  const syncErr = (e) => {
+    const msg = e.message === 'pw' ? '암호가 틀렸어요. 보관함을 다시 열면 다시 물어봐요.'
+      : e.message === 'nopw' ? (store.get(PW_KEY) ? '' : '구글 시트 스크립트에 암호를 먼저 적어 주세요.')
+      : '구글 시트에 연결하지 못했어요. 이 기기에는 저장돼 있어요.';
+    setSync('⚠️ ' + msg, true);
+  };
+
+  async function pushEntry(id) {
+    const x = lib.find((y) => y.id === id);
+    if (!x) return;
+    await syncCall({ action: 'save', entry: { id: x.id, at: x.at, name: libName(x.data), data: x.data } });
+    const y = lib.find((z) => z.id === id);
+    if (y) { y.synced = true; store.set(LIB_KEY, lib); }
+    setSync('☁️ 구글 시트에 저장됐어요');
+  }
+  // 고칠 때마다 바로 보내지 않고, 손을 멈추고 2초 뒤에 보낸다
+  const pushTimers = {};
+  function queuePush(id) {
+    if (!SYNC_URL || !store.get(PW_KEY)) return;
+    clearTimeout(pushTimers[id]);
+    pushTimers[id] = setTimeout(() => pushEntry(id).catch(syncErr), 2000);
+  }
+
+  // 시트와 이 기기의 보관함을 합친다: 같은 학습지는 더 최근에 고친 쪽으로.
+  // 시트에 올라갔던 학습지가 시트에서 없어졌으면 다른 기기에서 지운 것이라 여기서도 지운다.
+  let syncing = null, lastSync = 0;
+  function syncLib() {
+    if (!SYNC_URL) return Promise.resolve(false);
+    if (syncing) return syncing;
+    syncing = (async () => {
+      setSync('☁️ 구글 시트와 맞추는 중…');
+      try {
+        const { list } = await syncCall({ action: 'list' });
+        const remote = new Map(list.map((x) => [x.id, x]));
+        const next = [], uploads = [];
+        let curChanged = false;
+        for (const x of lib) {
+          const r = remote.get(x.id);
+          remote.delete(x.id);
+          if (!r) { if (!x.synced) { next.push(x); uploads.push(x.id); } continue; }
+          if (r.at > x.at) { next.push({ ...r, synced: true }); if (x.id === state.id) curChanged = true; }
+          else { next.push({ ...x, synced: true }); if (x.at > r.at) uploads.push(x.id); }
+        }
+        for (const r of remote.values()) next.push({ ...r, synced: true });
+        lib = next;
+        store.set(LIB_KEY, lib);
+        for (const id of uploads) await pushEntry(id);
+        // 지금 보는 학습지를 다른 기기에서 더 고쳤으면 그걸로 바꿔 보여 준다
+        if (curChanged) {
+          const cur = lib.find((x) => x.id === state.id);
+          openSheet(cur.id, cur.data);
+          if (step === 3) renderWordsView();
+          if (step === 4) renderSheet();
+          toast('다른 기기에서 고친 내용을 불러왔어요');
+        }
+        lastSync = Date.now();
+        setSync(`☁️ 구글 시트와 연결됨 · 학습지 ${lib.length}개`);
+        return true;
+      } catch (e) {
+        syncErr(e);
+        return false;
+      } finally {
+        syncing = null;
+      }
+    })();
+    return syncing;
+  }
+  // 다른 기기에서 돌아왔을 때(앱을 다시 볼 때) 맞춘다
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - lastSync > 20000 && store.get(PW_KEY)) syncLib();
+  });
+
   // ---------- 보관함 ----------
   function libName(d) {
     if (d.title && d.title.trim()) return d.title.trim();
@@ -3615,7 +3715,11 @@ zoo=동물원
       </div>`;
     }).join('') || '<p class="hint">아직 저장된 학습지가 없어요.</p>';
   }
-  $('#btnLib').addEventListener('click', () => { save(); renderLib(); $('#libModal').classList.add('show'); });
+  $('#btnLib').addEventListener('click', async () => {
+    save(); renderLib(); $('#libModal').classList.add('show');
+    if (!SYNC_URL) { setSync('이 기기에만 저장돼요. 다른 기기에서 보려면 [보내기]로 링크를 보내세요.'); return; }
+    if (await syncLib()) renderLib();
+  });
   $('#libClose').addEventListener('click', () => $('#libModal').classList.remove('show'));
   $('#libModal').addEventListener('click', (e) => { if (e.target.id === 'libModal') $('#libModal').classList.remove('show'); });
   $('#libList').addEventListener('click', (e) => {
@@ -3629,6 +3733,7 @@ zoo=동물원
       if (!confirm(`"${libName(x.data)}"\n이 학습지를 지울까요? 되돌릴 수 없어요.`)) return;
       lib = lib.filter((y) => y.id !== x.id);
       store.set(LIB_KEY, lib);
+      if (SYNC_URL && x.synced) syncCall({ action: 'delete', id: x.id }).then(() => setSync('☁️ 구글 시트에서도 지웠어요')).catch(syncErr);
       if (x.id === state.id) { state.id = null; state.title = ''; state.passage = ''; state.ko = ''; state.q = ''; state.words = []; fillInputs(); save(); go(1); }
       renderLib();
     }
@@ -3659,6 +3764,7 @@ zoo=동물원
     if (state.passage.trim() && !state.id) save(); // 보관함이 생기기 전에 만들던 학습지도 넣는다
     if (fromLink) go(4);
     else if (state.passage.trim()) go(state.words.length ? 3 : 2);
+    if (store.get(PW_KEY)) syncLib(); // 구글 시트 보관함과 맞추기 (암호를 넣은 기기만, 처음엔 보관함을 열 때 물어봄)
   })();
 })();
 

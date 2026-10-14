@@ -11,3 +11,6 @@ node_modules/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# 구글 시트 스크립트 (선생님이 암호를 적는 파일)
+apps-script.gs
