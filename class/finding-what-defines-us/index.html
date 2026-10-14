@@ -17,9 +17,10 @@
   }
 
   /* ---------- 도구 막대 ---------- */
+  /* 도구 막대는 화면 맨 위에 고정 (학습지를 확대해도 크기·위치 그대로) */
   #toolbar {
-    position: sticky; top: 0; z-index: 10;
-    width: 794px; margin: 0 auto;
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 10;
+    width: 794px; max-width: 100%;
     display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
     padding: 8px 12px;
     background: #fff; border-bottom: 1px solid #ced4da;
@@ -61,8 +62,9 @@
   }
   body.hand .page canvas { pointer-events: none; }
   /* 입력칸은 필기 레이어 위에 둔다 (배경이 투명해 아래 필기가 보인다) */
-  .field { position: relative; z-index: 3; touch-action: none; cursor: text; }
-  body.hand .field { touch-action: auto; }
+  .field { position: relative; z-index: 3; cursor: text; }
+  /* 손가락 이동·확대는 모두 스크립트가 처리한다 (브라우저 확대는 도구 막대까지 키워 버린다) */
+  html, body { touch-action: none; }
 
   header h1 { margin: 0 0 4px; font: bold 30px Georgia, "Times New Roman", serif; }
   header .unit { font-size: 13px; color: #868e96; letter-spacing: .08em; }
@@ -217,6 +219,7 @@
   @media print {
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #toolbar, #toast, .reveal, #cover { display: none; }
+    body { padding-top: 0 !important; }
     #sheet { transform: none !important; }
     .page { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; height: 1122px; }
     .page:last-of-type { break-after: auto; }
@@ -627,7 +630,8 @@ const sheetEl = document.getElementById("sheet");
 function setZoom(z) {
   zoom = Math.min(ZMAX, Math.max(ZMIN, z));
   sheetEl.style.transform = zoom === 1 ? "" : `scale(${zoom})`;
-  document.getElementById("zoomReset").hidden = zoom === 1;
+  const btn = document.getElementById("zoomReset");
+  if (btn.hidden !== (zoom === 1)) { btn.hidden = zoom === 1; fitToolbar(); }   // 버튼이 생기면 막대 높이가 바뀔 수 있다
 }
 function twoFingers() {
   const [a, b] = [...touches.values()];
@@ -701,24 +705,32 @@ document.getElementById("zoomReset").addEventListener("click", () => {
   window.scrollTo(0, cy + sheetEl.offsetTop);
 });
 
-// 입력칸은 필기 레이어 위에 있다: 손가락·마우스로 누르면 키보드 입력, 펜으로 쓰면 필기
+// 손가락(✋ 이동 상태에서는 S펜도)은 화면 어디를 눌러도 여기서 받는다
+document.addEventListener("pointerdown", e => {
+  const moveOnly = tool === "hand";
+  if (e.pointerType !== "touch" && !(e.pointerType === "pen" && moveOnly)) return;
+  if (e.target.closest("#toolbar, #cover")) return;      // 버튼은 그대로 눌리게
+  if (touchDown(e)) { e.preventDefault(); return; }
+  const page = e.target.closest(".page");
+  if (fingerDraw && !moveOnly && e.pointerType === "touch" && page) {
+    const cv = page.querySelector("canvas");
+    startDraw(cv, canvases.indexOf(cv), e);
+    return;
+  }
+  startPan(e);                           // 살짝 톡 누르면 입력칸·버튼은 그대로 눌린다
+});
+
+// 입력칸은 필기 레이어 위에 있다: 펜으로 쓰면 필기 (손가락·마우스로 누르면 키보드 입력)
 document.querySelectorAll(".field").forEach(f => {
   const cv = f.closest(".page").querySelector("canvas"), p = canvases.indexOf(cv);
   f.addEventListener("pointerdown", e => {
-    if (tool === "hand") return;
-    if (e.pointerType === "touch") {
-      if (touchDown(e)) { e.preventDefault(); return; }
-      if (fingerDraw) startDraw(cv, p, e); else startPan(e);
-    } else if (e.pointerType === "pen") startDraw(cv, p, e);
+    if (tool !== "hand" && e.pointerType === "pen") startDraw(cv, p, e);
   });
 });
 
 canvases.forEach((cv, p) => {
   cv.addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch") {
-      if (touchDown(e)) return;
-      if (fingerDraw) startDraw(cv, p, e); else startPan(e);
-    } else startDraw(cv, p, e);
+    if (e.pointerType !== "touch") startDraw(cv, p, e);
   });
 
   // 아직 화면에 안 그린 점들을 한 번에 그린다
@@ -974,6 +986,11 @@ setInterval(() => { if (document.visibilityState === "visible") poll(); }, TEACH
     try { sessionStorage.setItem("started", "1"); } catch (e) {}
   });
 })();
+
+// 고정된 도구 막대 아래로 학습지가 시작되게 (막대가 두 줄이 되면 높이가 바뀐다)
+function fitToolbar() { document.body.style.paddingTop = document.getElementById("toolbar").offsetHeight + "px"; }
+fitToolbar();
+window.addEventListener("resize", fitToolbar);
 </script>
 </body>
 </html>
