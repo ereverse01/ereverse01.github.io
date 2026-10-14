@@ -43,6 +43,7 @@
   .actions { margin-left: auto; }
 
   /* ---------- 종이 ---------- */
+  #sheet { transform-origin: 0 0; }   /* 두 손가락 확대 */
   .page {
     position: relative;
     width: 794px; height: 1123px;        /* A4 */
@@ -216,6 +217,7 @@
   @media print {
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     #toolbar, #toast, .reveal, #cover { display: none; }
+    #sheet { transform: none !important; }
     .page { margin: 0; box-shadow: none; break-after: page; break-inside: avoid; height: 1122px; }
     .page:last-of-type { break-after: auto; }
   }
@@ -278,7 +280,7 @@
     <button data-tool="pen">✏️ 펜</button>
     <button data-tool="hl">🖍 형광펜</button>
     <button data-tool="eraser">🧽 지우개</button>
-    <button id="finger" title="켜면 손가락으로도 필기합니다 (화면 넘기기는 ✋ 이동에서)">☝️ 손가락 필기</button>
+    <button id="finger" title="켜면 한 손가락은 필기, 두 손가락은 화면 이동·확대">☝️ 손가락 필기</button>
   </div>
   <div class="group" id="colors"></div>
   <div class="group" id="widths">
@@ -289,6 +291,7 @@
   <div class="group">
     <button id="undo" title="실행 취소">↶</button>
     <button id="clear">전체 지우기</button>
+    <button id="zoomReset" hidden>🔍 원래 크기</button>
     <button id="ko">해석 가리기</button>
   </div>
   <div class="group actions">
@@ -523,7 +526,7 @@ document.getElementById("finger").addEventListener("click", () => {
   try { localStorage.setItem("fingerDraw", fingerDraw ? "1" : "0"); } catch (e) {}
   if (fingerDraw && tool === "hand") tool = "pen";
   refreshToolbar();
-  toast(fingerDraw ? "손가락으로 필기할 수 있어요. 화면을 넘길 때는 ✋ 이동을 누르세요." : "손가락 필기를 껐어요. 손가락으로 화면을 넘길 수 있어요.");
+  toast(fingerDraw ? "한 손가락은 필기, 두 손가락은 화면 이동·확대예요." : "손가락 필기를 껐어요. 한 손가락으로 화면을 옮길 수 있어요.");
 });
 document.getElementById("tools").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -564,7 +567,6 @@ document.getElementById("clear").addEventListener("click", () => {
 
 /* ---------- 펜 입력: 펜·마우스는 필기, 손가락은 스크롤 ---------- */
 let drawing = null;                    // {p, id, stroke, erased}
-let finger = null;                     // {id, y, moved, v, t}
 let glide = 0;
 
 function pos(cv, e) {
@@ -608,48 +610,115 @@ function startDraw(cv, p, e) {
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   const [x, y] = pos(cv, e);
-  drawing = { p, id: e.pointerId, erased: [], drawn: 0, raf: 0 };
+  drawing = { p, id: e.pointerId, type: e.pointerType, erased: [], drawn: 0, raf: 0 };
   if (tool === "eraser") { eraseAt(p, x, y); return; }
   const hl = tool === "hl";
   drawing.stroke = { c: COLORS[colorIdx][hl ? 1 : 0], w: hl ? width * 5 : width, hl: hl ? 1 : 0, pts: [x, y] };
 }
-function startFinger(e) {
-  if (drawing) return;                 // 펜 쓰는 중 손바닥은 무시
+/* ---------- 손가락: 한 손가락은 화면 이동, 두 손가락은 확대·축소·이동 ----------
+   펜·형광펜 상태에서도 된다. 손가락 필기를 켜면 한 손가락은 필기, 두 손가락은 확대·이동. */
+const touches = new Map();             // 화면에 닿은 손가락 {id → {x, y}}
+let pan = null;                        // 한 손가락 이동 {id, x, y, vx, vy, t, moved}
+let pinch = null;                      // 두 손가락 확대 {d0, z0, cx, cy}
+let zoom = 1;
+const ZMIN = 1, ZMAX = 3;
+const sheetEl = document.getElementById("sheet");
+
+function setZoom(z) {
+  zoom = Math.min(ZMAX, Math.max(ZMIN, z));
+  sheetEl.style.transform = zoom === 1 ? "" : `scale(${zoom})`;
+  document.getElementById("zoomReset").hidden = zoom === 1;
+}
+function twoFingers() {
+  const [a, b] = [...touches.values()];
+  return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+}
+// 한 손가락으로 긋던 선은 두 번째 손가락이 닿으면 취소한다
+function cancelDraw() {
+  const d = drawing; drawing = null;
+  clearTimeout(d.hold); cancelAnimationFrame(d.raf);
+  if (d.erased.length) data.strokes[d.p].push(...d.erased);
+  redraw(d.p);
+}
+// 손가락이 닿았을 때: 두 손가락째면 확대를 시작하고 true를 돌려준다
+function touchDown(e) {
+  if (drawing && drawing.type === "pen") return true;   // 펜 쓰는 중 손바닥은 무시
   cancelAnimationFrame(glide);
-  finger = { id: e.pointerId, y: e.clientY, moved: 0, v: 0, t: e.timeStamp };
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (touches.size < 2) return false;
+  if (drawing) cancelDraw();
+  pan = null;
+  const g = twoFingers();
+  // 손가락 사이 가운데 아래의 학습지 위치(확대하지 않은 좌표)를 기억해 그 자리를 붙잡고 확대한다
+  pinch = { d0: g.d, z0: zoom,
+            cx: (scrollX + g.mx - sheetEl.offsetLeft) / zoom,
+            cy: (scrollY + g.my - sheetEl.offsetTop) / zoom };
+  return true;
+}
+function startPan(e) {
+  pan = { id: e.pointerId, x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: e.timeStamp, moved: 0 };
 }
 
-// 손가락: 어디서든 끌면 스크롤
 window.addEventListener("pointermove", e => {
-  if (!finger || e.pointerId !== finger.id) return;
-  const dy = e.clientY - finger.y, dt = Math.max(1, e.timeStamp - finger.t);
-  finger.moved += Math.abs(dy);
-  finger.v = 0.7 * finger.v + 0.3 * (dy / dt);
-  finger.y = e.clientY; finger.t = e.timeStamp;
-  window.scrollBy(0, -dy);
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && touches.size >= 2) {
+    const g = twoFingers();
+    setZoom(pinch.z0 * g.d / pinch.d0);
+    window.scrollTo(pinch.cx * zoom + sheetEl.offsetLeft - g.mx, pinch.cy * zoom + sheetEl.offsetTop - g.my);
+    return;
+  }
+  if (pan && e.pointerId === pan.id) {
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y, dt = Math.max(1, e.timeStamp - pan.t);
+    pan.moved += Math.abs(dx) + Math.abs(dy);
+    pan.vx = 0.7 * pan.vx + 0.3 * (dx / dt); pan.vy = 0.7 * pan.vy + 0.3 * (dy / dt);
+    pan.x = e.clientX; pan.y = e.clientY; pan.t = e.timeStamp;
+    window.scrollBy(-dx, -dy);
+  }
 });
-const fingerEnd = e => {
-  if (!finger || e.pointerId !== finger.id) return;
-  const f = finger; finger = null;
-  if (f.moved >= 8 && Math.abs(f.v) > 0.2) coast(f.v);
+const touchUp = e => {
+  if (!touches.has(e.pointerId)) return;
+  touches.delete(e.pointerId);
+  if (pinch && touches.size < 2) {
+    pinch = null;
+    if (zoom < 1.05) setZoom(1);
+    // 남은 한 손가락으로 이어서 화면을 옮길 수 있게
+    const rest = [...touches.entries()][0];
+    if (rest) pan = { id: rest[0], x: rest[1].x, y: rest[1].y, vx: 0, vy: 0, t: e.timeStamp, moved: 99 };
+    return;
+  }
+  if (pan && e.pointerId === pan.id) {
+    const p = pan; pan = null;
+    if (p.moved >= 8 && Math.hypot(p.vx, p.vy) > 0.2) coast(p.vx, p.vy);
+  }
 };
-window.addEventListener("pointerup", fingerEnd);
-window.addEventListener("pointercancel", fingerEnd);
+window.addEventListener("pointerup", touchUp);
+window.addEventListener("pointercancel", touchUp);
+
+document.getElementById("zoomReset").addEventListener("click", () => {
+  const cy = (scrollY - sheetEl.offsetTop) / zoom;   // 지금 보던 곳 그대로
+  setZoom(1);
+  window.scrollTo(0, cy + sheetEl.offsetTop);
+});
 
 // 입력칸은 필기 레이어 위에 있다: 손가락·마우스로 누르면 키보드 입력, 펜으로 쓰면 필기
 document.querySelectorAll(".field").forEach(f => {
   const cv = f.closest(".page").querySelector("canvas"), p = canvases.indexOf(cv);
   f.addEventListener("pointerdown", e => {
     if (tool === "hand") return;
-    if (e.pointerType === "touch" && !fingerDraw) startFinger(e);
-    else if (e.pointerType !== "mouse") startDraw(cv, p, e);
+    if (e.pointerType === "touch") {
+      if (touchDown(e)) { e.preventDefault(); return; }
+      if (fingerDraw) startDraw(cv, p, e); else startPan(e);
+    } else if (e.pointerType === "pen") startDraw(cv, p, e);
   });
 });
 
 canvases.forEach((cv, p) => {
   cv.addEventListener("pointerdown", e => {
-    if (e.pointerType === "touch" && !fingerDraw) startFinger(e);
-    else startDraw(cv, p, e);
+    if (e.pointerType === "touch") {
+      if (touchDown(e)) return;
+      if (fingerDraw) startDraw(cv, p, e); else startPan(e);
+    } else startDraw(cv, p, e);
   });
 
   // 아직 화면에 안 그린 점들을 한 번에 그린다
@@ -735,13 +804,13 @@ canvases.forEach((cv, p) => {
 });
 
 // 손가락 스크롤 뒤 미끄러짐
-function coast(v) {
+function coast(vx, vy) {
   let last = performance.now();
   const step = now => {
     const dt = now - last; last = now;
-    window.scrollBy(0, -v * dt);
-    v *= Math.pow(0.95, dt / 16);
-    if (Math.abs(v) > 0.03) glide = requestAnimationFrame(step);
+    window.scrollBy(-vx * dt, -vy * dt);
+    const f = Math.pow(0.95, dt / 16); vx *= f; vy *= f;
+    if (Math.hypot(vx, vy) > 0.03) glide = requestAnimationFrame(step);
   };
   glide = requestAnimationFrame(step);
 }
