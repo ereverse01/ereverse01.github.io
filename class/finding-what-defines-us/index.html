@@ -1389,7 +1389,7 @@ if (TEACHER) {
   pageSel.addEventListener("change", () => showSent(+pageSel.value));
   // 강의 중에 문장을 톡 누르면 그 문장으로
   document.addEventListener("click", e => {
-    if (!lectureOn || e.target.closest("#toolbar, #lectureBar")) return;
+    if (!lectureOn || (e.target.closest && e.target.closest("#toolbar, #lectureBar"))) return;
     const i = sents.findIndex(el => [...el.getClientRects()].some(r =>
       e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom));
     if (i >= 0 && i !== sentIdx) showSent(i);
