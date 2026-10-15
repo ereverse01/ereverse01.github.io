@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>독서 멘토링 기록장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#f7f3ec; --card:#fffdf9; --ink:#2b2622; --sub:#6f665d; --line:#e4dccf;
+  --accent:#3f6b5a; --accent-soft:#e3eee8; --warm:#c8763c; --warm-soft:#f8e9dc;
+  --done:#3f6b5a; --danger:#b44a3c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans KR",system-ui,sans-serif;font-size:17px;line-height:1.6}
+h1,h2,h3{font-family:"Gowun Batang",serif;margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 80px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+header.top h1{font-size:26px}
+header.top .who{font-size:14px;color:var(--sub);text-align:right}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:16px}
+label.f{display:block;font-weight:700;margin:14px 0 6px}
+input.t,textarea,select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff}
+input.t:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:120px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1 1 180px}
+.btn{border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff;min-height:48px}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.btn.warm{background:var(--warm)}
+.btn.small{padding:7px 12px;min-height:36px;font-size:14px}
+.btn:disabled{opacity:.5;cursor:default}
+.muted{color:var(--sub);font-size:14px}
+/* stepper */
+.steps{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px}
+.step{flex:1 0 120px;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:10px 12px;cursor:pointer;text-align:left}
+.step .n{font-size:12px;color:var(--sub)}
+.step .tt{font-weight:700;font-size:15px}
+.step.on{border-color:var(--accent);background:var(--accent-soft)}
+.step .st{font-size:12px;margin-top:2px;color:var(--sub)}
+.step.sent .st{color:var(--done);font-weight:700}
+.stage-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.stage-head h2{font-size:24px}
+.tip{background:var(--warm-soft);border-radius:12px;padding:12px 14px;margin:14px 0 4px;font-size:15px}
+.q{margin-top:22px}
+.q .ql{font-weight:700;display:flex;gap:8px}
+.q .ql .num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;display:grid;place-items:center;margin-top:1px}
+.stars{display:flex;gap:4px;margin:8px 0}
+.stars button{border:0;background:none;font-size:34px;line-height:1;cursor:pointer;color:#d9cfc0;padding:2px}
+.stars button.on{color:#e0a325}
+.acts{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.act{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fff;cursor:pointer;text-align:left;min-height:60px}
+.act.on{border-color:var(--warm);background:var(--warm-soft);font-weight:700}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:24px;flex-wrap:wrap}
+.saved{font-size:13px;color:var(--sub);margin-top:8px;min-height:20px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;opacity:0;transition:.25s;pointer-events:none;z-index:9;max-width:90vw}
+.toast.show{opacity:1}
+/* teacher */
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:700}
+.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+table.list{width:100%;border-collapse:collapse;font-size:15px}
+table.list th,table.list td{border-bottom:1px solid var(--line);padding:9px 6px;text-align:left;vertical-align:top}
+table.list th{font-size:13px;color:var(--sub);font-weight:500}
+table.list tr.stu{cursor:pointer}
+table.list tr.stu:hover{background:var(--accent-soft)}
+.dot{display:inline-block;min-width:22px;height:22px;border-radius:6px;background:#eee6da;color:#a99d8d;font-size:12px;text-align:center;line-height:22px;margin-right:3px}
+.dot.ok{background:var(--accent);color:#fff}
+.dot.need{background:var(--warm);color:#fff}
+.fbedit{border-top:1px dashed var(--line);margin-top:14px;padding-top:4px}
+.detail{background:#fbf8f2;padding:6px 14px 14px}
+.detail h4{margin:14px 0 4px;font-size:15px;color:var(--accent)}
+.detail .qa{margin:6px 0 10px}
+.detail .qa b{display:block;font-size:14px;color:var(--sub);font-weight:500}
+.detail .qa div{white-space:pre-wrap}
+.fbbox{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:10px;padding:14px 16px;margin-top:18px}
+.fbbox div{white-space:pre-wrap;margin-top:6px}
+.fbbox.small{font-size:15px;padding:10px 14px}
+.ed-stage{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}
+.tablewrap{overflow-x:auto}
+@media (max-width:560px){
+  header.top h1{font-size:21px}
+  .card{padding:16px}
+  table.list .hide-sm{display:none}
+}
+@media print{ .noprint{display:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 설정 ===== */
+// Apps Script 웹 앱 주소(…/exec)를 넣으세요. 비워 두면 이 기기 안에만 저장되는 '연습 모드'로 동작합니다.
+const SHEET_URL = '';
+
+// 기본 단계·질문. 교사 화면(주소 끝에 #teacher) → [질문 편집]에서 바꿀 수 있습니다.
+// 질문 앞에 [별점]을 붙이면 별점 + 이유 쓰기 질문이 됩니다. type:'activity' 단계는 줄마다 '활동 선택지'입니다.
+// type:'feedback' 단계는 멘토가 교사 화면에서 쓰고, 그 뒤 단계들은 피드백이 와야 쓸 수 있습니다.
+const DEFAULT_STAGES = [
+  {id:'after', title:'생각 펼치기', sub:'책을 읽고 활동 골라 쓰기', type:'activity', tip:'하고 싶은 활동을 1개 이상 골라 써 보세요.',
+   items:['⭐ 한 줄 감상과 별점','🪞 나의 경험과 연결하기','💌 등장인물에게 편지 쓰기','➡️ 뒷이야기 이어 쓰기','📣 책 광고 문구 만들기','🎤 작가에게 묻고 싶은 질문','🤝 멘토와 나눈 이야기 정리'], },
+  {id:'feedback', title:'멘토 피드백', sub:'멘토가 남긴 이야기', type:'feedback', tip:'멘토의 피드백을 천천히 읽어 보세요.', items:[]},
+  {id:'reply', title:'다시 생각하기', sub:'피드백에 답하며 깊이 읽기', tip:'멘토의 이야기를 떠올리며, 책을 다시 한번 생각해 보세요.',
+   items:['💬 멘토의 피드백에 답해 보세요. 공감한 점이나 새롭게 깨달은 점은 무엇인가요?','🔍 피드백을 듣고 책을 다시 떠올려 보세요. 새롭게 보이는 장면이나 문장이 있나요?','🌱 이 책에서 얻은 생각을 내 생활에 어떻게 적용해 볼 수 있을까요?']}
+];
+
+/* ===== 공통 ===== */
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {
+  get(k, d){ try{ const v = localStorage.getItem('rm.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem('rm.'+k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem('rm.'+k); }catch(e){} }
+};
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+const isRating = q => q.startsWith('[별점]');
+const qText = q => q.replace(/^\[별점\]\s*/, '');
+const now = () => new Date();
+function fmt(d){ d = new Date(d); if(isNaN(d)) return ''; const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+async function api(payload){
+  if(!SHEET_URL) return localApi(payload);
+  const r = await fetch(SHEET_URL, {method:'POST', body: JSON.stringify(payload)});
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error || '서버 오류');
+  return j;
+}
+// 연습 모드: 이 기기 localStorage를 서버처럼 사용
+function localApi(p){
+  if(p.action === 'config') return {ok:true, stages: LS.get('localConfig', null)};
+  if(p.action === 'setConfig'){ LS.set('localConfig', p.stages); return {ok:true}; }
+  if(p.action === 'submit'){
+    const db = LS.get('localDb', []); const t = now().toISOString(); const id = 'L'+Date.now();
+    p.items.forEach(it => db.push([t, id, p.sid, p.name, p.book, p.author, p.stage, it.q, it.a]));
+    LS.set('localDb', db); return {ok:true};
+  }
+  if(p.action === 'list') return {ok:true, rows: LS.get('localDb', [])};
+  if(p.action === 'feedback'){
+    const db = LS.get('localDb', []); const t = now().toISOString(); const id = 'FB-'+Date.now();
+    db.push([t, id, p.sid, p.name, p.book, p.author, p.stage, '멘토', p.mentor||'']);
+    db.push([t, id, p.sid, p.name, p.book, p.author, p.stage, '멘토 피드백', p.text]);
+    LS.set('localDb', db); return {ok:true};
+  }
+  if(p.action === 'myFeedback') return {ok:true, feedback: pickFeedback(LS.get('localDb', []), p)};
+  return {ok:false};
+}
+
+// 제출 기록 중 멘토 피드백(제출ID가 FB-로 시작)의 최신 것
+function pickFeedback(rows, p){
+  let fb = null;
+  rows.forEach(r => {
+    if(!String(r[1]).startsWith('FB-') || String(r[2]) !== String(p.sid) || r[3] !== p.name || r[4] !== p.book) return;
+    if(!fb || r[1] !== fb.id && new Date(r[0]) >= new Date(fb.t)) fb = {id:r[1], t:r[0], mentor:'', text:''};
+    if(r[1] === fb.id){ if(r[7] === '멘토') fb.mentor = r[8]; else fb.text = r[8]; }
+  });
+  return fb;
+}
+
+let STAGES = LS.get('stagesCache', DEFAULT_STAGES);
+async function loadConfig(){
+  try{
+    const j = await api({action:'config'});
+    if(j.stages && j.stages.length){ STAGES = j.stages; LS.set('stagesCache', STAGES); }
+    else { STAGES = DEFAULT_STAGES; LS.del('stagesCache'); }
+  }catch(e){ /* 오프라인이면 캐시 사용 */ }
+}
+
+/* ===== 학생 화면 ===== */
+let S = { profile: LS.get('profile', null), stage: 0 };
+const bookKey = () => S.profile ? [S.profile.sid, S.profile.name, S.profile.book].join('|') : '';
+const getDraft = () => LS.get('draft.'+bookKey(), {});
+const setDraft = d => LS.set('draft.'+bookKey(), d);
+const getSent = () => LS.get('sent.'+bookKey(), {});
+const getFb = () => LS.get('fb.'+bookKey(), null);
+const fbIndex = () => STAGES.findIndex(s => s.type === 'feedback');
+// 피드백 단계 뒤의 단계는 피드백이 와야 열림
+const locked = i => { const f = fbIndex(); return f >= 0 && i > f && !getFb(); };
+const stageDone = (s, sent) => s.type === 'feedback' ? !!getFb() : !!sent[s.id];
+async function fetchFeedback(){
+  if(fbIndex() < 0 || !S.profile) return;
+  try{
+    const j = await api(Object.assign({action:'myFeedback'}, S.profile));
+    const old = JSON.stringify(getFb());
+    if(j.feedback) LS.set('fb.'+bookKey(), j.feedback);
+    if(JSON.stringify(getFb()) !== old && location.hash !== '#teacher') renderStage();
+  }catch(e){}
+}
+
+function renderStart(){
+  const p = S.profile || {};
+  const books = LS.get('books', []);
+  app.innerHTML = `
+  <header class="top"><h1>📚 독서 멘토링 기록장</h1>${SHEET_URL ? '' : '<span class="muted">연습 모드</span>'}</header>
+  <div class="card">
+    <h2 style="font-size:22px">시작하기</h2>
+    <p class="muted" style="margin:6px 0 0">읽을 책을 정하고 나를 소개해 주세요. 한 권의 책을 <b>${STAGES.map(s => esc(s.title)).join(" → ")}</b> 순서로, 단계마다 하고 싶은 활동을 골라 기록합니다.</p>
+    <div class="row">
+      <div><label class="f" for="sid">학번</label><input class="t" id="sid" inputmode="numeric" placeholder="예: 10203" value="${esc(p.sid)}"></div>
+      <div><label class="f" for="name">이름</label><input class="t" id="name" placeholder="이름" value="${esc(p.name)}"></div>
+    </div>
+    <div class="row">
+      <div><label class="f" for="book">책 제목</label><input class="t" id="book" placeholder="읽을 책 제목" value="${esc(p.book)}"></div>
+      <div><label class="f" for="author">지은이</label><input class="t" id="author" placeholder="작가 이름" value="${esc(p.author)}"></div>
+    </div>
+    <div class="nav"><span></span><button class="btn" id="go">기록 시작 →</button></div>
+  </div>
+  ${books.length ? `<div class="card"><h3 style="font-size:18px">이 기기에서 기록 중인 책</h3>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+    ${books.map((b,i) => `<button class="act" data-i="${i}">${esc(b.book)} <span class="muted">· ${esc(b.sid)} ${esc(b.name)}</span></button>`).join('')}
+    </div></div>` : ''}`;
+  $('#go').onclick = () => {
+    const v = id => $('#'+id).value.trim();
+    const prof = {sid:v('sid'), name:v('name'), book:v('book'), author:v('author')};
+    if(!prof.sid || !prof.name || !prof.book) return toast('학번, 이름, 책 제목을 입력해 주세요.');
+    startBook(prof);
+  };
+  app.querySelectorAll('[data-i]').forEach(b => b.onclick = () => startBook(books[+b.dataset.i]));
+}
+function startBook(prof){
+  S.profile = prof; LS.set('profile', prof);
+  const books = LS.get('books', []).filter(b => !(b.sid===prof.sid && b.name===prof.name && b.book===prof.book));
+  books.unshift(prof); LS.set('books', books.slice(0, 8));
+  const sent = getSent();
+  const first = STAGES.findIndex(s => !stageDone(s, sent));
+  S.stage = first < 0 ? 0 : first;
+  renderStage();
+  fetchFeedback();
+}
+
+function renderStage(){
+  const st = STAGES[S.stage], d = getDraft()[st.id] || {}, sent = getSent();
+  const p = S.profile, fb = getFb(), isFb = st.type === 'feedback', lock = locked(S.stage);
+  const stLabel = (s, i) => s.type === 'feedback' ? (fb ? '✓ 받음' : '기다리는 중') : locked(i) ? '🔒' : sent[s.id] ? '✓ 제출함' : (getDraft()[s.id] ? '작성 중' : '');
+  app.innerHTML = `
+  <header class="top"><h1>📚 독서 멘토링 기록장</h1>
+    <div class="who"><b>${esc(p.book)}</b>${p.author ? ' · '+esc(p.author) : ''}<br>${esc(p.sid)} ${esc(p.name)} · <a href="#" id="chg">바꾸기</a></div></header>
+  <nav class="steps">${STAGES.map((s,i) => `
+    <button class="step ${i===S.stage?'on':''} ${stageDone(s, sent)?'sent':''}" data-s="${i}">
+      <div class="n">${i+1}단계</div><div class="tt">${esc(s.title)}</div>
+      <div class="st">${stLabel(s, i)}</div></button>`).join('')}</nav>
+  <div class="card">
+    <div class="stage-head"><h2>${S.stage+1}. ${esc(st.title)}</h2><span class="muted">${esc(st.sub||'')}</span></div>
+    ${st.tip ? `<div class="tip">💡 ${esc(st.tip)}</div>` : ''}
+    ${!isFb && fb && S.stage > fbIndex() ? `<div class="fbbox small"><b>💌 ${esc(fb.mentor || '멘토')}의 피드백</b><div>${esc(fb.text)}</div></div>` : ''}
+    <div id="qs">${isFb ? feedbackHtml(fb) : lock ? `<p class="muted" style="margin-top:18px">🔒 멘토의 피드백이 도착하면 쓸 수 있어요.</p>` : st.type === 'activity' ? activityHtml(st, d) : st.items.map((q,i) => questionHtml(q, i, d)).join('')}</div>
+    <div class="saved" id="saved">${isFb || lock ? '' : sent[st.id] ? '마지막 제출: '+fmt(sent[st.id])+' · 고친 뒤 다시 제출하면 새 기록으로 저장돼요.' : '쓰는 내용은 이 기기에 자동 저장됩니다.'}</div>
+    <div class="nav">
+      <button class="btn ghost" id="prev" ${S.stage===0?'disabled':''}>← 이전</button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${isFb ? (fb && S.stage < STAGES.length-1 ? '<button class="btn warm" id="gonext">피드백에 답하러 가기 →</button>' : '<button class="btn ghost" id="refresh">↻ 피드백 확인</button>') : lock ? '' : `<button class="btn warm" id="submit">${sent[st.id] ? '다시 제출' : '이 단계 제출'}</button>`}
+        <button class="btn ghost" id="next" ${S.stage===STAGES.length-1?'disabled':''}>다음 →</button>
+      </div>
+    </div>
+  </div>`;
+  $('#chg').onclick = e => { e.preventDefault(); renderStart(); };
+  app.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { S.stage = +b.dataset.s; renderStage(); scrollTo(0,0); });
+  $('#prev').onclick = () => { S.stage--; renderStage(); scrollTo(0,0); };
+  $('#next').onclick = () => { S.stage++; renderStage(); scrollTo(0,0); };
+  if($('#submit')) $('#submit').onclick = submitStage;
+  if($('#gonext')) $('#gonext').onclick = () => { S.stage++; renderStage(); scrollTo(0,0); };
+  if($('#refresh')) $('#refresh').onclick = async () => { await fetchFeedback(); toast(getFb() ? '피드백을 확인했어요.' : '아직 피드백이 없어요.'); };
+  // 자동 저장
+  app.querySelectorAll('#qs textarea').forEach(t => t.oninput = () => saveField(t.dataset.k, t.value));
+  app.querySelectorAll('.stars button').forEach(b => b.onclick = () => {
+    const k = b.parentElement.dataset.k, v = +b.dataset.v;
+    saveField(k, v);
+    b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', +x.dataset.v <= v));
+  });
+  app.querySelectorAll('.act[data-a]').forEach(b => b.onclick = () => {
+    const a = b.dataset.a, picks = picksOf(st, getDraft()[st.id] || {});
+    const i = picks.indexOf(a);
+    if(i < 0) picks.push(a);
+    else {
+      const w = (getDraft()[st.id] || {})['w:'+a];
+      if(w && w.trim() && !confirm(`'${a}'에 쓴 내용이 있어요. 선택을 빼면 제출되지 않아요. 뺄까요?`)) return;
+      picks.splice(i, 1);
+    }
+    saveField('picks', picks);
+    const y = scrollY; renderStage(); scrollTo(0, y);
+    if(i < 0){ const t = app.querySelector(`textarea[data-k="w:${CSS.escape(a)}"]`); if(t){ t.focus({preventScroll:true}); t.scrollIntoView({block:'center', behavior:'smooth'}); } }
+  });
+}
+function feedbackHtml(fb){
+  if(!fb) return `<p class="muted" style="margin-top:18px">⏳ 멘토가 1단계 기록을 읽고 피드백을 남기면 여기에 보여요.<br>잠시 뒤 [피드백 확인]을 눌러 보세요.</p>`;
+  return `<div class="fbbox"><b>💌 ${esc(fb.mentor || '멘토')}의 피드백 <span class="muted">· ${fmt(fb.t)}</span></b><div>${esc(fb.text)}</div></div>`;
+}
+function questionHtml(q, i, d){
+  const k = 'q'+i;
+  if(isRating(q)){
+    const v = +d[k+'_star'] || 0;
+    return `<div class="q"><div class="ql"><span class="num">${i+1}</span><span>${esc(qText(q))}</span></div>
+      <div class="stars" data-k="${k}_star">${[1,2,3,4,5].map(n => `<button type="button" data-v="${n}" class="${n<=v?'on':''}" aria-label="별 ${n}개">★</button>`).join('')}</div>
+      <textarea data-k="${k}" placeholder="별점을 준 이유">${esc(d[k])}</textarea></div>`;
+  }
+  return `<div class="q"><div class="ql"><span class="num">${i+1}</span><span>${esc(q)}</span></div>
+    <textarea data-k="${k}" placeholder="생각을 자유롭게 적어 보세요">${esc(d[k])}</textarea></div>`;
+}
+const picksOf = (st, d) => (d.picks || []).filter(a => st.items.includes(a));
+function activityHtml(st, d){
+  const picks = picksOf(st, d);
+  return `<div class="acts">${st.items.map(a => `<button type="button" class="act ${picks.includes(a)?'on':''}" data-a="${esc(a)}">${picks.includes(a)?'✓ ':''}${esc(a)}</button>`).join('')}</div>
+    ${picks.length ? '' : '<p class="muted" style="margin-top:14px">👆 활동을 누르면 쓰는 칸이 나타나요. 여러 개 골라도 좋아요.</p>'}
+    ${picks.map((a,i) => `<div class="q"><div class="ql"><span class="num">${i+1}</span><span>${esc(a)}</span></div>
+      <textarea data-k="w:${esc(a)}" style="min-height:160px" placeholder="자유롭게 써 보세요">${esc(d['w:'+a])}</textarea></div>`).join('')}`;
+}
+function saveField(k, v){
+  const all = getDraft(), id = STAGES[S.stage].id;
+  all[id] = Object.assign(all[id] || {}, {[k]: v}); setDraft(all);
+  $('#saved').textContent = '자동 저장됨 · ' + fmt(now()).slice(11);
+}
+function collect(st, d){
+  if(st.type === 'feedback') return [{q:'멘토', a:''}, {q:'멘토 피드백', a:''}];
+  if(st.type === 'activity'){
+    // 엑셀 열 순서용(d가 비었을 때)은 모든 활동, 제출할 때는 고른 활동만
+    const list = Object.keys(d).length ? picksOf(st, d) : st.items;
+    return list.map(a => ({q:a, a:d['w:'+a]||''}));
+  }
+  const out = [];
+  st.items.forEach((q,i) => {
+    if(isRating(q)){
+      out.push({q: qText(q)+' (별점)', a: d['q'+i+'_star'] ? '★'.repeat(d['q'+i+'_star']) + ` (${d['q'+i+'_star']}/5)` : ''});
+      out.push({q: qText(q)+' (이유)', a: d['q'+i]||''});
+    } else out.push({q, a: d['q'+i]||''});
+  });
+  return out;
+}
+async function submitStage(){
+  const st = STAGES[S.stage], d = getDraft()[st.id] || {};
+  const items = collect(st, d);
+  const empty = items.filter(x => !String(x.a).trim()).length;
+  if(!items.length) return toast('활동을 하나 이상 골라 주세요.');
+  if(empty === items.length) return toast('아직 아무것도 쓰지 않았어요.');
+  if(empty && !confirm(`빈 칸이 ${empty}개 있어요. 그래도 제출할까요?`)) return;
+  const btn = $('#submit'); btn.disabled = true; btn.textContent = '제출 중…';
+  try{
+    await api(Object.assign({action:'submit', stage: `${S.stage+1}. ${st.title}`, items}, S.profile));
+    const sent = getSent(); sent[st.id] = now().toISOString(); LS.set('sent.'+bookKey(), sent);
+    toast(`'${st.title}' 단계를 제출했어요! 👏`);
+    if(S.stage < STAGES.length-1 && !stageDone(STAGES[S.stage+1], sent)) S.stage++;
+    renderStage(); scrollTo(0,0);
+    if(STAGES.every(s => stageDone(s, sent))) toast('모든 단계를 마쳤어요. 멋진 독서였어요! 🎉');
+  }catch(e){
+    btn.disabled = false; btn.textContent = '이 단계 제출';
+    toast('제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요. (쓴 내용은 저장되어 있어요)');
+  }
+}
+
+/* ===== 교사 화면 (#teacher) ===== */
+let T = { tab:'list', rows:null, open:null, q:'', book:'', need:false };
+function renderTeacher(){
+  const key = LS.get('tkey', '');
+  if(SHEET_URL && !key){
+    app.innerHTML = `<header class="top"><h1>👩‍🏫 교사 화면</h1></header>
+    <div class="card"><label class="f" for="k">교사 암호</label><input class="t" id="k" type="password">
+    <div class="nav"><span class="muted">Apps Script의 TEACHER_KEY에 넣은 암호</span><button class="btn" id="ok">들어가기</button></div></div>`;
+    $('#ok').onclick = async () => {
+      LS.set('tkey', $('#k').value.trim());
+      if(await loadRows()) renderTeacher(); else LS.del('tkey'), renderTeacher();
+    };
+    return;
+  }
+  app.innerHTML = `<header class="top"><h1>👩‍🏫 독서 멘토링 · 교사</h1>
+    <div class="who">${SHEET_URL ? '<a href="#" id="out">로그아웃</a>' : '연습 모드(이 기기 기록)'}</div></header>
+    <div class="tabs noprint"><button data-t="list" class="${T.tab==='list'?'on':''}">제출 현황</button><button data-t="edit" class="${T.tab==='edit'?'on':''}">질문 편집</button></div>
+    <div id="tbody"></div>`;
+  app.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { T.tab = b.dataset.t; renderTeacher(); });
+  if($('#out')) $('#out').onclick = e => { e.preventDefault(); LS.del('tkey'); T.rows = null; renderTeacher(); };
+  if(T.tab === 'edit') return renderEditor();
+  if(!T.rows){ $('#tbody').innerHTML = '<div class="card muted">불러오는 중…</div>'; loadRows().then(ok => { if(!ok && SHEET_URL) LS.del('tkey'); if(ok || SHEET_URL) renderTeacher(); }); return; }
+  renderList();
+}
+async function loadRows(){
+  try{ const j = await api({action:'list', key: LS.get('tkey','')}); T.rows = j.rows; return true; }
+  catch(e){ toast('불러오지 못했어요: '+e.message); return false; }
+}
+// rows: [시각, 제출ID, 학번, 이름, 책, 지은이, 단계, 질문, 답변]
+function groupRows(rows){
+  const map = new Map();
+  rows.forEach(r => {
+    const [t, sub, sid, name, book, author, stage, q, a] = r;
+    const k = [sid, name, book].join('|');
+    if(!map.has(k)) map.set(k, {sid, name, book, author, last:t, stages:{}, answers:{}});
+    const g = map.get(k);
+    if(new Date(t) > new Date(g.last)) g.last = t;
+    const prev = g.stages[stage];
+    if(!prev || new Date(t) >= new Date(prev)) g.stages[stage] = t;
+    const ak = stage+'§'+q;
+    if(!g.answers[ak] || new Date(t) >= new Date(g.answers[ak].t)) g.answers[ak] = {t, a};
+  });
+  return [...map.values()].sort((a,b) => String(a.sid).localeCompare(String(b.sid), 'ko', {numeric:true}) || String(a.book).localeCompare(String(b.book)));
+}
+// 엑셀 열 순서: 현재 질문 설정 순서 → 그 밖의 질문은 제출 순서대로
+function columnOrder(rows){
+  const cols = [];
+  const add = (stage, q) => { const k = stage+'§'+q; if(!cols.includes(k)) cols.push(k); };
+  STAGES.forEach((st, i) => {
+    const sname = `${i+1}. ${st.title}`;
+    collect(st, {}).forEach(it => add(sname, it.q));
+  });
+  const set = new Set(rows.map(r => r[6]+'§'+r[7]));
+  const extra = [...set].filter(k => !cols.includes(k)).sort();
+  return cols.filter(k => set.has(k)).concat(extra);
+}
+function stageNames(rows){
+  const names = STAGES.map((s,i) => `${i+1}. ${s.title}`);
+  rows.forEach(r => { if(!names.includes(r[6])) names.push(r[6]); });
+  return names;
+}
+const fbName = () => { const i = fbIndex(); return i < 0 ? null : `${i+1}. ${STAGES[i].title}`; };
+// 피드백 단계 앞 단계를 하나라도 냈는데 그 뒤로 피드백이 없으면 '피드백 필요'
+function needsFb(g){
+  const f = fbIndex(); if(f < 0) return false;
+  const before = STAGES.slice(0, f).map((s,i) => `${i+1}. ${s.title}`).map(n => g.stages[n]).filter(Boolean);
+  if(!before.length) return false;
+  const fbT = g.stages[fbName()];
+  return !fbT || before.some(t => new Date(t) > new Date(fbT));
+}
+function renderList(){
+  const groups = groupRows(T.rows), names = stageNames(T.rows), fbN = fbName();
+  const books = [...new Set(groups.map(g => g.book))].sort();
+  const q = T.q.trim();
+  const shown = groups.filter(g => (!T.book || g.book === T.book) && (!q || (g.sid+' '+g.name).includes(q)) && (!T.need || needsFb(g)));
+  const needN = groups.filter(needsFb).length;
+  $('#tbody').innerHTML = `
+  <div class="card noprint">
+    <div class="row">
+      <div><label class="f" for="fq">학번·이름 찾기</label><input class="t" id="fq" value="${esc(T.q)}" placeholder="검색"></div>
+      <div><label class="f" for="fb">책</label><select id="fb"><option value="">전체 (${books.length}권)</option>${books.map(b => `<option ${b===T.book?'selected':''}>${esc(b)}</option>`).join('')}</select></div>
+    </div>
+    ${fbN ? `<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:700"><input type="checkbox" id="fneed" ${T.need?'checked':''} style="width:20px;height:20px"> 피드백 기다리는 학생만 보기 <span class="dot need">${needN}</span></label>` : ''}
+    <div class="nav">
+      <button class="btn ghost" id="reload">↻ 새로 불러오기</button>
+      <button class="btn" id="xlsx">⬇ 엑셀로 내려받기</button>
+    </div>
+    <p class="muted" style="margin:8px 0 0">엑셀에는 <b>학생별 정리</b>(학생·책 한 줄, 질문별 최신 답변)와 <b>전체 제출 기록</b> 두 시트가 들어갑니다. ${T.book||q ? '지금 걸러 놓은 학생만 내려받습니다.' : ''}</p>
+  </div>
+  <div class="card">
+    <h3 style="font-size:18px;margin-bottom:6px">제출 현황 · ${shown.length}명</h3>
+    <p class="muted" style="margin:0 0 8px">숫자 칸은 단계 번호, 초록색은 완료${fbN ? ', 주황색은 멘토 피드백을 기다리는 중' : ''}이에요. 줄을 누르면 답변을 보고 피드백을 쓸 수 있어요.</p>
+    ${shown.length ? `<div class="tablewrap"><table class="list"><thead><tr><th>학번</th><th>이름</th><th>책</th><th>단계</th><th class="hide-sm">최근 제출</th></tr></thead><tbody>
+    ${shown.map(g => { const k = [g.sid,g.name,g.book].join('|'); return `
+      <tr class="stu" data-k="${esc(k)}"><td>${esc(g.sid)}</td><td>${esc(g.name)}</td><td>${esc(g.book)}</td>
+      <td style="white-space:nowrap">${names.map((n,i) => `<span class="dot ${n===fbN && needsFb(g) ? 'need' : g.stages[n]?'ok':''}" title="${esc(n)}">${i+1}</span>`).join('')}</td>
+      <td class="hide-sm muted">${fmt(g.last)}</td></tr>
+      ${T.open === k ? `<tr><td colspan="5" class="detail">${detailHtml(g, names)}${fbN ? fbEditorHtml(g) : ''}</td></tr>` : ''}`; }).join('')}
+    </tbody></table></div>` : '<p class="muted">아직 제출된 기록이 없어요.</p>'}
+  </div>`;
+  $('#fq').oninput = e => { T.q = e.target.value; const pos = e.target.selectionStart; renderList(); const f = $('#fq'); f.focus(); f.setSelectionRange(pos,pos); };
+  $('#fb').onchange = e => { T.book = e.target.value; renderList(); };
+  if($('#fneed')) $('#fneed').onchange = e => { T.need = e.target.checked; renderList(); };
+  if($('#fbsave')) $('#fbsave').onclick = saveFeedback;
+  $('#reload').onclick = async () => { $('#reload').disabled = true; if(await loadRows()) { renderList(); toast('새로 불러왔어요.'); } };
+  $('#xlsx').onclick = () => exportXlsx(shown);
+  app.querySelectorAll('tr.stu').forEach(tr => tr.onclick = () => { T.open = T.open === tr.dataset.k ? null : tr.dataset.k; renderList(); });
+}
+function fbEditorHtml(g){
+  const cur = g.answers[fbName()+'§멘토 피드백'];
+  return `<div class="fbedit">
+    <h4>💌 멘토 피드백 ${cur ? '<span class="muted">· 고쳐서 다시 저장하면 학생에게 새 피드백이 보여요</span>' : ''}</h4>
+    <div class="row"><div style="flex:0 1 220px"><label class="f" for="fbm">멘토 이름</label><input class="t" id="fbm" value="${esc(LS.get('mentor',''))}" placeholder="예: 김OO 선생님"></div></div>
+    <label class="f" for="fbt">피드백</label>
+    <textarea id="fbt" style="min-height:150px" placeholder="학생의 기록을 읽고 칭찬, 질문, 더 생각해 볼 점을 남겨 주세요.">${esc(cur ? cur.a : '')}</textarea>
+    <div class="nav" style="margin-top:10px"><span></span><button class="btn" id="fbsave">피드백 보내기</button></div>
+  </div>`;
+}
+async function saveFeedback(){
+  const g = groupRows(T.rows).find(x => [x.sid,x.name,x.book].join('|') === T.open);
+  const text = $('#fbt').value.trim(), mentor = $('#fbm').value.trim();
+  if(!g || !text) return toast('피드백 내용을 적어 주세요.');
+  LS.set('mentor', mentor);
+  const btn = $('#fbsave'); btn.disabled = true; btn.textContent = '보내는 중…';
+  try{
+    await api({action:'feedback', key: LS.get('tkey',''), sid:g.sid, name:g.name, book:g.book, author:g.author, stage: fbName(), mentor, text});
+    await loadRows(); renderList(); toast(`${g.name} 학생에게 피드백을 보냈어요.`);
+  }catch(e){ btn.disabled = false; btn.textContent = '피드백 보내기'; toast('보내지 못했어요: '+e.message); }
+}
+function detailHtml(g, names){
+  return names.filter(n => g.stages[n]).map(n => `<h4>${esc(n)} <span class="muted">· ${fmt(g.stages[n])}</span></h4>` +
+    Object.entries(g.answers).filter(([k]) => k.startsWith(n+'§')).map(([k,v]) =>
+      `<div class="qa"><b>${esc(k.split('§')[1])}</b><div>${esc(v.a) || '<span class="muted">(빈칸)</span>'}</div></div>`).join('')).join('');
+}
+function exportXlsx(groups){
+  if(!window.XLSX) return toast('엑셀 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');
+  const names = stageNames(T.rows), cols = columnOrder(T.rows);
+  const keys = new Set(groups.map(g => [g.sid,g.name,g.book].join('|')));
+  const head = ['학번','이름','책 제목','지은이', ...names.map(n => n+' 제출일'), '최근 제출', ...cols.map(c => c.replace('§',' | '))];
+  const sum = [head, ...groups.map(g => [g.sid, g.name, g.book, g.author,
+    ...names.map(n => g.stages[n] ? fmt(g.stages[n]) : ''), fmt(g.last),
+    ...cols.map(c => g.answers[c] ? g.answers[c].a : '')])];
+  const raw = [['제출시각','학번','이름','책 제목','지은이','단계','질문','답변'],
+    ...T.rows.filter(r => keys.has([r[2],r[3],r[4]].join('|'))).map(r => [fmt(r[0]), r[2], r[3], r[4], r[5], r[6], r[7], r[8]])];
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(sum), ws2 = XLSX.utils.aoa_to_sheet(raw);
+  ws1['!cols'] = head.map((h,i) => ({wch: i < 4 ? 12 : i < 5+names.length ? 16 : 40}));
+  ws2['!cols'] = [{wch:16},{wch:9},{wch:9},{wch:20},{wch:12},{wch:12},{wch:40},{wch:60}];
+  ws1['!freeze'] = {xSplit:2, ySplit:1};
+  XLSX.utils.book_append_sheet(wb, ws1, '학생별 정리');
+  XLSX.utils.book_append_sheet(wb, ws2, '전체 제출 기록');
+  const d = now(), p = n => String(n).padStart(2,'0');
+  XLSX.writeFile(wb, `독서멘토링_기록_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.xlsx`);
+}
+
+let ED = null;
+function renderEditor(){
+  if(!ED) ED = JSON.parse(JSON.stringify(STAGES));
+  $('#tbody').innerHTML = `
+  <div class="card">
+    <p class="muted" style="margin:0">단계 이름과 질문을 바꿀 수 있어요. <b>활동 고르기</b> 단계는 한 줄이 활동 하나이고, 학생이 그중 1개 이상 골라 씁니다. <b>멘토 피드백</b> 단계는 멘토가 쓰고, <b>질문 쓰기</b> 단계는 모든 질문에 답하며, 질문 앞에 <b>[별점]</b>을 붙이면 별점+이유 질문이 됩니다.<br>
+    ⚠️ 학생이 이미 쓰고 있는 중에 질문 순서를 바꾸면 임시 저장된 답이 다른 질문에 붙을 수 있으니, 새 책을 시작하기 전에 고쳐 주세요.</p>
+  </div>
+  ${ED.map((s,i) => `<div class="ed-stage">
+    <div class="row">
+      <div><label class="f">${i+1}단계 이름</label><input class="t" data-i="${i}" data-f="title" value="${esc(s.title)}"></div>
+      <div><label class="f">부제</label><input class="t" data-i="${i}" data-f="sub" value="${esc(s.sub||'')}"></div>
+      <div style="flex:0 0 130px"><label class="f">종류</label><select data-i="${i}" data-f="type"><option value="">질문 쓰기</option><option value="activity" ${s.type==='activity'?'selected':''}>활동 고르기</option><option value="feedback" ${s.type==='feedback'?'selected':''}>멘토 피드백</option></select></div>
+    </div>
+    <label class="f">도움말</label><input class="t" data-i="${i}" data-f="tip" value="${esc(s.tip||'')}">
+    ${s.type==='feedback' ? '<p class="muted">멘토가 [제출 현황]에서 학생별로 피드백을 씁니다. 이 단계 뒤의 단계는 피드백이 도착해야 학생이 쓸 수 있어요.</p>' : `<label class="f">${s.type==='activity' ? '활동 선택지' : '질문'} (한 줄에 하나)</label>
+    <textarea data-i="${i}" data-f="items" style="min-height:130px">${esc(s.items.join('\n'))}</textarea>`}
+    <div class="nav" style="margin-top:10px"><span>
+      <button class="btn small ghost" data-mv="${i}" data-d="-1" ${i===0?'disabled':''}>▲</button>
+      <button class="btn small ghost" data-mv="${i}" data-d="1" ${i===ED.length-1?'disabled':''}>▼</button></span>
+      <button class="btn small ghost" style="color:var(--danger);border-color:var(--danger)" data-del="${i}">단계 삭제</button></div>
+  </div>`).join('')}
+  <div class="nav">
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" id="add">+ 단계 추가</button><button class="btn ghost" id="reset">기본 질문으로</button></div>
+    <button class="btn" id="save">저장해서 학생에게 적용</button>
+  </div>`;
+  app.querySelectorAll('[data-f]').forEach(el => el.oninput = el.onchange = () => {
+    const s = ED[+el.dataset.i], f = el.dataset.f;
+    if(f === 'items') s.items = el.value.split('\n').map(x => x.trim()).filter(Boolean);
+    else if(f === 'type'){ if(el.value) s.type = el.value; else delete s.type; renderEditor(); }
+    else s[f] = el.value;
+  });
+  app.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => { const i = +b.dataset.mv, j = i + +b.dataset.d; [ED[i], ED[j]] = [ED[j], ED[i]]; renderEditor(); });
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if(confirm(`'${ED[+b.dataset.del].title}' 단계를 지울까요?`)){ ED.splice(+b.dataset.del, 1); renderEditor(); } });
+  $('#add').onclick = () => { ED.push({id:'s'+Date.now().toString(36), title:'새 단계', sub:'', tip:'', type:'activity', items:['활동을 적어 주세요']}); renderEditor(); };
+  $('#reset').onclick = () => { if(confirm('기본 질문으로 되돌릴까요? (저장을 눌러야 적용돼요)')){ ED = JSON.parse(JSON.stringify(DEFAULT_STAGES)); renderEditor(); } };
+  $('#save').onclick = async () => {
+    const bad = ED.find(s => !s.title.trim() || (s.type !== 'feedback' && !s.items.length));
+    if(ED.filter(s => s.type === 'feedback').length > 1) return toast('멘토 피드백 단계는 하나만 둘 수 있어요.');
+    if(bad) return toast('이름이나 질문이 비어 있는 단계가 있어요.');
+    try{ await api({action:'setConfig', key: LS.get('tkey',''), stages: ED}); STAGES = JSON.parse(JSON.stringify(ED)); LS.set('stagesCache', STAGES); toast('저장했어요. 학생 화면을 새로 고치면 적용됩니다.'); }
+    catch(e){ toast('저장하지 못했어요: '+e.message); }
+  };
+}
+
+/* ===== 시작 ===== */
+async function route(){
+  if(location.hash === '#teacher'){ await loadConfig(); renderTeacher(); }
+  else {
+    S.profile ? startBook(S.profile) : renderStart();
+    const before = JSON.stringify(STAGES);
+    await loadConfig();
+    if(location.hash !== '#teacher' && S.profile && JSON.stringify(STAGES) !== before){ S.stage = Math.min(S.stage, STAGES.length-1); renderStage(); }
+  }
+}
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
