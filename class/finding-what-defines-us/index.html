@@ -270,6 +270,7 @@
     border: 0; border-radius: 999px; background: #f1f3f5; cursor: pointer;
   }
   #lectureBar #sentNext { background: #ffd43b; }
+  #lectureBar select { font: bold 15px "Malgun Gothic", sans-serif; height: 40px; border: 1px solid #ced4da; border-radius: 999px; padding: 0 10px; background: #fff; }
   #lectureBar #sentNo { min-width: 64px; text-align: center; font-weight: bold; color: #495057; }
 
   /* ---------- 지문 탭 ---------- */
@@ -404,6 +405,7 @@
 <svg id="spot" hidden aria-hidden="true"><path fill="rgba(0,0,0,.78)" fill-rule="evenodd"/></svg>
 <div id="lectureBar" hidden>
   <button id="sentPrev">◀ 이전</button>
+  <select id="sentPage" title="쪽으로 바로 가기"></select>
   <span id="sentNo">1 / 1</span>
   <button id="sentNext">다음 ▶</button>
   <button id="lectureEnd">끝내기 ✕</button>
@@ -1348,6 +1350,8 @@ function drawSpot() {
 function showSent(i) {
   sentIdx = Math.max(0, Math.min(sents.length - 1, i));
   document.getElementById("sentNo").textContent = `${sentIdx + 1} / ${sents.length}`;
+  const sel = document.getElementById("sentPage");
+  for (const o of sel.options) if (+o.value <= sentIdx) sel.value = o.value;
   // 문장이 화면 가운데에 오도록 옮긴다
   const r = sents[sentIdx].getBoundingClientRect();
   const toolbarH = document.getElementById("toolbar").offsetHeight;
@@ -1362,7 +1366,10 @@ function setLecture(on) {
   cancelAnimationFrame(spotRaf);
   if (on) {
     lectureBar.style.top = document.getElementById("toolbar").offsetHeight + 10 + "px";
-    showSent(sentIdx); drawSpot();
+    // 지금 화면에 보이는 첫 문장부터 시작한다
+    const top = document.getElementById("toolbar").offsetHeight;
+    const seen = sents.findIndex(el => el.getBoundingClientRect().bottom > top + 10);
+    showSent(seen >= 0 ? seen : 0); drawSpot();
   }
 }
 
@@ -1371,6 +1378,22 @@ if (TEACHER) {
   document.getElementById("sentNext").addEventListener("click", () => showSent(sentIdx + 1));
   document.getElementById("sentPrev").addEventListener("click", () => showSent(sentIdx - 1));
   document.getElementById("lectureEnd").addEventListener("click", () => setLecture(false));
+  // 쪽 바로 가기: 문장이 있는 쪽마다 하나씩 (쪽수 표시가 있으면 그 이름으로)
+  const pageSel = document.getElementById("sentPage");
+  document.querySelectorAll(".page").forEach((page, p) => {
+    const first = sents.findIndex(el => page.contains(el));
+    if (first < 0) return;
+    const pno = page.querySelector(".pno");
+    pageSel.add(new Option(`${p + 1}쪽${pno ? ` (${pno.textContent})` : ""}`, first));
+  });
+  pageSel.addEventListener("change", () => showSent(+pageSel.value));
+  // 강의 중에 문장을 톡 누르면 그 문장으로
+  document.addEventListener("click", e => {
+    if (!lectureOn || e.target.closest("#toolbar, #lectureBar")) return;
+    const i = sents.findIndex(el => [...el.getClientRects()].some(r =>
+      e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom));
+    if (i >= 0 && i !== sentIdx) showSent(i);
+  });
   // 프로젝터에 연결한 PC: → 또는 스페이스 = 다음, ← = 이전, Esc = 끝내기
   document.addEventListener("keydown", e => {
     if (!lectureOn || e.target.closest("input, textarea")) return;
