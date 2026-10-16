@@ -691,6 +691,13 @@ canvases.forEach((_, p) => redraw(p));
 
 /* ---------- 도구 상태 ---------- */
 let tool = "hand", colorIdx = 0, width = 3.5;
+// 펜 색·굵기는 이 기기에 기억해 새로고침·지문 탭을 바꿔도 그대로 둔다
+try {
+  const pref = JSON.parse(localStorage.getItem("penPref")) || {};
+  if (pref.c >= 0 && pref.c < COLORS.length) colorIdx = pref.c;
+  if ([2, 3.5, 6].includes(pref.w)) width = pref.w;
+} catch (e) {}
+function savePen() { try { localStorage.setItem("penPref", JSON.stringify({ c: colorIdx, w: width })); } catch (e) {} }
 // 손가락 필기: 켜면 손가락으로도 펜·형광펜·지우개를 쓴다 (이 기기에 기억)
 let fingerDraw = false;
 try { fingerDraw = localStorage.getItem("fingerDraw") === "1"; } catch (e) {}
@@ -725,13 +732,13 @@ document.getElementById("tools").addEventListener("click", e => {
 });
 colorsBox.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  colorIdx = +b.dataset.c;
+  colorIdx = +b.dataset.c; savePen();
   if (tool === "hand" || tool === "eraser") tool = "pen";
   refreshToolbar();
 });
 document.getElementById("widths").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
-  width = +b.dataset.w; refreshToolbar();
+  width = +b.dataset.w; savePen(); refreshToolbar();
 });
 refreshToolbar();
 
