@@ -1479,24 +1479,34 @@ if (TEACHER) {
 }
 
 /* ---------- 메뉴바·강의 버튼: 브라우저 자체 확대에도 지금 보이는 화면 맨 위 가운데에 ---------- */
+// 처음 열었을 때의 배율을 기준으로 삼는다.
+// 아이폰 사파리는 화면 폭(794px)에 맞춰 처음부터 축소해 보여 주는 것도 '배율'로 알려 주므로,
+// 그 상태를 확대로 착각하면 메뉴바가 커지고 깜빡인다.
+let baseScale = window.visualViewport ? visualViewport.scale : 1;
 function placeBars() {
   const vv = window.visualViewport;
+  const z = vv ? vv.scale / baseScale : 1;          // 사용자가 더 확대한 만큼
   const bars = [[document.getElementById("toolbar"), 0], [document.getElementById("lectureBar"), 8]];
   for (const [el, gap] of bars) {
-    if (!vv || (Math.abs(vv.scale - 1) < 0.01 && !vv.offsetLeft && !vv.offsetTop)) {
+    if (!vv || z < 1.05) {
       el.style.left = el.style.top = el.style.transform = el.style.transformOrigin = "";   // 평소: CSS 그대로
       continue;
     }
-    // 확대 배율만큼 줄이고(같은 크기로 보이게) 보이는 화면의 가운데·맨 위로 옮긴다
-    const w = el.offsetWidth / vv.scale;
+    // 확대한 만큼 줄이고(같은 크기로 보이게) 보이는 화면의 가운데·맨 위로 옮긴다
+    const w = el.offsetWidth / z;
     el.style.transformOrigin = "0 0";
     el.style.left = "0"; el.style.top = "0";
-    el.style.transform = `translate(${vv.offsetLeft + Math.max(0, (vv.width - w) / 2)}px, ${vv.offsetTop + gap / vv.scale}px) scale(${1 / vv.scale})`;
+    el.style.transform = `translate(${vv.offsetLeft + Math.max(0, (vv.width - w) / 2)}px, ${vv.offsetTop + gap / z}px) scale(${1 / z})`;
   }
 }
+// 스크롤 중 아주 자주 불리므로 화면 한 장면에 한 번만
+let barsRaf = 0;
+function queueBars() { if (!barsRaf) barsRaf = requestAnimationFrame(() => { barsRaf = 0; placeBars(); }); }
 if (window.visualViewport) {
-  visualViewport.addEventListener("resize", placeBars);
-  visualViewport.addEventListener("scroll", placeBars);
+  visualViewport.addEventListener("resize", queueBars);
+  visualViewport.addEventListener("scroll", queueBars);
+  // 화면을 돌리면 기준 배율이 바뀐다
+  window.addEventListener("orientationchange", () => setTimeout(() => { baseScale = visualViewport.scale; placeBars(); }, 400));
 }
 </script>
 </body>
