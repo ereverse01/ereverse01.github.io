@@ -172,10 +172,10 @@
     <button class="toggle" id="xferBtn"></button>
   </div>
 
-  <!-- CMA -->
+  <!-- 저축 (CMA 이체) -->
   <div class="card">
-    <h2>CMA 누적액</h2>
-    <div class="money"><input id="cma" data-k="cma" inputmode="numeric" autocomplete="off" placeholder="이번 달 누적액"></div>
+    <h2>이번 달 저축액<small>CMA 이체 금액</small></h2>
+    <div class="money"><input id="cma" data-k="cma" inputmode="numeric" autocomplete="off" placeholder="이번 달 CMA로 보낸 금액"></div>
     <div class="hint" id="cmaHint"></div>
   </div>
 
@@ -198,12 +198,12 @@
     <h2><span id="yearTitle"></span><small>줄을 누르면 그 달로 가요</small></h2>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>월</th><th>월급 합계</th><th>십일조</th><th class="c">냄</th><th class="c">이체</th><th>카드값</th></tr></thead>
+        <thead><tr><th>월</th><th>월급 합계</th><th>십일조</th><th class="c">냄</th><th class="c">이체</th><th>카드값</th><th>저축</th></tr></thead>
         <tbody id="tbody"></tbody>
         <tfoot id="tfoot"></tfoot>
       </table>
     </div>
-    <div class="cma-line"><span>CMA 최근 누적액</span><b id="cmaLatest">-</b></div>
+    <div class="cma-line"><span id="saveLabel">올해 저축 합계</span><b id="cmaLatest">-</b></div>
   </div>
 </div>
 
@@ -327,9 +327,10 @@
     $("xferBtn").innerHTML = r.xferDone
       ? '<span class="box">✓</span>이체 했어요'
       : '<span class="box"></span>아직 안 했어요 — 하면 눌러 주세요';
-    // 지난 CMA 기록 알려주기
-    const prev = Object.values(rows).filter(x => x.m < r.m && has(x.cma)).sort((a, b) => b.m.localeCompare(a.m))[0];
-    $("cmaHint").textContent = prev ? "지난 기록: " + Number(prev.m.slice(5)) + "월 " + won(num(prev.cma)) + "원" + (prev.m.slice(0, 4) !== r.m.slice(0, 4) ? " (" + prev.m.slice(0, 4) + "년)" : "") : "";
+    // 올해 이 달까지 모은 저축
+    const y = r.m.slice(0, 4);
+    const upto = Object.values(rows).filter(x => x.m.slice(0, 4) === y && x.m <= r.m).reduce((a, x) => a + num(x.cma), 0);
+    $("cmaHint").textContent = upto ? y + "년 " + Number(r.m.slice(5)) + "월까지 저축 합계: " + won(upto) + "원" : "";
   }
 
   function renderAll() {
@@ -341,12 +342,12 @@
         <span class="dots"><i class="${r.titheDone ? "t" : ""}"></i><i class="${r.xferDone ? "x" : ""}"></i></span></button>`;
     }).join("");
 
-    let sSal = 0, sTithe = 0, sCard = 0;
+    let sSal = 0, sTithe = 0, sCard = 0, sSave = 0;
     $("tbody").innerHTML = Array.from({ length: 12 }, (_, i) => {
       const r = rows[ym(viewY, i + 1)];
       const empty = isEmpty(r);
-      const sal = r ? num(r.won) + num(r.re) : 0, card = r ? num(r.wonCard) + num(r.reCard) : 0, t = r ? tithe(r) : 0;
-      sSal += sal; sTithe += t; sCard += card;
+      const sal = r ? num(r.won) + num(r.re) : 0, card = r ? num(r.wonCard) + num(r.reCard) : 0, t = r ? tithe(r) : 0, sv = r ? num(r.cma) : 0;
+      sSal += sal; sTithe += t; sCard += card; sSave += sv;
       const mark = v => v ? '<span class="ok">✓</span>' : '<span class="no">–</span>';
       return `<tr data-m="${i + 1}" class="${i + 1 === viewM ? "on " : ""}${empty ? "empty" : ""}">
         <td>${i + 1}월</td>
@@ -354,12 +355,13 @@
         <td>${t ? won(t) : "-"}</td>
         <td class="c">${empty && !sal ? "" : mark(r.titheDone)}</td>
         <td class="c">${empty ? "" : mark(r.xferDone)}</td>
-        <td>${card ? man(card) : "-"}</td></tr>`;
+        <td>${card ? man(card) : "-"}</td>
+        <td>${sv ? man(sv) : "-"}</td></tr>`;
     }).join("");
-    $("tfoot").innerHTML = `<tr><td>합계</td><td>${man(sSal)}</td><td>${won(sTithe)}</td><td></td><td></td><td>${man(sCard)}</td></tr>`;
+    $("tfoot").innerHTML = `<tr><td>합계</td><td>${man(sSal)}</td><td>${won(sTithe)}</td><td></td><td></td><td>${man(sCard)}</td><td>${man(sSave)}</td></tr>`;
 
-    const last = Object.values(rows).filter(r => has(r.cma)).sort((a, b) => b.m.localeCompare(a.m))[0];
-    $("cmaLatest").textContent = last ? won(num(last.cma)) + "원 (" + last.m.slice(0, 4) + "년 " + Number(last.m.slice(5)) + "월)" : "-";
+    $("saveLabel").textContent = viewY + "년 저축 합계 (CMA 이체)";
+    $("cmaLatest").textContent = won(sSave) + "원";
     renderMonth();
   }
 
