@@ -50,7 +50,7 @@
     margin: 0 auto;
     padding: 8px 16px 60px;
     display: grid;
-    gap: 16px;
+    gap: 8px;
   }
   .group {
     background: var(--card);
@@ -95,7 +95,7 @@
   .who button.on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
   .item textarea {
     grid-column: 1 / -1;
-    width: 100%; min-height: 56px; resize: vertical;
+    width: 100%; min-height: 56px; resize: none; overflow: hidden;
     font: inherit; padding: 8px 10px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff;
   }
@@ -197,6 +197,35 @@
     width: 6px; height: 6px; border-radius: 50%; background: var(--c-new);
   }
   @media (min-width: 640px) { .tabs { grid-template-columns: repeat(12, 1fr); } }
+
+  /* 저장 후 보이는 간결한 카드 */
+  .group.view { padding: 8px 12px; border-radius: 10px; }
+  .view .group-head { margin-bottom: 2px; gap: 8px; flex-wrap: nowrap; }
+  .view .badge { padding: 1px 8px; font-size: 0.85rem; border-radius: 6px; }
+  .view .name { flex: 1; min-width: 0; font-weight: 700; }
+  .edit-btn {
+    font: inherit; font-size: 0.8rem; cursor: pointer; white-space: nowrap;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid var(--line); background: #fff; color: var(--muted);
+  }
+  .view-list { list-style: none; margin: 0; padding: 0; }
+  .view-list li {
+    margin: 3px 0 0; padding: 1px 0 1px 8px; line-height: 1.45;
+    border-left: 3px solid var(--line);
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .view-list li.s-pray { border-left-color: var(--c-pray); }
+  .view-list li.s-ans  { border-left-color: var(--c-ans); }
+  .view-list li.s-new  { border-left-color: var(--c-new); }
+  .view-list .w { font-weight: 700; margin-right: 4px; }
+  .view-list .tag {
+    font-size: 0.72rem; padding: 0 6px; margin-left: 4px; border-radius: 999px;
+    white-space: nowrap; vertical-align: 1px;
+  }
+  .tag.s-pray { background: var(--c-pray-bg); color: var(--c-pray); }
+  .tag.s-ans  { background: var(--c-ans-bg);  color: var(--c-ans); }
+  .tag.s-new  { background: var(--c-new-bg);  color: var(--c-new); }
+  .view-empty { color: var(--muted); font-size: 0.9rem; margin: 2px 0 0; }
 </style>
 </head>
 <body>
@@ -321,6 +350,17 @@
   }
   const isDirty = g => dirty.has(cur() + "|" + g) || dirty.has("목자|" + g);
 
+  // 저장된 목장은 간결하게 보여 주고, [수정]을 눌렀을 때만 입력창으로
+  const editing = new Set();        // "2026-10|01"
+  const secEls = {};                // 화면에 있는 목장 카드
+  const groupHasText = g => ((data.months[cur()] || {})[g] || []).some(it => it.text.trim());
+  const isEditing = g =>
+    editing.has(cur() + "|" + g) || isDirty(g) || failed.has(g) || saving.has(g) || !groupHasText(g);
+  function redrawGroup(g) {
+    const old = secEls[g];
+    if (old && old.isConnected) old.replaceWith(renderGroup(g, cur(), monthData(cur())));
+  }
+
   function updateBtn(g) {
     const b = saveBtns[g];
     if (!b) return;
@@ -329,7 +369,8 @@
     b.disabled = false;
     if (failed.has(g)) { b.textContent = "저장 실패 · 다시 누르기"; b.classList.add("bad"); }
     else if (isDirty(g)) { b.textContent = "저장하기"; b.classList.add("need"); }
-    else { b.textContent = "저장됨 ✓"; b.disabled = true; }
+    else if (groupHasText(g)) { b.textContent = "수정 완료"; }
+    else { b.textContent = "저장하기"; b.disabled = true; }
   }
 
   async function send(month, g) {
@@ -339,20 +380,23 @@
   }
 
   async function saveGroup(g) {
-    const keys = [cur(), "목자"].filter(m => dirty.has(m + "|" + g));
-    if (!keys.length) return;
+    const key = cur();
+    const keys = [key, "목자"].filter(m => dirty.has(m + "|" + g));
+    if (!keys.length) { editing.delete(key + "|" + g); redrawGroup(g); return; }
     saving.add(g); failed.delete(g); updateBtn(g);
     try {
       for (const m of keys) {
         await send(m, g);
         dirty.delete(m + "|" + g);
       }
+      editing.delete(key + "|" + g);
       toast(LABELS[g] + " 저장했어요");
     } catch {
       failed.add(g);
     }
     saving.delete(g);
-    updateBtn(g);
+    if (key === cur()) redrawGroup(g);
+    else updateBtn(g);
   }
 
   window.addEventListener("beforeunload", e => {
@@ -442,10 +486,54 @@
     Promise.all(GROUPS.map(saveGroup));
   };
 
+  // 간결한 보기: 이름 · 기도제목 전문 · 상태 표시만
+  function renderView(g, key, md) {
+    const sec = document.createElement("section");
+    sec.className = "group view";
+    const head = document.createElement("div");
+    head.className = "group-head";
+    head.innerHTML = `<span class="badge">${LABELS[g]}</span>`;
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = data.leaders[g] || "";
+    const eb = document.createElement("button");
+    eb.className = "edit-btn";
+    eb.textContent = "수정";
+    eb.onclick = () => { editing.add(key + "|" + g); redrawGroup(g); };
+    head.append(name, eb);
+    sec.appendChild(head);
+
+    const ul = document.createElement("ul");
+    ul.className = "view-list";
+    md[g].filter(it => it.text.trim()).forEach(it => {
+      const li = document.createElement("li");
+      if (it.status) li.className = "s-" + it.status;
+      if (it.who) {
+        const w = document.createElement("span");
+        w.className = "w";
+        w.textContent = it.who.replace(/\s*(장로|권사|집사|성도)?님$/, "");
+        li.appendChild(w);
+      }
+      li.appendChild(document.createTextNode(it.text.trim()));
+      if (it.status) {
+        const t = document.createElement("span");
+        t.className = "tag s-" + it.status;
+        t.textContent = STATUS[it.status];
+        li.appendChild(t);
+      }
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    secEls[g] = sec;
+    return sec;
+  }
+
   function renderGroup(g, key, md) {
+    if (!isEditing(g)) { delete saveBtns[g]; return renderView(g, key, md); }
     const items = md[g];
     const sec = document.createElement("section");
     sec.className = "group";
+    secEls[g] = sec;
 
     const head = document.createElement("div");
     head.className = "group-head";
@@ -510,7 +598,10 @@
     const ta = document.createElement("textarea");
     ta.placeholder = "기도제목을 적어 주세요";
     ta.value = it.text;
-    ta.oninput = () => { it.text = ta.value; onChange(); renderTabs(); };
+    // 글이 길어져도 창 안 스크롤 없이 늘어나게
+    const fit = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + 2 + "px"; };
+    setTimeout(fit);
+    ta.oninput = () => { it.text = ta.value; onChange(); renderTabs(); fit(); };
 
     const st = document.createElement("div");
     st.className = "status";
