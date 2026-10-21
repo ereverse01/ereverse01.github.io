@@ -894,7 +894,6 @@ function setView(v) {
     document.getElementById(cfg.btn).classList.toggle('on', k === v);
   }
   VIEWS[v].render();
-  try { localStorage.setItem(STORE_KEY + '-view', v); } catch (e) {}
 }
 document.getElementById('btnWeek').onclick = () => setView('week');
 document.getElementById('btnClass').onclick = () => setView('class');
@@ -1159,7 +1158,6 @@ wireCards(document.getElementById('week'));
 wireCards(document.getElementById('classList'));
 let startView = 'week';
 monthIdx = monthOfToday();
-try { const v = localStorage.getItem(STORE_KEY + '-view'); if (VIEWS[v]) startView = v; } catch (e) {}
 setView(startView);
 if (syncUrl) pushSync();   // 열 때마다 시트와 맞추기
 // 앱으로 설치할 수 있게 (웹 주소로 열었을 때만)
