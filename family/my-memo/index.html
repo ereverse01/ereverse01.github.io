@@ -942,7 +942,22 @@ function ensureTrailingP() {
 function normalize() {
   if (!editor.firstChild) editor.innerHTML = '<p><br></p>';
   fixHugeSizes(editor);
+  fixBareToggles();
   ensureTrailingP();
+}
+// 제목(summary)이 사라진 토글은 브라우저가 "세부 정보"로 띄워 지울 수도 없음 → 안쪽 내용만 남기고 풂
+function fixBareToggles() {
+  const bare = $$('details', editor).filter(d => !d.querySelector(':scope > summary'));
+  if (!bare.length) return false;
+  const s = getSelection(), anchor = s.rangeCount ? s.anchorNode : null;
+  for (const d of bare) {
+    const had = anchor && d.contains(anchor);
+    const kids = [...d.childNodes].filter(n => n.nodeType !== 3 || n.data.trim());
+    if (!kids.some(n => n.nodeType === 1)) { const p = document.createElement('p'); p.append(...kids); if (!p.textContent.trim()) p.innerHTML = '<br>'; kids.length = 0; kids.push(p); }
+    d.replaceWith(...kids);
+    if (had && !editor.contains(anchor)) placeCaret(kids[0], false);
+  }
+  return true;
 }
 function toP(el) {
   const p = document.createElement('p'); p.append(...el.childNodes);
@@ -1358,6 +1373,7 @@ function fixNewlines(root) {
 }
 editor.addEventListener('input', e => {
   if (!e.isComposing && fixNewlines(/^insertFrom/.test(e.inputType) ? editor : (topBlock() || editor))) markChanged();
+  if (!e.isComposing && /^(delete|insertFrom)/.test(e.inputType) && fixBareToggles()) markChanged();
   // 맨 위에 떠 있는 글자는 문단으로 감싸기
   if ([...editor.childNodes].some(n => n.nodeType === 3 && n.data.trim())) exec('formatBlock', '<p>');
   if (!editor.firstElementChild) editor.innerHTML = '<p><br></p>';
