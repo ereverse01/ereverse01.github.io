@@ -63,13 +63,23 @@ class MemoApp : ApplicationContext
     public System.Threading.Tasks.Task<CoreWebView2Environment> Env;
     readonly HotkeyWindow keys;
     readonly System.Windows.Forms.Timer saveTimer = new System.Windows.Forms.Timer { Interval = 800 };
+    readonly NotifyIcon tray;
     bool ending; // 컴퓨터를 끄는 중이면 창이 닫혀도 목록을 지우지 않음
+    bool quitting, hintShown; // 알림 영역 메뉴의 "끝내기"로만 진짜 종료
 
     public MemoApp()
     {
         Current = this;
         Env = CoreWebView2Environment.CreateAsync(null, Path.Combine(Cfg.Dir, "WebView2"));
         keys = new HotkeyWindow(this);
+        // 마지막 창을 X 로 닫아도 알림 영역에 남아 있어야 Ctrl+Alt+M 이 계속 먹음
+        Icon ico = SystemIcons.Application;
+        try { string p = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico"); if (File.Exists(p)) ico = new Icon(p); } catch { }
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("열기\tCtrl+Alt+M", null, delegate { ShowMain(); });
+        menu.Items.Add("끝내기", null, delegate { Quit(); });
+        tray = new NotifyIcon { Icon = ico, Text = "내 메모장 (Ctrl+Alt+M)", ContextMenuStrip = menu, Visible = true };
+        tray.MouseClick += (o, e) => { if (e.Button == MouseButtons.Left) ShowMain(); };
         saveTimer.Tick += delegate { saveTimer.Stop(); SaveSession(); };
         Microsoft.Win32.SystemEvents.SessionEnding += delegate { ending = true; saveTimer.Stop(); };
         foreach (var s in WinState.LoadAll()) Open(s);
@@ -101,13 +111,18 @@ class MemoApp : ApplicationContext
         // 컴퓨터를 끌 때 닫히는 창들은 목록을 그대로 둠
         f.FormClosing += (o, e) =>
         {
-            if (e.CloseReason == CloseReason.UserClosing && Forms.Count == 1) { SaveSession(); ending = true; }
+            if (e.CloseReason != CloseReason.UserClosing || Forms.Count != 1) return;
+            SaveSession();
+            if (quitting) { ending = true; return; }
+            // 마지막 창은 닫지 않고 숨김 (알림 영역에서 계속 실행)
+            e.Cancel = true; f.Hide();
+            if (!hintShown) { hintShown = true; tray.ShowBalloonTip(4000, "내 메모장", "알림 영역에서 계속 켜져 있어요. Ctrl+Alt+M 으로 다시 열어요.", ToolTipIcon.Info); }
         };
         f.FormClosed += (o, e) =>
         {
             if (e.CloseReason != CloseReason.UserClosing) ending = true;
             Forms.Remove(f);
-            if (Forms.Count == 0) { saveTimer.Stop(); keys.Dispose(); ExitThread(); }
+            if (Forms.Count == 0) { saveTimer.Stop(); keys.Dispose(); tray.Visible = false; tray.Dispose(); ExitThread(); }
             else SaveSoon();
         };
         f.Show();
@@ -150,6 +165,13 @@ class MemoApp : ApplicationContext
     }
 
     public void ShowMain() { foreach (var f in Forms) f.BringUp(); }
+
+    void Quit()
+    {
+        // 열린 창 전부를 다음 실행 때 다시 열도록 저장해 두고, 닫히는 동안에는 목록을 건드리지 않음
+        SaveSession(); quitting = true; ending = true; saveTimer.Stop();
+        foreach (var f in Forms.ToArray()) f.Close();
+    }
 }
 
 class HotkeyWindow : NativeWindow, IDisposable
