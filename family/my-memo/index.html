@@ -1290,6 +1290,46 @@ editor.addEventListener('beforeinput', e => {
     const n = document.createElement('li'); n.innerHTML = '<br>'; li.after(n); placeCaret(n, false); markChanged();
   }
 });
+// 토글 지우기 (휴대폰 자판은 Backspace keydown 이 안 올 때가 있어서 beforeinput 에서 처리)
+function unwrapToggle(d) {
+  const sum = d.querySelector(':scope > summary'), p = document.createElement('p');
+  if (sum) p.append(...sum.childNodes);
+  if (!p.textContent.replace(/​/g, '') && !p.querySelector('img')) p.innerHTML = '<br>';
+  const rest = [...d.childNodes].filter(n => n !== sum); d.replaceWith(p, ...rest); placeCaret(p, false); markChanged();
+}
+editor.addEventListener('beforeinput', e => {
+  if (!/^delete/.test(e.inputType)) return;
+  const s = getSelection(); if (!s.rangeCount) return;
+  if (s.isCollapsed) {
+    if (e.inputType !== 'deleteContentBackward') return;
+    // 토글 제목 맨 앞에서 지우기 → 토글을 풀어 보통 문단으로 (안쪽 내용은 그대로 아래에)
+    const sum = closestIn('summary');
+    if (sum && caretAtStart(sum)) { e.preventDefault(); unwrapToggle(sum.parentElement); return; }
+    // 접힌 토글 바로 아랫줄 맨 앞에서 지우기 → 숨은 내용은 두고 제목 끝에 이어 붙임 (빈 줄이면 그 줄만 지움)
+    const p = closestIn('p'), d = p && p.previousElementSibling;
+    if (d && d.tagName === 'DETAILS' && !d.open && caretAtStart(p)) {
+      const t = d.querySelector(':scope > summary'); if (!t) return;
+      e.preventDefault();
+      const off = t.textContent.length;
+      if (p.textContent.replace(/​/g, '') || p.querySelector('img')) {
+        if (t.lastChild && t.lastChild.nodeName === 'BR') t.lastChild.remove();
+        t.append(...p.childNodes);
+      }
+      p.remove(); setCaretOffset(t, off); markChanged();
+    }
+    return;
+  }
+  // 토글 제목 처음부터 그 아래까지 선택해 지우면 빈 토글 껍데기가 남지 않게 지운 뒤 토글을 풂
+  const r = s.getRangeAt(0);
+  const cut = $$('details', editor).filter(d => {
+    const t = d.querySelector(':scope > summary'); if (!t || t.contains(r.endContainer)) return false;
+    const pre = document.createRange(); pre.setStart(t, 0);
+    try { pre.setEnd(r.startContainer, r.startOffset); } catch (_) { return false; }
+    const startsBefore = r.comparePoint(t, 0) === 0 || (t.contains(r.startContainer) && pre.toString() === '');
+    return startsBefore && r.comparePoint(t, t.childNodes.length) === 0;
+  });
+  if (cut.length) setTimeout(() => cut.forEach(d => { if (d.isConnected && editor.contains(d)) unwrapToggle(d); }));
+});
 // 일부 휴대폰 자판은 Enter 를 "\n" 글자로 넣어서, 화면에서는 띄어쓰기처럼 보여 줄바꿈이 사라짐 → 문단 나누기로 바꿈
 editor.addEventListener('beforeinput', e => {
   if (!['insertText', 'insertReplacementText'].includes(e.inputType) || !e.data || !/[\r\n]/.test(e.data) || closestIn('pre')) return;
@@ -1400,12 +1440,6 @@ editor.addEventListener('keydown', e => {
   if (e.key === 'Backspace' && s.isCollapsed) {
     const b = closestIn('h1,h2,h3,blockquote,pre');
     if (b && caretAtStart(b)) { e.preventDefault(); toP(b); return; }
-    const sum = closestIn('summary');
-    if (sum && caretAtStart(sum)) {
-      e.preventDefault(); const d = sum.parentElement; const p = document.createElement('p');
-      p.append(...sum.childNodes); if (!p.firstChild) p.innerHTML = '<br>';
-      const rest = [...d.childNodes].filter(n => n !== sum); d.replaceWith(p, ...rest); placeCaret(p, false); markChanged(); return;
-    }
   }
   if (e.key === ' ' && closestIn('summary')) { e.preventDefault(); exec('insertText', ' '); return; }
   if (e.key === 'ArrowDown' && !e.shiftKey) {
