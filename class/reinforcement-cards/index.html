@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reinforcement Cards</title>
+<style>
+  :root {
+    --bg: #f5f3fb;
+    --card: #ffffff;
+    --ink: #2a2840;
+    --muted: #87849a;
+    --line: #e2dff0;
+    --accent: #5b4ac4;
+    --pos: #2e8b57;
+    --pos-bg: #e3f5ea;
+    --neg: #d9822b;
+    --neg-bg: #fdf0e1;
+    --err: #d0452f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 80px; }
+  header { text-align: center; padding: 24px 16px 6px; }
+  header h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
+  #who { color: var(--muted); font-size: 0.92rem; text-align: center; margin-bottom: 10px; }
+  #who button, .link { border: 0; background: none; color: var(--accent); text-decoration: underline; padding: 0 0 0 6px; font-size: inherit; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-top: 14px; }
+  label.f { display: block; font-weight: 600; margin: 12px 0 4px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; font-size: 1.05rem;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+  .btn { display: block; width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font-size: 1.1rem; font-weight: 700; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.ghost { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); }
+  .msg { min-height: 1.4em; margin-top: 8px; font-size: 0.92rem; color: var(--err); }
+  .msg.ok { color: var(--pos); }
+  .hint { color: var(--muted); font-size: 0.88rem; margin: 4px 0 0; }
+
+  /* 카드 뽑기 */
+  .deck { position: relative; height: 260px; margin: 18px auto 4px; width: 200px; }
+  .back {
+    position: absolute; inset: 0; border-radius: 18px;
+    background: repeating-linear-gradient(45deg, #6a59d6 0 12px, #5b4ac4 12px 24px);
+    border: 6px solid #fff; box-shadow: 0 6px 18px rgba(60, 40, 140, .25);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 3.4rem; font-weight: 800;
+  }
+  .back:nth-child(1) { transform: rotate(-8deg) translateX(-14px); }
+  .back:nth-child(2) { transform: rotate(6deg) translateX(12px); }
+  .deck.shuffle .back:nth-child(1) { animation: sh1 .35s ease-in-out 3; }
+  .deck.shuffle .back:nth-child(2) { animation: sh2 .35s ease-in-out 3; }
+  .deck.shuffle .back:nth-child(3) { animation: sh3 .35s ease-in-out 3; }
+  @keyframes sh1 { 50% { transform: rotate(-20deg) translateX(-70px); } }
+  @keyframes sh2 { 50% { transform: rotate(18deg) translateX(70px); } }
+  @keyframes sh3 { 50% { transform: translateY(-18px) scale(1.04); } }
+
+  .rcard { border-radius: 20px; overflow: hidden; background: #fff; border: 1px solid var(--line); box-shadow: 0 8px 22px rgba(60, 40, 140, .12); }
+  .rcard.reveal { animation: flip .55s ease-out; }
+  @keyframes flip { from { transform: perspective(900px) rotateY(90deg) scale(.9); opacity: .2; } to { transform: none; opacity: 1; } }
+  .rcard svg { display: block; width: 100%; height: auto; }
+  .rcard .body { padding: 14px 18px 18px; }
+  .tag { display: inline-block; font-size: 0.8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .rcard h2 { margin: 6px 0 4px; font-size: 1.4rem; }
+  .rcard .sit { margin: 0; font-size: 1.12rem; }
+  .goal { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: #f3f1fc; font-size: 0.95rem; }
+  .goal b { color: var(--accent); }
+
+  .types { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .type {
+    border: 2px solid var(--line); border-radius: 14px; background: #fff; padding: 12px; text-align: left;
+  }
+  .type b { display: block; font-size: 1.05rem; }
+  .type span { display: block; font-size: 0.85rem; color: var(--muted); margin-top: 2px; }
+  .type.pos.on { border-color: var(--pos); background: var(--pos-bg); }
+  .type.neg.on { border-color: var(--neg); background: var(--neg-bg); }
+  .type.pos b { color: var(--pos); }
+  .type.neg b { color: var(--neg); }
+  .warn { font-size: 0.85rem; color: #8a5a2b; background: #fff6e8; border-radius: 10px; padding: 8px 12px; margin-top: 10px; }
+
+  .mine { margin-top: 14px; }
+  .mine h3 { font-size: 1rem; margin: 0 0 6px; }
+  .mine .it { border-top: 1px dashed var(--line); padding: 8px 0; font-size: 0.95rem; }
+
+  .badge { display: inline-block; font-size: 0.75rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; vertical-align: 1px; }
+  .badge.P { background: var(--pos-bg); color: var(--pos); }
+  .badge.N { background: var(--neg-bg); color: var(--neg); }
+
+  /* 교사 */
+  body.teacher .wrap { max-width: 1100px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  .bar select { width: auto; padding: 8px 12px; font-size: 0.98rem; }
+  .bar button { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font-size: 0.95rem; }
+  .bar .sp { flex: 1; }
+  .bar label { font-size: 0.95rem; display: flex; align-items: center; gap: 4px; }
+  #sum { color: var(--muted); font-size: 0.92rem; margin-top: 8px; }
+  .tc { background: #fff; border: 1px solid var(--line); border-radius: 16px; margin-top: 14px; overflow: hidden; }
+  .tc .head { display: grid; grid-template-columns: 200px 1fr; gap: 14px; padding: 12px; align-items: center; cursor: pointer; }
+  .tc .head svg { width: 100%; height: auto; border-radius: 10px; display: block; }
+  .tc h3 { margin: 4px 0 2px; font-size: 1.2rem; }
+  .tc .sit { margin: 0; color: #4a4760; font-size: 0.95rem; }
+  .tc .cnt { margin-top: 6px; font-size: 0.9rem; }
+  .tc .cnt .badge { margin-right: 4px; }
+  .tc.empty { opacity: .55; }
+  .ans { border-top: 1px solid var(--line); }
+  .ans .row .badge { min-width: 76px; text-align: center; }
+  .ans .row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; padding: 10px 14px; border-top: 1px dashed var(--line); align-items: start; }
+  .ans .row:first-child { border-top: 0; }
+  .ans .txt { font-size: 1.05rem; white-space: pre-wrap; word-break: break-word; }
+  .ans .nm { color: var(--muted); font-size: 0.85rem; }
+  .ans .del { border: 0; background: none; color: #bbb; font-size: 1.1rem; padding: 0 4px; }
+  .ans .del:hover { color: var(--err); }
+  body.nonames .nm { display: none; }
+  body.big .ans .txt { font-size: 1.35rem; }
+  @media (max-width: 640px) {
+    .tc .head { grid-template-columns: 1fr; }
+    .types { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🃏 Reinforcement Cards</h1>
+  <p id="sub">강화 카드를 뽑고, 강화로 문제를 해결해 보세요!</p>
+</header>
+<div id="who"></div>
+
+<div class="wrap">
+  <!-- 학생: 입장 -->
+  <section id="login" class="panel hidden">
+    <label class="f" for="sid">학번 (5자리)</label>
+    <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="예: 20315" autocomplete="off">
+    <label class="f" for="sname">이름</label>
+    <input id="sname" type="text" maxlength="20" placeholder="예: 홍길동" autocomplete="off">
+    <div class="msg" id="loginMsg"></div>
+    <button class="btn" id="enterBtn">입장하기</button>
+  </section>
+
+  <!-- 학생: 뽑기 -->
+  <section id="drawView" class="hidden">
+    <div class="deck" id="deck"><div class="back">?</div><div class="back">?</div><div class="back">?</div></div>
+    <button class="btn" id="drawBtn">🎲 카드 뽑기</button>
+  </section>
+
+  <!-- 학생: 카드 + 답 -->
+  <section id="cardView" class="hidden">
+    <div class="rcard" id="rcard"></div>
+    <div class="panel">
+      <label class="f">1. 어떤 강화를 쓸까요?</label>
+      <div class="types">
+        <button class="type pos" data-t="P"><b>➕ Positive Reinforcement</b><span>좋은 것을 <u>주어서</u> 행동을 늘려요<br>(add something pleasant)</span></button>
+        <button class="type neg" data-t="N"><b>➖ Negative Reinforcement</b><span>싫은 것을 <u>없애 주어서</u> 행동을 늘려요<br>(remove something unpleasant)</span></button>
+      </div>
+      <div class="warn">⚠️ Negative reinforcement는 <b>벌(punishment)이 아니에요.</b> 원하는 행동을 하면 불편한 것을 <b>없애 주는</b> 거예요.</div>
+      <label class="f" for="ans">2. 어떻게 강화할지 영어로 간단히 써 보세요</label>
+      <textarea id="ans" maxlength="500" placeholder="먼저 위에서 강화 종류를 골라 주세요."></textarea>
+      <div class="msg" id="ansMsg"></div>
+      <button class="btn" id="sendBtn" disabled>제출하기</button>
+      <button class="btn ghost" id="againBtn">🎲 다른 카드 뽑기</button>
+      <div class="mine hidden" id="mine"></div>
+    </div>
+  </section>
+
+  <!-- 교사 -->
+  <section id="tLogin" class="panel hidden">
+    <label class="f" for="tpw">교사 암호</label>
+    <input id="tpw" type="password" autocomplete="off">
+    <div class="msg" id="tMsg"></div>
+    <button class="btn" id="tBtn">들어가기</button>
+  </section>
+
+  <section id="tView" class="hidden">
+    <div class="bar">
+      <select id="fClass"></select>
+      <select id="fType">
+        <option value="">강화 전체</option>
+        <option value="P">Positive만</option>
+        <option value="N">Negative만</option>
+      </select>
+      <span class="sp"></span>
+      <label><input type="checkbox" id="optNames" checked> 이름 보기</label>
+      <label><input type="checkbox" id="optBig"> 큰 글씨</label>
+      <button id="refreshBtn">🔄 새로고침</button>
+      <button id="copyBtn">📋 엑셀용 복사</button>
+    </div>
+    <div id="sum"></div>
+    <div id="tList"></div>
+  </section>
+</div>
+
+<script src="cards.js"></script>
+<script>
+  // 구글 시트에 연결한 Apps Script 웹 앱 주소 (비어 있으면 이 기기에만 저장되는 연습 모드)
+  const SHEET_URL = "";
+
+  const $ = id => document.getElementById(id);
+  const LOCAL_KEY = "rc-local-rows";
+  const ME_KEY = "rc-me";
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const cardById = id => CARDS.find(c => c.id === +id);
+  const TYPE_NAME = { P: "Positive", N: "Negative" };
+  const isTeacher = location.hash === "#teacher";
+
+  function show(...ids) {
+    ["login", "drawView", "cardView", "tLogin", "tView"].forEach(id => $(id).classList.toggle("hidden", !ids.includes(id)));
+  }
+
+  async function call(body) {
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
+  function localRows() {
+    try { return JSON.parse(localStorage.getItem(LOCAL_KEY)) || []; } catch { return []; }
+  }
+  function saveLocalRows(rows) {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(rows)); } catch {}
+  }
+
+  function cardHTML(c) {
+    const cat = CATS[c.cat];
+    return c.svg + `<div class="body">
+      <span class="tag" style="background:${cat.bg};color:${cat.color}">Card ${c.id} · ${cat.name}</span>
+      <h2>${esc(c.title)}</h2>
+      <p class="sit">${esc(c.text)}</p>
+      <div class="goal"><b>Goal:</b> ${esc(c.goal)}</div>
+    </div>`;
+  }
+
+  // ================= 학생 =================
+  let me = null;          // { sid, name, grade, cls, num }
+  let card = null;
+  let type = "";
+  let drawn = [];         // 이번에 뽑은 카드 (겹치지 않게)
+  const mine = [];
+
+  function parseSid(s) {
+    if (!/^\d{5}$/.test(s)) return null;
+    const grade = +s[0], cls = +s.slice(1, 3), num = +s.slice(3);
+    if (grade < 1 || grade > 3 || cls < 1 || num < 1) return null;
+    return { grade, cls, num };
+  }
+
+  function setWho() {
+    $("who").innerHTML = me
+      ? `${me.grade}학년 ${me.cls}반 ${me.num}번 <b>${esc(me.name)}</b> <button id="outBtn">나가기</button>`
+      : "";
+    if (me) $("outBtn").onclick = () => {
+      me = null;
+      try { localStorage.removeItem(ME_KEY); } catch {}
+      setWho(); show("login");
+    };
+  }
+
+  function enter() {
+    const sid = $("sid").value.trim(), name = $("sname").value.trim();
+    const p = parseSid(sid);
+    if (!p) { $("loginMsg").textContent = "학번 5자리를 확인해 주세요. (예: 2학년 3반 15번 → 20315)"; return; }
+    if (!name) { $("loginMsg").textContent = "이름을 써 주세요."; return; }
+    me = { sid, name, ...p };
+    try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch {}
+    $("loginMsg").textContent = "";
+    setWho();
+    show("drawView");
+  }
+
+  function draw() {
+    $("drawBtn").disabled = true;
+    const deck = $("deck");
+    deck.classList.remove("shuffle"); void deck.offsetWidth; deck.classList.add("shuffle");
+    if (drawn.length >= CARDS.length) drawn = [];
+    const pool = CARDS.filter(c => !drawn.includes(c.id) && (!card || c.id !== card.id));
+    card = pool[Math.floor(Math.random() * pool.length)];
+    drawn.push(card.id);
+    setTimeout(() => {
+      deck.classList.remove("shuffle");
+      $("drawBtn").disabled = false;
+      openCard();
+    }, 1100);
+  }
+
+  function openCard() {
+    type = "";
+    $("rcard").innerHTML = cardHTML(card);
+    $("rcard").classList.remove("reveal"); void $("rcard").offsetWidth; $("rcard").classList.add("reveal");
+    document.querySelectorAll(".type").forEach(b => b.classList.remove("on"));
+    $("ans").value = "";
+    $("ans").placeholder = "먼저 위에서 강화 종류를 골라 주세요.";
+    $("ansMsg").textContent = ""; $("ansMsg").className = "msg";
+    $("sendBtn").disabled = true;
+    $("sendBtn").textContent = "제출하기";
+    show("cardView");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function pickType(t) {
+    type = t;
+    document.querySelectorAll(".type").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+    $("ans").placeholder = t === "P"
+      ? "e.g. When students ..., the teacher will give them ..."
+      : "e.g. When students ..., the teacher will remove / stop ...";
+    checkSend();
+  }
+
+  function checkSend() { $("sendBtn").disabled = !type || $("ans").value.trim().length < 3; }
+
+  async function submit() {
+    const text = $("ans").value.trim();
+    if (!type || !text) return;
+    const row = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      time: new Date().toISOString(),
+      sid: me.sid, name: me.name, grade: me.grade, cls: me.cls, num: me.num,
+      card: card.id, title: card.title, type, text,
+    };
+    $("sendBtn").disabled = true; $("sendBtn").textContent = "보내는 중…";
+    try {
+      if (SHEET_URL) {
+        const r = await call({ action: "submit", row });
+        if (!r.ok) throw new Error(r.error || "fail");
+      } else {
+        const rows = localRows(); rows.push(row); saveLocalRows(rows);
+      }
+      mine.unshift(row);
+      renderMine();
+      $("ansMsg").className = "msg ok";
+      $("ansMsg").textContent = SHEET_URL ? "✅ 제출했어요! 다른 카드도 뽑아 볼까요?" : "✅ 저장했어요 (연습 모드: 이 기기에만 저장)";
+      $("sendBtn").textContent = "제출 완료";
+      $("ans").value = "";
+    } catch (e) {
+      $("ansMsg").className = "msg";
+      $("ansMsg").textContent = "제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+      $("sendBtn").disabled = false; $("sendBtn").textContent = "제출하기";
+    }
+  }
+
+  function renderMine() {
+    $("mine").classList.toggle("hidden", !mine.length);
+    $("mine").innerHTML = `<h3>📝 내가 낸 답</h3>` + mine.map(r =>
+      `<div class="it"><span class="badge ${r.type}">${TYPE_NAME[r.type]}</span> <b>Card ${r.card}. ${esc(r.title)}</b><br>${esc(r.text)}</div>`).join("");
+  }
+
+  // ================= 교사 =================
+  let tpw = "";
+  let rows = [];
+  const open = new Set();
+
+  async function tLoad() {
+    if (!SHEET_URL) { rows = localRows(); return true; }
+    const r = await call({ action: "list", pw: tpw });
+    if (!r.ok) throw new Error(r.error);
+    rows = r.rows;
+    return true;
+  }
+
+  async function tEnter() {
+    tpw = $("tpw").value.trim();
+    $("tMsg").textContent = "불러오는 중…";
+    try {
+      await tLoad();
+      try { sessionStorage.setItem("rc-tpw", tpw); } catch {}
+      $("tMsg").textContent = "";
+      show("tView"); tRender();
+    } catch (e) {
+      $("tMsg").textContent = e.message === "pw" ? "암호가 맞지 않아요." : "불러오지 못했어요. 다시 시도해 주세요.";
+    }
+  }
+
+  const classKey = r => `${r.grade}-${r.cls}`;
+
+  function fillClassSelect() {
+    const sel = $("fClass"), cur = sel.value;
+    const keys = [...new Set(rows.map(classKey))].sort((a, b) => {
+      const [ga, ca] = a.split("-").map(Number), [gb, cb] = b.split("-").map(Number);
+      return ga - gb || ca - cb;
+    });
+    sel.innerHTML = `<option value="">모든 반</option>` + keys.map(k => {
+      const [g, c] = k.split("-");
+      return `<option value="${k}">${g}학년 ${c}반 (${rows.filter(r => classKey(r) === k).length})</option>`;
+    }).join("");
+    if (keys.includes(cur)) sel.value = cur;
+  }
+
+  function filtered() {
+    const k = $("fClass").value, t = $("fType").value;
+    return rows.filter(r => (!k || classKey(r) === k) && (!t || r.type === t));
+  }
+
+  function tRender() {
+    fillClassSelect();
+    const list = filtered();
+    const students = new Set(list.map(r => r.sid)).size;
+    const p = list.filter(r => r.type === "P").length;
+    $("sum").textContent = `답 ${list.length}개 · 학생 ${students}명 · Positive ${p} / Negative ${list.length - p}  —  카드를 누르면 답을 접거나 펼쳐요.`;
+    $("tList").innerHTML = CARDS.map(c => {
+      const rs = list.filter(r => +r.card === c.id).sort((a, b) => b.type.localeCompare(a.type) || String(a.sid).localeCompare(String(b.sid)));
+      const np = rs.filter(r => r.type === "P").length;
+      const cat = CATS[c.cat];
+      const shown = open.has(c.id) || (open.size === 0);
+      return `<div class="tc ${rs.length ? "" : "empty"}">
+        <div class="head" data-card="${c.id}">
+          ${c.svg}
+          <div>
+            <span class="tag" style="background:${cat.bg};color:${cat.color}">Card ${c.id} · ${cat.name}</span>
+            <h3>${esc(c.title)}</h3>
+            <p class="sit">${esc(c.text)}</p>
+            <div class="cnt"><span class="badge P">Positive ${np}</span><span class="badge N">Negative ${rs.length - np}</span></div>
+          </div>
+        </div>
+        ${rs.length && shown ? `<div class="ans">${rs.map(r => `<div class="row">
+          <span class="badge ${r.type}">${TYPE_NAME[r.type]}</span>
+          <div><div class="txt">${esc(r.text)}</div><div class="nm">${r.grade}-${r.cls} ${r.num}번 ${esc(r.name)}</div></div>
+          <button class="del" data-id="${esc(r.id)}" title="삭제">✕</button>
+        </div>`).join("")}</div>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  $("tList").addEventListener("click", async e => {
+    const del = e.target.closest(".del");
+    if (del) {
+      const r = rows.find(x => x.id === del.dataset.id);
+      if (!r || !confirm(`${r.name} 학생의 답을 지울까요?\n\n"${r.text}"`)) return;
+      try {
+        if (SHEET_URL) {
+          const res = await call({ action: "del", pw: tpw, id: r.id });
+          if (!res.ok) throw new Error(res.error);
+        } else saveLocalRows(localRows().filter(x => x.id !== r.id));
+        rows = rows.filter(x => x.id !== r.id);
+        tRender();
+      } catch { alert("지우지 못했어요. 다시 시도해 주세요."); }
+      return;
+    }
+    const head = e.target.closest(".head");
+    if (head) {
+      const id = +head.dataset.card;
+      if (open.size === 0) CARDS.forEach(c => c.id !== id && open.add(c.id)); // 처음엔 모두 펼침 → 누른 카드만 접기
+      else open.has(id) ? open.delete(id) : open.add(id);
+      if (open.size === 0) open.add(-1);
+      tRender();
+    }
+  });
+
+  async function refresh() {
+    $("refreshBtn").textContent = "불러오는 중…";
+    try { await tLoad(); tRender(); } catch { alert("불러오지 못했어요."); }
+    $("refreshBtn").textContent = "🔄 새로고침";
+  }
+
+  function copyTSV() {
+    const clean = s => String(s ?? "").replace(/[\t\r\n]+/g, " ");
+    const lines = [["학년", "반", "번호", "이름", "카드", "문제상황", "강화", "답"].join("\t")]
+      .concat(filtered().slice().sort((a, b) => String(a.sid).localeCompare(String(b.sid)) || a.card - b.card)
+        .map(r => [r.grade, r.cls, r.num, r.name, r.card, r.title, TYPE_NAME[r.type] + " reinforcement", r.text].map(clean).join("\t")));
+    navigator.clipboard.writeText(lines.join("\n")).then(
+      () => { $("copyBtn").textContent = "✅ 복사됨 — 엑셀에 붙여넣기"; setTimeout(() => $("copyBtn").textContent = "📋 엑셀용 복사", 2000); },
+      () => alert("복사하지 못했어요."));
+  }
+
+  // ================= 시작 =================
+  if (isTeacher) {
+    document.body.classList.add("teacher");
+    $("sub").textContent = "교사 모드 · 반별·문제상황별 학생 답 보기" + (SHEET_URL ? "" : " (연습 모드: 이 기기에 저장된 답만 보여요)");
+    $("tBtn").onclick = tEnter;
+    $("tpw").addEventListener("keydown", e => e.key === "Enter" && tEnter());
+    $("fClass").onchange = tRender;
+    $("fType").onchange = tRender;
+    $("refreshBtn").onclick = refresh;
+    $("copyBtn").onclick = copyTSV;
+    $("optNames").onchange = e => document.body.classList.toggle("nonames", !e.target.checked);
+    $("optBig").onchange = e => document.body.classList.toggle("big", e.target.checked);
+    let saved = "";
+    try { saved = sessionStorage.getItem("rc-tpw") || ""; } catch {}
+    if (!SHEET_URL || saved) { $("tpw").value = saved; tEnter(); } else show("tLogin");
+  } else {
+    $("enterBtn").onclick = enter;
+    $("sname").addEventListener("keydown", e => e.key === "Enter" && enter());
+    $("sid").addEventListener("input", e => e.target.value = e.target.value.replace(/\D/g, ""));
+    $("drawBtn").onclick = draw;
+    $("againBtn").onclick = () => { show("drawView"); window.scrollTo({ top: 0 }); };
+    document.querySelectorAll(".type").forEach(b => b.onclick = () => pickType(b.dataset.t));
+    $("ans").addEventListener("input", checkSend);
+    $("sendBtn").onclick = submit;
+    try { me = JSON.parse(localStorage.getItem(ME_KEY)); } catch {}
+    if (me && me.sid) { $("sid").value = me.sid; $("sname").value = me.name; }
+    me = null;
+    show("login");   // 같은 태블릿을 여러 학생이 쓸 수 있어서 매번 확인
+  }
+</script>
+</body>
+</html>
