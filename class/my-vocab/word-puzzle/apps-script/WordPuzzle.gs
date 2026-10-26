@@ -30,8 +30,12 @@ const RESULTS_HEADER = ['time', 'setId', 'setTitle', 'name', 'miss', 'stars', 's
 const BUILDINGS = {
   hospital: 10, school: 10, fire: 10, police: 10, library: 10, post: 10, bank: 10, cafe: 10, bakery: 10, market: 10,
   park: 10, station: 10, cityhall: 10, museum: 10, theater: 10, stadium: 10, pool: 10, flowershop: 10, windmill: 10,
+  pcroom: 10, convenience: 10, pharmacy: 10, bookstore: 10, cinema: 10, karaoke: 10, gym: 10, bunsik: 10,
+  chicken: 10, icecream: 10, laundry: 10, hairshop: 10, apartment: 10, hotel: 10, gas: 10, bus: 10,
+  playground: 10, farm: 10, arcade: 10, toystore: 10, vet: 10, camp: 10, court: 10,
   hanok: 4, tower: 4, ferris: 4, lighthouse: 4, observatory: 4,
-  castle: 1
+  cheomseongdae: 4, zoo: 4, aquarium: 4, coaster: 4, pyramid: 4, balloon: 4,
+  castle: 1, bulguksa: 1, rocket: 1
 };
 
 function tab_(name, header) {
@@ -86,10 +90,13 @@ function cls_(v) {
 }
 function shortName_(name) { return String(name).replace(/^\s*\d{5}\s*/, '') || String(name); }
 
-// 이 반에 아직 없는 기관 중에서 가중치대로 하나 뽑는다. 다 있으면 전체에서 뽑는다.
+// 이 반에서 가장 적게 나온 기관(처음엔 아직 없는 기관) 중에서 가중치대로 하나 뽑는다 — 반 친구끼리 겹치지 않게.
 function pickBuilding_(have) {
-  let keys = Object.keys(BUILDINGS).filter(function (k) { return have.indexOf(k) < 0; });
-  if (!keys.length) keys = Object.keys(BUILDINGS);
+  const count = {};
+  Object.keys(BUILDINGS).forEach(function (k) { count[k] = 0; });
+  have.forEach(function (k) { if (k in count) count[k]++; });
+  const min = Math.min.apply(null, Object.keys(count).map(function (k) { return count[k]; }));
+  const keys = Object.keys(BUILDINGS).filter(function (k) { return count[k] === min; });
   const total = keys.reduce(function (a, k) { return a + BUILDINGS[k]; }, 0);
   let r = Math.random() * total;
   for (let i = 0; i < keys.length; i++) { r -= BUILDINGS[keys[i]]; if (r < 0) return keys[i]; }

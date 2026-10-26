@@ -1069,8 +1069,16 @@ ${draft.passage.trim().slice(0, 12000)}
     bakery: ["빵집", "🥐", 0], market: ["시장", "🛒", 0], park: ["공원", "🌳", 0], station: ["기차역", "🚉", 0],
     cityhall: ["시청", "🏛️", 0], museum: ["박물관", "🖼️", 0], theater: ["극장", "🎭", 0], stadium: ["경기장", "🏟️", 0],
     pool: ["수영장", "🏊", 0], flowershop: ["꽃집", "💐", 0], windmill: ["풍차 방앗간", "🌾", 0],
+    pcroom: ["PC방", "🖥️", 0], convenience: ["편의점", "🏪", 0], pharmacy: ["약국", "💊", 0], bookstore: ["서점", "📖", 0],
+    cinema: ["영화관", "🎬", 0], karaoke: ["노래방", "🎤", 0], gym: ["체육관", "🏋️", 0], bunsik: ["분식집", "🍢", 0],
+    chicken: ["치킨집", "🍗", 0], icecream: ["아이스크림 가게", "🍦", 0], laundry: ["빨래방", "🧺", 0], hairshop: ["미용실", "💈", 0],
+    apartment: ["아파트", "🏢", 0], hotel: ["호텔", "🏨", 0], gas: ["주유소", "⛽", 0], bus: ["버스 터미널", "🚌", 0],
+    playground: ["놀이터", "🎠", 0], farm: ["농장", "🐄", 0], arcade: ["오락실", "🕹️", 0], toystore: ["장난감 가게", "🧸", 0],
+    vet: ["동물병원", "🐾", 0], camp: ["캠핑장", "⛺", 0], court: ["농구장", "🏀", 0],
     hanok: ["한옥", "🏯", 1], tower: ["전망 타워", "🗼", 1], ferris: ["관람차", "🎡", 1], lighthouse: ["등대", "🔦", 1], observatory: ["천문대", "🔭", 1],
-    castle: ["성", "🏰", 2],
+    cheomseongdae: ["첨성대", "🏺", 1], zoo: ["동물원", "🦒", 1], aquarium: ["아쿠아리움", "🐠", 1], coaster: ["롤러코스터", "🎢", 1],
+    pyramid: ["피라미드", "🔺", 1], balloon: ["열기구", "🎈", 1],
+    castle: ["성", "🏰", 2], bulguksa: ["불국사", "🛕", 2], rocket: ["우주 발사대", "🚀", 2],
   };
   const RARITY = ["", "희귀", "전설"];
   function pickBuildingLocal() {
@@ -1290,6 +1298,320 @@ ${draft.passage.trim().slice(0, 12000)}
         cyl(0.01, 0.01, 0.25, CL.gray, 0, 1.4, -0.05, 5); box(0.14, 0.08, 0.01, CL.gold, 0.07, 1.48, -0.05);
         box(0.22, 0.26, 0.04, 0x5A3A26, 0, 0.13, 0.5);
         wins(0.42, 0.165, 0.62, 2, 2, 0.2, 0.08, 0x3E4A58);
+      },
+      pcroom() {
+        box(0.95, 0.72, 0.72, 0x343A52, 0, 0.36); box(0.99, 0.05, 0.76, 0x1E2233, 0, 0.745);
+        box(0.8, 0.26, 0.02, 0x7FD8FF, 0, 0.36, 0.365, { emissive: 0x38B6FF, emissiveIntensity: 0.55 });
+        for (let i = 0; i < 4; i++) box(0.12, 0.08, 0.02, 0x1E2233, -0.3 + i * 0.2, 0.33, 0.375);
+        box(0.22, 0.2, 0.02, CL.dark, 0, 0.1, 0.365);
+        box(0.7, 0.14, 0.05, 0x1E2233, 0, 0.6, 0.38); box(0.64, 0.08, 0.055, 0xFF4FD8, 0, 0.6, 0.38, { emissive: 0xFF4FD8, emissiveIntensity: 0.8 });
+        box(0.22, 0.03, 0.14, CL.dark, 0, 0.785, -0.05); box(0.05, 0.12, 0.05, CL.dark, 0, 0.85, -0.05);
+        box(0.54, 0.34, 0.05, CL.dark, 0, 1.06, -0.05); box(0.48, 0.28, 0.055, 0x5CE1E6, 0, 1.06, -0.045, { emissive: 0x2EC4F0, emissiveIntensity: 0.7 });
+        box(0.34, 0.025, 0.11, 0xDDE3EA, -0.04, 0.785, 0.2); ball(0.035, 0xDDE3EA, 0.24, 0.79, 0.2).scale.set(1, 0.6, 1.4);
+      },
+      convenience() {
+        box(1.0, 0.6, 0.7, CL.white, 0, 0.3); box(1.04, 0.05, 0.74, CL.gray, 0, 0.625);
+        box(1.01, 0.06, 0.71, 0x7A3FC4, 0, 0.52); box(1.01, 0.04, 0.71, 0x2EC4B6, 0, 0.465);
+        box(0.84, 0.3, 0.02, CL.glass, 0, 0.2, 0.355, { metalness: 0.3, roughness: 0.2 }); box(0.02, 0.3, 0.025, CL.white, 0, 0.2, 0.36);
+        box(0.06, 0.06, 0.06, CL.gray, 0, 0.68, 0); box(0.5, 0.18, 0.05, CL.white, 0, 0.8, 0);
+        box(0.46, 0.06, 0.055, 0x7A3FC4, 0, 0.82, 0); box(0.46, 0.035, 0.055, 0x2EC4B6, 0, 0.765, 0);
+        cyl(0.012, 0.012, 0.4, CL.gray, 0.42, 0.2, 0.5, 5); cone(0.18, 0.08, 0x2EC4B6, 0.42, 0.43, 0.5, 10); cyl(0.1, 0.1, 0.02, CL.white, 0.42, 0.16, 0.5, 12);
+      },
+      pharmacy() {
+        box(0.9, 0.58, 0.68, 0xEAF6EE, 0, 0.29); box(0.94, 0.05, 0.72, 0x2FA36B, 0, 0.605);
+        wins(0.9, 0.345, 0.32, 3); box(0.22, 0.28, 0.02, CL.glass, 0, 0.14, 0.345, { metalness: 0.3 });
+        box(0.34, 0.1, 0.06, 0x2FA36B, -0.1, 0.82, 0, { emissive: 0x2FA36B, emissiveIntensity: 0.4 }); box(0.1, 0.34, 0.06, 0x2FA36B, -0.1, 0.82, 0, { emissive: 0x2FA36B, emissiveIntensity: 0.4 });
+        [[0.25, 0xE5484D], [0.37, CL.white]].forEach(([x, c]) => { cyl(0.055, 0.055, 0.12, c, x, 0.69, 0.2, 12).rotation.z = Math.PI / 2; });
+        ball(0.055, 0xE5484D, 0.19, 0.69, 0.2); ball(0.055, CL.white, 0.43, 0.69, 0.2);
+      },
+      bookstore() {
+        box(0.92, 0.58, 0.68, 0xD9E4F5, 0, 0.29); box(0.96, 0.05, 0.72, 0x2F55D4, 0, 0.605);
+        wins(0.92, 0.345, 0.3, 2, 1, 0.2, 0.22); box(0.2, 0.28, 0.02, CL.door, 0, 0.14, 0.345);
+        awning(0.92, 0.32, 0.5, 0x2F55D4, CL.white);
+        [[-1, -0.35], [1, 0.35]].forEach(([s, rz]) => {
+          box(0.36, 0.03, 0.3, 0xC0392B, s * 0.16, 0.71, 0).rotation.z = rz;
+          box(0.34, 0.03, 0.27, CL.white, s * 0.16, 0.735, 0).rotation.z = rz;
+        });
+      },
+      cinema() {
+        box(1.0, 0.75, 0.75, 0x9E2A3A, 0, 0.375); box(1.04, 0.05, 0.79, CL.dark, 0, 0.775);
+        box(0.36, 0.3, 0.02, CL.dark, 0, 0.15, 0.38);
+        box(0.86, 0.2, 0.06, CL.dark, 0, 0.5, 0.4); box(0.8, 0.14, 0.065, 0xFFF4C2, 0, 0.5, 0.4, { emissive: 0xFFE27A, emissiveIntensity: 0.6 });
+        box(0.1, 0.06, 0.1, CL.dark, 0, 0.83, 0);
+        const reel = new THREE.Group(); reel.position.set(0, 1.1, 0); g.add(reel);
+        const disk = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, 24), M(0x3E4A58, { metalness: 0.4 })); disk.rotation.x = Math.PI / 2; reel.add(disk);
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2, h = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.07, 12), M(0xD8DEE4));
+          h.rotation.x = Math.PI / 2; h.position.set(Math.cos(a) * 0.15, Math.sin(a) * 0.15, 0); reel.add(h);
+        }
+        reel.userData.spin = [0, 0, 0.6];
+        cyl(0.1, 0.07, 0.18, 0xE5484D, 0.4, 0.09, 0.5, 10); ball(0.09, 0xFFF4C2, 0.4, 0.2, 0.5);
+      },
+      karaoke() {
+        box(0.9, 0.66, 0.7, 0x5B3FA8, 0, 0.33); box(0.94, 0.05, 0.74, 0x2B1F55, 0, 0.685);
+        box(0.92, 0.04, 0.72, 0xFF4FD8, 0, 0.6, 0, { emissive: 0xFF4FD8, emissiveIntensity: 0.6 });
+        [-0.3, 0.3].forEach((x) => box(0.2, 0.16, 0.02, 0xFFB3F0, x, 0.36, 0.355, { emissive: 0xFF7AD9, emissiveIntensity: 0.5 }));
+        box(0.22, 0.28, 0.02, CL.dark, 0, 0.14, 0.355);
+        cyl(0.04, 0.06, 0.36, CL.dark, 0, 0.89, 0, 10); cyl(0.065, 0.065, 0.03, 0xFF4FD8, 0, 1.06, 0, 12, { emissive: 0xFF4FD8, emissiveIntensity: 0.6 });
+        ball(0.1, 0xC9D1DA, 0, 1.15, 0, { metalness: 0.6, roughness: 0.3 });
+      },
+      gym() {
+        box(1.05, 0.6, 0.75, 0xE8EDF2, 0, 0.3);
+        at(new THREE.CylinderGeometry(0.38, 0.38, 1.07, 16, 1, false, 0, Math.PI), 0xE5484D, 0, 0.6, 0).rotation.z = Math.PI / 2;
+        wins(1.05, 0.38, 0.4, 5); box(0.26, 0.28, 0.02, CL.glass, 0, 0.14, 0.38, { metalness: 0.3 });
+        cyl(0.025, 0.025, 0.42, CL.gray, 0, 0.78, 0.41, 8).rotation.z = Math.PI / 2;
+        [-0.17, 0.17].forEach((x) => { cyl(0.09, 0.09, 0.06, CL.dark, x, 0.78, 0.41, 14).rotation.z = Math.PI / 2; });
+      },
+      bunsik() {
+        box(0.86, 0.52, 0.65, 0xFFE3B3, 0, 0.26, -0.1); box(0.9, 0.05, 0.69, 0xE5484D, 0, 0.545, -0.1);
+        wins(0.86, 0.235, 0.26, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, CL.door, 0, 0.14, 0.235);
+        awning(0.86, 0.2, 0.44, 0xF28C28, CL.white);
+        cyl(0.24, 0.22, 0.1, CL.dark, 0, 0.62, -0.1, 16); cyl(0.22, 0.22, 0.02, 0xE5484D, 0, 0.665, -0.1, 16);
+        for (let i = 0; i < 7; i++) { const a = i * 0.9; cyl(0.025, 0.025, 0.12, 0xF0603C, Math.cos(a) * 0.12, 0.69, -0.1 + Math.sin(a) * 0.12, 8).rotation.set(Math.PI / 2, 0, a); }
+        box(0.3, 0.16, 0.18, CL.wood, 0.32, 0.08, 0.42);
+        [0.24, 0.32, 0.4].forEach((x) => { cyl(0.008, 0.008, 0.3, CL.wood, x, 0.3, 0.42, 4); box(0.06, 0.12, 0.02, 0xE8C27A, x, 0.3, 0.42); });
+      },
+      chicken() {
+        box(0.86, 0.55, 0.65, 0xF5C542, 0, 0.275, -0.1); box(0.9, 0.05, 0.69, 0xC0392B, 0, 0.575, -0.1);
+        wins(0.86, 0.235, 0.26, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, CL.door, 0, 0.14, 0.235);
+        awning(0.86, 0.2, 0.44, 0xC0392B, 0xF5C542);
+        ball(0.17, 0xC8762E, -0.08, 0.78, -0.1, { flatShading: false }).scale.set(1.3, 0.95, 0.95);
+        cyl(0.03, 0.03, 0.24, 0xF6EEDC, 0.18, 0.72, -0.1, 8).rotation.z = 1.2;
+        ball(0.04, 0xF6EEDC, 0.3, 0.69, -0.13); ball(0.04, 0xF6EEDC, 0.3, 0.67, -0.07);
+      },
+      icecream() {
+        box(0.82, 0.52, 0.65, 0xFFD6E7, 0, 0.26, -0.1); box(0.86, 0.05, 0.69, 0x7FD1E8, 0, 0.545, -0.1);
+        wins(0.82, 0.235, 0.26, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, CL.door, 0, 0.14, 0.235);
+        awning(0.82, 0.2, 0.44, 0x7FD1E8, CL.white);
+        cone(0.14, 0.34, 0xE0A458, 0, 0.75, -0.1, 10).rotation.x = Math.PI;
+        ball(0.15, 0xFFB3C7, 0, 0.97, -0.1, { flatShading: false }); ball(0.12, 0xFFF4C2, 0, 1.13, -0.1, { flatShading: false }); ball(0.035, 0xE5484D, 0, 1.27, -0.1);
+      },
+      laundry() {
+        box(0.9, 0.58, 0.68, 0xDDF1F7, 0, 0.29); box(0.94, 0.05, 0.72, 0x3D7BFF, 0, 0.605);
+        [-0.3, -0.04].forEach((x) => {
+          box(0.22, 0.26, 0.02, CL.white, x, 0.24, 0.345);
+          at(new THREE.TorusGeometry(0.07, 0.015, 6, 16), CL.gray, x, 0.22, 0.358);
+          cyl(0.06, 0.06, 0.01, CL.glass, x, 0.22, 0.356, 14, { metalness: 0.3 }).rotation.x = Math.PI / 2;
+        });
+        box(0.2, 0.28, 0.02, CL.glass, 0.3, 0.14, 0.345, { metalness: 0.3 });
+        cyl(0.18, 0.14, 0.16, 0xC69A6B, 0, 0.71, 0, 12);
+        [[0xF27BA8, -0.06, 0], [0x7FD1E8, 0.06, 0.03], [0xF2B632, 0, -0.06]].forEach(([c, x, z]) => ball(0.07, c, x, 0.8, z));
+        [[0.16, 0.95, 0.05, 0.06], [-0.12, 1.02, -0.04, 0.045], [0.04, 1.12, 0.02, 0.035]].forEach(([x, y, z, r]) => ball(r, 0xBFE9FF, x, y, z, { transparent: true, opacity: 0.6, roughness: 0.1 }));
+      },
+      hairshop() {
+        box(0.86, 0.56, 0.65, 0xF4F5F2, 0, 0.28, -0.1); box(0.9, 0.05, 0.69, CL.dark, 0, 0.585, -0.1);
+        wins(0.86, 0.235, 0.28, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, CL.glass, 0, 0.14, 0.235, { metalness: 0.3 });
+        const pole = new THREE.Group(); pole.position.set(0.36, 0.3, 0.32); g.add(pole);
+        for (let i = 0; i < 6; i++) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 10), M([0xE5484D, CL.white, 0x3D7BFF][i % 3])); s.position.y = -0.15 + i * 0.06; s.rotation.z = 0.3; pole.add(s); }
+        [-0.2, 0.2].forEach((y) => { const c = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), M(CL.white)); c.position.y = y; pole.add(c); });
+        pole.userData.spin = [0, 1.5, 0];
+        [0.35, -0.35].forEach((rz) => { box(0.04, 0.4, 0.02, 0xC9D1DA, 0, 0.9, -0.1, { metalness: 0.6 }).rotation.z = rz; });
+        [-0.09, 0.09].forEach((x) => at(new THREE.TorusGeometry(0.06, 0.018, 6, 14), 0xE5484D, x, 0.69, -0.1));
+      },
+      apartment() {
+        box(1.1, 0.04, 0.9, CL.stone, 0, 0.02);
+        [[-0.27, 1.5, 0xF1E3C8], [0.3, 1.15, 0xDCE6F0]].forEach(([x, h, c]) => {
+          box(0.46, h, 0.5, c, x, 0.04 + h / 2, -0.05); box(0.48, 0.05, 0.52, CL.gray, x, 0.065 + h, -0.05);
+          for (let y = 0.22; y < h - 0.05; y += 0.2) {
+            for (let i = 0; i < 3; i++) box(0.1, 0.1, 0.02, CL.glass, x - 0.14 + i * 0.14, y, 0.205, { metalness: 0.25, roughness: 0.3 });
+            box(0.42, 0.025, 0.04, CL.white, x, y - 0.06, 0.22);
+          }
+        });
+        box(0.12, 0.16, 0.02, CL.door, 0.3, 0.12, 0.205); tree(-0.42, 0.36, 0.9); tree(0.0, 0.38, 0.8);
+      },
+      hotel() {
+        box(0.8, 1.25, 0.6, 0xE9D8C0, 0, 0.625, -0.1); box(0.84, 0.06, 0.64, 0x7A4B2E, 0, 1.28, -0.1);
+        for (let r = 0; r < 4; r++) for (let i = 0; i < 4; i++) box(0.11, 0.12, 0.02, CL.glass, -0.27 + i * 0.18, 0.47 + r * 0.22, 0.205, { metalness: 0.25, roughness: 0.3 });
+        box(0.24, 0.28, 0.02, CL.glass, 0, 0.14, 0.205, { metalness: 0.3 });
+        box(0.5, 0.04, 0.3, 0x7A4B2E, 0, 0.32, 0.34); [-0.22, 0.22].forEach((x) => cyl(0.015, 0.015, 0.3, CL.gold, x, 0.16, 0.46, 6, { metalness: 0.5 }));
+        const neon = { emissive: 0xE5484D, emissiveIntensity: 0.6 };
+        box(0.06, 0.3, 0.05, 0xE5484D, -0.08, 1.46, -0.1, neon); box(0.06, 0.3, 0.05, 0xE5484D, 0.08, 1.46, -0.1, neon); box(0.12, 0.06, 0.05, 0xE5484D, 0, 1.46, -0.1, neon);
+      },
+      gas() {
+        box(1.15, 0.03, 1.0, 0xB9C0C7, 0, 0.015);
+        [-0.32, 0.32].forEach((x) => cyl(0.03, 0.03, 0.54, CL.gray, x, 0.3, 0.12, 8));
+        box(0.92, 0.07, 0.62, 0xE5484D, 0, 0.57, 0.12); box(0.9, 0.04, 0.6, CL.white, 0, 0.625, 0.12);
+        [-0.14, 0.14].forEach((x) => { box(0.12, 0.3, 0.1, 0x2FA36B, x, 0.18, 0.12); box(0.08, 0.06, 0.01, 0x5CE1E6, x, 0.26, 0.175, { emissive: 0x2EC4F0, emissiveIntensity: 0.6 }); cyl(0.01, 0.01, 0.16, CL.dark, x + 0.07, 0.16, 0.12, 5); });
+        box(0.72, 0.4, 0.3, CL.white, 0, 0.215, -0.34); box(0.74, 0.04, 0.32, 0xE5484D, 0, 0.435, -0.34); box(0.5, 0.18, 0.02, CL.glass, 0, 0.2, -0.185, { metalness: 0.3 });
+        cyl(0.015, 0.015, 0.66, CL.gray, 0.5, 0.33, 0.44, 6); box(0.16, 0.24, 0.04, CL.dark, 0.5, 0.78, 0.44);
+        [0.84, 0.74].forEach((y) => box(0.12, 0.05, 0.045, 0xFFB300, 0.5, y, 0.44, { emissive: 0xFFB300, emissiveIntensity: 0.7 }));
+      },
+      bus() {
+        box(1.15, 0.04, 0.95, CL.stone, 0, 0.02);
+        box(1.0, 0.45, 0.35, 0xDCE6F0, 0, 0.245, -0.28); box(1.04, 0.05, 0.4, 0x2E7DD8, 0, 0.495, -0.26);
+        wins(1.0, -0.104, 0.3, 5); box(0.3, 0.12, 0.05, 0xF2B632, 0, 0.58, -0.28);
+        box(0.8, 0.3, 0.28, 0x2FA36B, 0, 0.24, 0.24); box(0.8, 0.04, 0.29, CL.white, 0, 0.16, 0.24);
+        for (let i = 0; i < 5; i++) box(0.11, 0.09, 0.01, CL.glass, -0.3 + i * 0.14, 0.3, 0.385, { metalness: 0.3 });
+        box(0.01, 0.14, 0.24, CL.glass, 0.405, 0.28, 0.24, { metalness: 0.3 });
+        [-0.25, 0.25].forEach((x) => { cyl(0.06, 0.06, 0.3, CL.dark, x, 0.07, 0.24, 12).rotation.x = Math.PI / 2; });
+      },
+      playground() {
+        box(1.15, 0.04, 1.15, 0xE8C99A, 0, 0.02);
+        box(0.24, 0.03, 0.24, 0xF2B632, -0.25, 0.42, -0.15);
+        [[-0.36, -0.26], [-0.14, -0.26], [-0.36, -0.04], [-0.14, -0.04]].forEach(([x, z]) => cyl(0.015, 0.015, 0.62, 0xE5484D, x, 0.33, z, 6));
+        cone(0.2, 0.16, 0xE5484D, -0.25, 0.72, -0.15, 4).rotation.y = Math.PI / 4;
+        box(0.18, 0.02, 0.57, 0x3D7BFF, -0.25, 0.23, 0.185).rotation.x = 0.72;
+        [-0.34, -0.16].forEach((x) => { box(0.02, 0.06, 0.57, 0x3D7BFF, x, 0.26, 0.185).rotation.x = 0.72; });
+        cyl(0.015, 0.015, 0.5, 0x2FA36B, 0.3, 0.6, 0, 6).rotation.z = Math.PI / 2;
+        [0.07, 0.53].forEach((x) => [-1, 1].forEach((s) => { box(0.03, 0.62, 0.03, 0x2FA36B, x, 0.3, s * 0.075).rotation.x = -s * 0.245; }));
+        [0.2, 0.4].forEach((x) => { box(0.1, 0.02, 0.06, 0xF2B632, x, 0.22, 0); [-0.04, 0.04].forEach((dx) => cyl(0.004, 0.004, 0.37, CL.gray, x + dx, 0.41, 0, 4)); });
+        box(0.4, 0.03, 0.06, 0xF27BA8, 0.28, 0.13, 0.42).rotation.z = 0.2; cone(0.05, 0.1, CL.gray, 0.28, 0.09, 0.42, 3);
+      },
+      farm() {
+        box(1.15, 0.04, 1.15, 0x9BCB6B, 0, 0.02);
+        box(0.55, 0.42, 0.5, 0xC0392B, -0.18, 0.25, -0.1); prism(0.54, 0.6, 0.25, 0x7A2E22, -0.18, 0.46, -0.1).rotation.y = 0;
+        box(0.22, 0.26, 0.02, 0x8A2A20, -0.18, 0.17, 0.155);
+        [0.85, -0.85].forEach((rz) => { box(0.025, 0.32, 0.025, CL.white, -0.18, 0.17, 0.168).rotation.z = rz; });
+        cyl(0.14, 0.14, 0.75, 0xD8DEE4, 0.32, 0.415, -0.2, 14); dome(0.14, 0xC0392B, 0.32, 0.79, -0.2);
+        for (let i = 0; i < 7; i++) box(0.03, 0.14, 0.03, CL.wood, -0.5 + i * 0.167, 0.11, 0.5);
+        [0.1, 0.16].forEach((y) => box(1.0, 0.02, 0.015, CL.wood, 0, y, 0.5));
+        box(0.2, 0.1, 0.1, CL.white, 0.3, 0.17, 0.25); box(0.07, 0.07, 0.07, CL.white, 0.43, 0.21, 0.25);
+        [[0.22, 0.21], [0.22, 0.29], [0.38, 0.21], [0.38, 0.29]].forEach(([x, z]) => box(0.025, 0.12, 0.025, CL.dark, x, 0.06, z));
+        box(0.06, 0.05, 0.102, CL.dark, 0.28, 0.19, 0.25);
+        cyl(0.08, 0.08, 0.12, 0xE8C27A, -0.42, 0.1, 0.3, 12).rotation.z = Math.PI / 2;
+      },
+      arcade() {
+        box(0.92, 0.66, 0.7, 0x22304A, 0, 0.33); box(0.96, 0.05, 0.74, 0x111827, 0, 0.685);
+        const n = (c) => ({ emissive: c, emissiveIntensity: 0.8 });
+        box(0.92, 0.03, 0.02, 0x38E1FF, 0, 0.64, 0.355, n(0x38E1FF)); box(0.03, 0.62, 0.02, 0x38E1FF, -0.445, 0.33, 0.355, n(0x38E1FF)); box(0.03, 0.62, 0.02, 0x38E1FF, 0.445, 0.33, 0.355, n(0x38E1FF));
+        [-0.27, 0.27].forEach((x) => box(0.24, 0.22, 0.02, 0x9B6BDE, x, 0.36, 0.355, n(0x7A3FC4)));
+        box(0.2, 0.28, 0.02, CL.dark, 0, 0.14, 0.355);
+        box(0.5, 0.1, 0.32, 0xF2B632, 0, 0.76, 0);
+        cyl(0.025, 0.025, 0.25, CL.dark, -0.12, 0.93, 0, 8); ball(0.07, 0xE5484D, -0.12, 1.07, 0);
+        [[0.08, 0x3D7BFF], [0.18, 0x2FA36B]].forEach(([x, c]) => cyl(0.04, 0.04, 0.03, c, x, 0.82, 0.04, 12));
+      },
+      toystore() {
+        box(0.86, 0.55, 0.65, 0xBFE3FF, 0, 0.275, -0.1); box(0.9, 0.05, 0.69, 0xF27BA8, 0, 0.575, -0.1);
+        wins(0.86, 0.235, 0.26, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, CL.door, 0, 0.14, 0.235);
+        awning(0.86, 0.2, 0.46, 0xF2B632, 0x3D7BFF);
+        const fur = { flatShading: false };
+        ball(0.2, 0xC68B59, 0, 0.8, -0.1, fur); [-0.15, 0.15].forEach((x) => ball(0.07, 0xC68B59, x, 0.95, -0.1, fur));
+        ball(0.08, 0xEBD3B5, 0, 0.76, 0.08, fur); ball(0.025, CL.dark, 0, 0.78, 0.16); [-0.07, 0.07].forEach((x) => ball(0.022, CL.dark, x, 0.86, 0.08));
+        [[0xE5484D, 0.05], [0x3D7BFF, 0.15], [0xF2B632, 0.25]].forEach(([c, y]) => box(0.1, 0.1, 0.1, c, 0.34, y, 0.38));
+      },
+      vet() {
+        box(0.9, 0.56, 0.68, 0xFFF6E5, 0, 0.28); box(0.94, 0.05, 0.72, 0x38A3A5, 0, 0.585);
+        wins(0.9, 0.345, 0.32, 3); box(0.22, 0.28, 0.02, CL.glass, 0, 0.14, 0.345, { metalness: 0.3 });
+        box(0.42, 0.36, 0.04, CL.white, 0, 0.8, 0);
+        ball(0.08, 0x38A3A5, 0, 0.76, 0.03).scale.set(1.1, 0.9, 0.3);
+        [-0.09, -0.03, 0.03, 0.09].forEach((x, i) => ball(0.035, 0x38A3A5, x, i % 3 ? 0.88 : 0.85, 0.03).scale.z = 0.4);
+        box(0.18, 0.14, 0.18, 0xC69A6B, 0.36, 0.07, 0.48); prism(0.2, 0.22, 0.1, 0x7A4B2E, 0.36, 0.14, 0.48);
+        box(0.06, 0.08, 0.01, CL.dark, 0.36, 0.05, 0.575);
+      },
+      camp() {
+        box(1.15, 0.04, 1.15, 0x6FBF73, 0, 0.02);
+        [[-0.28, -0.2, 0xF28C28, Math.PI / 4], [0.3, -0.25, 0x3D7BFF, 0.3]].forEach(([x, z, c, ry]) => { cone(0.26, 0.38, c, x, 0.23, z, 4).rotation.y = ry; });
+        [0, Math.PI / 2].forEach((ry) => { box(0.2, 0.03, 0.03, CL.wood, 0, 0.055, 0.3).rotation.y = ry; });
+        cone(0.06, 0.16, 0xF28C28, 0, 0.14, 0.3, 6, { emissive: 0xF26B1D, emissiveIntensity: 0.8 }); cone(0.035, 0.1, 0xFFE27A, 0, 0.13, 0.3, 6, { emissive: 0xFFC83D, emissiveIntensity: 0.9 });
+        for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; ball(0.03, CL.gray, Math.cos(a) * 0.14, 0.05, 0.3 + Math.sin(a) * 0.14); }
+        tree(-0.42, 0.38, 1.2); tree(0.45, 0.3, 1.0); tree(0.0, -0.45, 1.3);
+      },
+      court() {
+        box(1.15, 0.04, 0.9, 0x3B7A57, 0, 0.02); box(1.0, 0.01, 0.75, 0xE07B39, 0, 0.045);
+        box(0.01, 0.005, 0.75, CL.white, 0, 0.052, 0); at(new THREE.TorusGeometry(0.12, 0.006, 4, 24), CL.white, 0, 0.052, 0).rotation.x = Math.PI / 2;
+        [-0.375, 0.375].forEach((z) => box(1.0, 0.005, 0.01, CL.white, 0, 0.052, z)); [-0.5, 0.5].forEach((x) => box(0.01, 0.005, 0.75, CL.white, x, 0.052, 0));
+        [-1, 1].forEach((s) => {
+          cyl(0.015, 0.015, 0.62, CL.gray, s * 0.53, 0.33, 0, 6); box(0.02, 0.16, 0.24, CL.white, s * 0.5, 0.58, 0);
+          at(new THREE.TorusGeometry(0.05, 0.008, 6, 16), 0xE5484D, s * 0.44, 0.52, 0).rotation.x = Math.PI / 2;
+        });
+        ball(0.05, 0xE07B39, 0.1, 0.1, 0.15);
+      },
+      cheomseongdae() {
+        box(0.9, 0.06, 0.9, 0x9BCB6B, 0, 0.03);
+        box(0.62, 0.08, 0.62, 0xCFC3A6, 0, 0.1); box(0.52, 0.06, 0.52, 0xCFC3A6, 0, 0.17);
+        const pts = [[0.24, 0], [0.25, 0.12], [0.24, 0.3], [0.2, 0.5], [0.15, 0.72], [0.12, 0.9], [0.115, 1.0]];
+        at(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 16), 0xD9CBA8, 0, 0.2, 0);
+        pts.slice(1, -1).forEach(([r, y]) => { at(new THREE.TorusGeometry(r, 0.008, 4, 16), 0xB9AD90, 0, 0.2 + y, 0).rotation.x = Math.PI / 2; });
+        box(0.1, 0.1, 0.08, CL.dark, 0, 0.62, 0.17);
+        [1.22, 1.28].forEach((y) => { [-0.135, 0.135].forEach((p) => { box(0.32, 0.05, 0.05, 0xCFC3A6, 0, y, p); box(0.05, 0.05, 0.32, 0xCFC3A6, p, y, 0); }); });
+      },
+      zoo() {
+        box(1.15, 0.04, 1.15, 0x8BC34A, 0, 0.02);
+        [-0.25, 0.25].forEach((x) => box(0.08, 0.4, 0.08, CL.wood, x, 0.2, 0.48)); box(0.62, 0.12, 0.06, 0xF2B632, 0, 0.44, 0.48);
+        const gf = 0xE8B04A;
+        [[-0.22, -0.14], [-0.08, -0.14], [-0.22, -0.06], [-0.08, -0.06]].forEach(([x, z]) => box(0.03, 0.3, 0.03, gf, x, 0.15, z));
+        box(0.22, 0.14, 0.12, gf, -0.15, 0.36, -0.1); box(0.05, 0.45, 0.05, gf, 0.0, 0.62, -0.1).rotation.z = -0.3;
+        box(0.12, 0.06, 0.06, gf, 0.09, 0.87, -0.1); [-0.12, -0.08].forEach((z) => cyl(0.008, 0.008, 0.05, CL.wood, 0.06, 0.92, z, 4));
+        [[-0.2, 0.38], [-0.1, 0.34], [-0.15, 0.4]].forEach(([x, y]) => box(0.04, 0.04, 0.125, 0x8A5A3B, x, y, -0.1));
+        ball(0.15, 0x9AA4AE, 0.3, 0.27, 0.05).scale.x = 1.3;
+        [[0.2, -0.03], [0.4, -0.03], [0.2, 0.13], [0.4, 0.13]].forEach(([x, z]) => cyl(0.04, 0.04, 0.16, 0x9AA4AE, x, 0.08, z, 8));
+        ball(0.1, 0x9AA4AE, 0.12, 0.33, 0.05); [-0.1, 0.2].forEach((z) => ball(0.08, 0x8A939C, 0.16, 0.34, z).scale.x = 0.3);
+        cyl(0.025, 0.035, 0.18, 0x9AA4AE, 0.04, 0.22, 0.05, 8).rotation.z = -0.3;
+        tree(0.4, -0.38, 1.2); cyl(0.16, 0.16, 0.02, 0x4FB3E8, -0.38, 0.05, 0.2, 16, { metalness: 0.2, roughness: 0.2 });
+      },
+      aquarium() {
+        box(1.1, 0.1, 1.1, 0xDCE6F0, 0, 0.05); cyl(0.48, 0.5, 0.12, 0x2E7DD8, 0, 0.16, 0, 24);
+        [-0.2, 0.05, 0.22].forEach((x, i) => cone(0.04, 0.22 + i * 0.05, 0x2FA36B, x, 0.33 + i * 0.025, -0.15 + i * 0.1, 5));
+        ball(0.06, 0xF27BA8, -0.12, 0.25, 0.2); ball(0.05, 0xF5A524, 0.25, 0.25, -0.2);
+        const fish = new THREE.Group(); fish.position.y = 0.42; g.add(fish);
+        [0xF5A524, 0xE5484D, 0xF2B632, 0x38C6D9].forEach((c, i) => {
+          const f = new THREE.Group(); f.rotation.y = -(i / 4) * Math.PI * 2; f.position.y = (i % 2) * 0.1 - 0.05; fish.add(f);
+          const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), M(c)); b.scale.set(0.7, 1, 1.6); b.position.x = 0.25; f.add(b);
+          const t = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.07, 6), M(c)); t.rotation.x = -Math.PI / 2; t.position.set(0.25, 0, 0.11); f.add(t);
+        });
+        fish.userData.spin = [0, 0.6, 0];
+        at(new THREE.SphereGeometry(0.46, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), CL.glass, 0, 0.22, 0, { transparent: true, opacity: 0.4, metalness: 0.3, roughness: 0.1 });
+        box(0.22, 0.14, 0.04, 0x2E7DD8, 0, 0.17, 0.5);
+      },
+      coaster() {
+        box(1.15, 0.04, 0.9, CL.stone, 0, 0.02);
+        const curve = new THREE.CatmullRomCurve3([[-0.5, 0.1, 0.3], [-0.35, 0.85, 0.3], [-0.15, 0.15, 0.3], [0.2, 0.45, 0.35], [0.48, 0.2, 0.1], [0.4, 0.3, -0.3], [0, 0.55, -0.35], [-0.45, 0.2, -0.2]].map((p) => new THREE.Vector3(...p)), true);
+        at(new THREE.TubeGeometry(curve, 90, 0.025, 6, true), 0xE5484D, 0, 0, 0);
+        for (let i = 0; i < 18; i++) { const p = curve.getPoint(i / 18); if (p.y > 0.12) cyl(0.012, 0.012, p.y, CL.white, p.x, p.y / 2, p.z, 5); }
+        const p = curve.getPoint(0.03), q = curve.getPoint(0.05);
+        const cart = box(0.12, 0.08, 0.08, 0xF2B632, p.x, p.y + 0.05, p.z); cart.lookAt(q.x, q.y + 0.05, q.z);
+        box(0.3, 0.2, 0.2, 0x3D7BFF, 0.3, 0.12, -0.05); box(0.32, 0.03, 0.22, CL.white, 0.3, 0.235, -0.05);
+      },
+      pyramid() {
+        box(1.15, 0.04, 1.15, 0xE8D3A0, 0, 0.02);
+        cone(0.6, 0.75, 0xD9B56E, -0.05, 0.415, -0.05, 4).rotation.y = Math.PI / 4;
+        cone(0.08, 0.1, CL.gold, -0.05, 0.745, -0.05, 4, { metalness: 0.6, roughness: 0.3 }).rotation.y = Math.PI / 4;
+        cone(0.25, 0.3, 0xD9B56E, 0.4, 0.19, 0.38, 4).rotation.y = Math.PI / 4;
+        cyl(0.025, 0.035, 0.5, CL.wood, -0.42, 0.29, 0.4, 6);
+        for (let i = 0; i < 5; i++) { const lf = box(0.24, 0.015, 0.07, 0x3E9E57, -0.42, 0.53, 0.4); lf.rotation.set(0, (i / 5) * Math.PI * 2, -0.35); lf.translateX(0.1); }
+      },
+      balloon() {
+        box(0.8, 0.04, 0.8, 0x9BCB6B, 0, 0.02); cyl(0.2, 0.22, 0.05, CL.wood, 0, 0.065, 0, 12);
+        cyl(0.004, 0.004, 0.42, CL.wood, 0.05, 0.3, 0, 4);
+        const b = new THREE.Group(); b.position.y = 0.1; g.add(b);
+        const cols = [0xE5484D, 0xF2B632, 0x3D7BFF, 0xF4F5F2];
+        for (let i = 0; i < 8; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.34, 3, 12, (i * Math.PI) / 4, Math.PI / 4), M(cols[i % 4])); s.position.y = 1.0; s.scale.y = 1.15; b.add(s); }
+        const c = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.3, 16), M(cols[0])); c.rotation.x = Math.PI; c.position.y = 0.6; b.add(c);
+        const k = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.14), M(CL.wood)); k.position.y = 0.36; b.add(k);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4), M(CL.dark)); r.position.set(sx * 0.07, 0.47, sz * 0.07); b.add(r); });
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), M(0xFFB300, { emissive: 0xFF8A00, emissiveIntensity: 0.9 })); fl.position.y = 0.47; b.add(fl);
+        b.userData.spin = [0, 0.3, 0];
+      },
+      bulguksa() {
+        box(1.15, 0.04, 1.15, 0x9BCB6B, 0, 0.02);
+        box(1.1, 0.26, 0.62, 0xCFC3A6, 0, 0.17, -0.2); box(1.11, 0.015, 0.625, 0xB9AD90, 0, 0.17, -0.2);
+        [-0.25, 0.25].forEach((x) => { for (let i = 0; i < 5; i++) { const h = 0.055 * (i + 1); box(0.22, h, 0.07, 0xD9CBA8, x, 0.04 + h / 2, 0.425 - i * 0.07); } });
+        const tile = 0x4A4F57, wood = 0xF2E6CF, red = 0xB0352B;
+        box(0.62, 0.26, 0.3, wood, 0, 0.43, -0.3);
+        for (let i = 0; i < 5; i++) cyl(0.018, 0.018, 0.26, red, -0.28 + i * 0.14, 0.43, -0.14, 8);
+        box(0.66, 0.02, 0.34, red, 0, 0.57, -0.3); box(0.66, 0.04, 0.34, 0x2F8F6B, 0, 0.6, -0.3);
+        const r = cone(0.62, 0.26, tile, 0, 0.75, -0.3, 4); r.rotation.y = Math.PI / 4; r.scale.set(1.25, 1, 0.6);
+        box(0.4, 0.04, 0.05, 0x3B3F46, 0, 0.87, -0.3); [-0.2, 0.2].forEach((x) => ball(0.025, CL.gold, x, 0.9, -0.3, { metalness: 0.6 }));
+        [-0.47, 0.47].forEach((x) => { box(0.14, 0.14, 0.42, wood, x, 0.37, -0.3); prism(0.44, 0.2, 0.1, tile, x, 0.44, -0.3).rotation.y = 0; });
+        const st = 0xBDB5A6;
+        box(0.14, 0.06, 0.14, st, -0.3, 0.33, 0.02);
+        for (let i = 0; i < 3; i++) { const y = 0.39 + i * 0.075; box(0.08 - i * 0.012, 0.05, 0.08 - i * 0.012, st, -0.3, y, 0.02); box(0.15 - i * 0.02, 0.02, 0.15 - i * 0.02, st, -0.3, y + 0.035, 0.02); }
+        cyl(0.008, 0.008, 0.1, st, -0.3, 0.66, 0.02, 6);
+        box(0.15, 0.05, 0.15, st, 0.3, 0.325, 0.02);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => box(0.02, 0.06, 0.02, st, 0.3 + sx * 0.05, 0.38, 0.02 + sz * 0.05));
+        box(0.13, 0.03, 0.13, st, 0.3, 0.425, 0.02); cyl(0.05, 0.06, 0.06, st, 0.3, 0.47, 0.02, 8); cyl(0.08, 0.08, 0.015, st, 0.3, 0.51, 0.02, 8);
+        cyl(0.035, 0.04, 0.05, st, 0.3, 0.54, 0.02, 8); cone(0.03, 0.08, st, 0.3, 0.6, 0.02, 8); ball(0.015, st, 0.3, 0.65, 0.02);
+      },
+      rocket() {
+        box(1.0, 0.06, 1.0, CL.stone, 0, 0.03); cyl(0.3, 0.32, 0.08, CL.gray, 0, 0.1, 0, 16);
+        cyl(0.12, 0.12, 0.8, CL.white, 0, 0.62, 0, 16); cone(0.12, 0.3, 0xE5484D, 0, 1.17, 0, 16);
+        cyl(0.122, 0.122, 0.06, 0xE5484D, 0, 0.8, 0, 16);
+        cyl(0.04, 0.04, 0.02, CL.glass, 0, 0.92, 0.12, 14, { metalness: 0.3 }).rotation.x = Math.PI / 2;
+        for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2 + Math.PI / 4; box(0.02, 0.18, 0.12, 0xE5484D, Math.sin(a) * 0.15, 0.3, Math.cos(a) * 0.15).rotation.y = a; }
+        cone(0.08, 0.08, CL.dark, 0, 0.19, 0, 12); cone(0.06, 0.12, 0xFFB300, 0, 0.13, 0, 10, { emissive: 0xFF8A00, emissiveIntensity: 0.9 }).rotation.x = Math.PI;
+        box(0.08, 1.1, 0.08, 0x9AA4AE, -0.38, 0.6, -0.1);
+        for (let y = 0.2; y < 1.1; y += 0.15) box(0.1, 0.02, 0.1, CL.red, -0.38, y, -0.1);
+        [0.5, 0.9].forEach((y) => box(0.24, 0.03, 0.04, 0x9AA4AE, -0.24, y, -0.06));
       },
     };
     (B[key] || B.hospital)();
