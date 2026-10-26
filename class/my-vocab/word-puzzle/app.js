@@ -1075,10 +1075,22 @@ ${draft.passage.trim().slice(0, 12000)}
     apartment: ["아파트", "🏢", 0], hotel: ["호텔", "🏨", 0], gas: ["주유소", "⛽", 0], bus: ["버스 터미널", "🚌", 0],
     playground: ["놀이터", "🎠", 0], farm: ["농장", "🐄", 0], arcade: ["오락실", "🕹️", 0], toystore: ["장난감 가게", "🧸", 0],
     vet: ["동물병원", "🐾", 0], camp: ["캠핑장", "⛺", 0], court: ["농구장", "🏀", 0],
+    dentist: ["치과", "🦷", 0], academy: ["학원", "✏️", 0], kindergarten: ["유치원", "🖍️", 0], burger: ["햄버거 가게", "🍔", 0],
+    pizza: ["피자 가게", "🍕", 0], ramen: ["라면 가게", "🍜", 0], donut: ["도넛 가게", "🍩", 0], bubbletea: ["버블티 가게", "🧋", 0],
+    fruit: ["과일 가게", "🍎", 0], fishmarket: ["수산 시장", "🐟", 0], bowling: ["볼링장", "🎳", 0], tennis: ["테니스장", "🎾", 0],
+    soccer: ["축구장", "⚽", 0], skate: ["스케이트장", "⛸️", 0], baseball: ["야구장", "⚾", 0], photo: ["사진관", "📷", 0],
+    clothes: ["옷 가게", "👕", 0], shoes: ["신발 가게", "👟", 0], glasses: ["안경점", "👓", 0], music: ["악기점", "🎸", 0],
+    artshop: ["화방", "🎨", 0], parking: ["주차장", "🅿️", 0], carwash: ["세차장", "🧽", 0], subway: ["지하철역", "🚇", 0],
+    bike: ["자전거 대여소", "🚲", 0], recycling: ["분리수거장", "♻️", 0], solar: ["태양광 발전소", "☀️", 0], windpower: ["풍력 발전기", "💨", 0],
+    greenhouse: ["비닐하우스", "🌱", 0], orchard: ["과수원", "🍊", 0], beehive: ["양봉장", "🐝", 0], broadcast: ["방송국", "📺", 0],
     hanok: ["한옥", "🏯", 1], tower: ["전망 타워", "🗼", 1], ferris: ["관람차", "🎡", 1], lighthouse: ["등대", "🔦", 1], observatory: ["천문대", "🔭", 1],
     cheomseongdae: ["첨성대", "🏺", 1], zoo: ["동물원", "🦒", 1], aquarium: ["아쿠아리움", "🐠", 1], coaster: ["롤러코스터", "🎢", 1],
     pyramid: ["피라미드", "🔺", 1], balloon: ["열기구", "🎈", 1],
+    airport: ["공항", "✈️", 1], port: ["항구", "⚓", 1], waterpark: ["워터파크", "🌊", 1], circus: ["서커스", "🎪", 1],
+    skyscraper: ["초고층 빌딩", "🏙️", 1], igloo: ["이글루", "🧊", 1], treehouse: ["나무 위 집", "🌲", 1], dino: ["공룡 공원", "🦕", 1],
+    cablecar: ["케이블카", "🚡", 1],
     castle: ["성", "🏰", 2], bulguksa: ["불국사", "🛕", 2], rocket: ["우주 발사대", "🚀", 2],
+    geobukseon: ["거북선", "🐢", 2], liberty: ["자유의 여신상", "🗽", 2], ufo: ["UFO 착륙장", "🛸", 2],
   };
   const RARITY = ["", "희귀", "전설"];
   function pickBuildingLocal() {
@@ -1120,6 +1132,16 @@ ${draft.passage.trim().slice(0, 12000)}
     const prism = (len, d, h, c, x, y, z) => { const s = new THREE.Shape(); s.moveTo(-d / 2, 0); s.lineTo(d / 2, 0); s.lineTo(0, h); s.closePath(); const geo = new THREE.ExtrudeGeometry(s, { depth: len, bevelEnabled: false }); geo.translate(0, 0, -len / 2); const m = at(geo, c, x, y, z); m.rotation.y = Math.PI / 2; return m; };
     const tree = (x, z, s = 1) => { cyl(0.03 * s, 0.04 * s, 0.16 * s, CL.wood, x, 0.08 * s, z, 6); cone(0.13 * s, 0.3 * s, 0x3E9E57, x, 0.3 * s, z, 7); };
     const awning = (w, z, y, c1, c2) => { const n = 6; for (let i = 0; i < n; i++) { const m = box(w / n, 0.03, 0.2, i % 2 ? c2 : c1, -w / 2 + (i + 0.5) * (w / n), y, z + 0.1); m.rotation.x = 0.45; } };
+    // 작은 가게 한 채(지붕 윗면 y≈0.59, 가운데 z=-0.1) — 지붕 위 상징물만 바꿔 쓴다
+    const shop = (wall, roof, a1, a2, door = CL.door) => { box(0.86, 0.54, 0.65, wall, 0, 0.27, -0.1); box(0.9, 0.05, 0.69, roof, 0, 0.565, -0.1); wins(0.86, 0.235, 0.26, 2, 1, 0.2, 0.2); box(0.18, 0.28, 0.02, door, 0, 0.14, 0.235); awning(0.86, 0.2, 0.44, a1, a2); };
+    const lawn = (c = 0x9BCB6B, o) => box(1.15, 0.04, 1.15, c, 0, 0.02, 0, o);
+    const car = (x, z, c, alongZ) => {
+      const [w, d] = alongZ ? [0.14, 0.26] : [0.26, 0.14];
+      box(w, 0.08, d, c, x, 0.08, z); box(alongZ ? 0.125 : 0.14, 0.07, alongZ ? 0.14 : 0.125, CL.glass, x, 0.155, z, { metalness: 0.3 }); box(alongZ ? 0.13 : 0.15, 0.02, alongZ ? 0.15 : 0.13, c, x, 0.195, z);
+      [-1, 1].forEach((a) => [-1, 1].forEach((b) => { cyl(0.035, 0.035, 0.03, CL.dark, x + (alongZ ? b * 0.075 : a * 0.08), 0.04, z + (alongZ ? a * 0.08 : b * 0.075), 10).rotation[alongZ ? "z" : "x"] = Math.PI / 2; }));
+    };
+    // 두 점을 잇는 막대(케이블·사다리 등)
+    const rod = (p, q, r, c) => { const d = new THREE.Vector3(q[0] - p[0], q[1] - p[1], q[2] - p[2]); const m = cyl(r, r, d.length(), c, (p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2, 5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); return m; };
     const B = {
       hospital() {
         box(1.0, 0.9, 0.8, CL.white, 0, 0.45); box(1.04, 0.06, 0.84, CL.gray, 0, 0.93);
@@ -1612,6 +1634,359 @@ ${draft.passage.trim().slice(0, 12000)}
         box(0.08, 1.1, 0.08, 0x9AA4AE, -0.38, 0.6, -0.1);
         for (let y = 0.2; y < 1.1; y += 0.15) box(0.1, 0.02, 0.1, CL.red, -0.38, y, -0.1);
         [0.5, 0.9].forEach((y) => box(0.24, 0.03, 0.04, 0x9AA4AE, -0.24, y, -0.06));
+      },
+      dentist() {
+        shop(0xEAF6FB, 0x38C6D9, 0x38C6D9, CL.white);
+        ball(0.15, CL.white, 0, 0.8, -0.1, { flatShading: false }).scale.set(1, 0.8, 0.8);
+        [-0.06, 0.06].forEach((x) => { cone(0.05, 0.16, CL.white, x, 0.66, -0.1, 8).rotation.x = Math.PI; });
+      },
+      academy() {
+        box(0.95, 0.85, 0.65, 0xF1E3C8, 0, 0.425, -0.05); box(0.99, 0.05, 0.69, 0x2F55D4, 0, 0.875, -0.05);
+        wins(0.95, 0.276, 0.36, 5, 3, 0.2); box(0.2, 0.26, 0.02, CL.glass, 0, 0.13, 0.276, { metalness: 0.3 });
+        cyl(0.05, 0.05, 0.46, 0xF2B632, -0.02, 0.95, -0.05, 6).rotation.z = Math.PI / 2;
+        cone(0.05, 0.12, 0xEBD3B5, 0.27, 0.95, -0.05, 6).rotation.z = -Math.PI / 2; cone(0.02, 0.045, CL.dark, 0.315, 0.95, -0.05, 6).rotation.z = -Math.PI / 2;
+        cyl(0.05, 0.05, 0.08, 0xF27BA8, -0.29, 0.95, -0.05, 6).rotation.z = Math.PI / 2; cyl(0.053, 0.053, 0.03, CL.gray, -0.24, 0.95, -0.05, 6).rotation.z = Math.PI / 2;
+      },
+      kindergarten() {
+        box(0.95, 0.5, 0.65, 0xFFF1D6, 0, 0.25, -0.05);
+        [[-0.32, 0xE5484D], [0, 0xF2B632], [0.32, 0x3D7BFF]].forEach(([x, c]) => prism(0.32, 0.72, 0.22, c, x, 0.5, -0.05));
+        [-0.3, 0.3].forEach((x) => { cyl(0.08, 0.08, 0.02, CL.glass, x, 0.3, 0.276, 16, { metalness: 0.3 }).rotation.x = Math.PI / 2; });
+        box(0.18, 0.26, 0.02, 0xF27BA8, 0, 0.13, 0.276);
+        [[0.13, 0xE5484D], [0.105, 0xF2B632], [0.08, 0x3D7BFF]].forEach(([r, c]) => at(new THREE.TorusGeometry(r, 0.012, 6, 16, Math.PI), c, 0, 0.28, 0.29));
+      },
+      burger() {
+        shop(0xFFE3B3, 0xE5484D, 0xF2B632, 0xE5484D);
+        cyl(0.17, 0.15, 0.06, 0xD9A05B, 0, 0.62, -0.1, 16); cyl(0.19, 0.19, 0.05, 0x6B3F23, 0, 0.675, -0.1, 16);
+        box(0.3, 0.015, 0.3, 0xF2B632, 0, 0.705, -0.1).rotation.y = 0.4; cyl(0.2, 0.2, 0.02, 0x5DBB63, 0, 0.72, -0.1, 12); dome(0.18, 0xD9A05B, 0, 0.73, -0.1);
+        [[-0.06, 0.03], [0.05, -0.05], [0.02, 0.08], [-0.08, -0.07], [0.1, 0.04]].forEach(([x, z]) => ball(0.015, 0xFFF4C2, x, 0.73 + Math.sqrt(0.0324 - x * x - z * z), -0.1 + z));
+      },
+      pizza() {
+        shop(0xF6EEDC, 0x2FA36B, 0xE5484D, CL.white); box(0.06, 0.12, 0.06, CL.dark, 0, 0.65, -0.1);
+        [[0.27, 0xE0A458, 0], [0.23, 0xF2B632, 0.01]].forEach(([r, c, z]) => { cyl(r, r, 0.03, c, 0, 0.96, -0.1 + z, 20).rotation.x = Math.PI / 2; });
+        [[0.1, 0.05], [-0.09, 0.08], [0.02, -0.12], [-0.1, -0.07], [0.12, -0.08], [0, 0.01]].forEach(([x, y]) => { cyl(0.04, 0.04, 0.02, 0xC0392B, x, 0.96 + y, -0.07, 12).rotation.x = Math.PI / 2; });
+      },
+      ramen() {
+        shop(0xFFF4E0, 0x2E3A46, 0xE5484D, CL.white);
+        at(new THREE.SphereGeometry(0.2, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), 0xE5484D, 0, 0.8, -0.1, { side: THREE.DoubleSide });
+        cyl(0.185, 0.185, 0.02, 0xF2D57A, 0, 0.78, -0.1, 16);
+        ball(0.05, CL.white, 0.07, 0.8, -0.05).scale.y = 0.5; ball(0.025, 0xF5A524, 0.07, 0.81, -0.05);
+        [-0.02, 0.02].forEach((dz) => { cyl(0.008, 0.008, 0.4, 0x8A5A3B, -0.05, 0.9, -0.1 + dz, 5).rotation.z = 0.5; });
+      },
+      donut() {
+        shop(0xFFD6E7, 0xC0566E, 0xF27BA8, CL.white); box(0.06, 0.1, 0.06, CL.dark, 0, 0.64, -0.1);
+        at(new THREE.TorusGeometry(0.15, 0.07, 10, 20), 0xD9A05B, 0, 0.86, -0.1, { flatShading: false });
+        at(new THREE.TorusGeometry(0.15, 0.072, 10, 20), 0xF27BA8, 0, 0.86, -0.08, { flatShading: false }).scale.z = 0.6;
+        for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; box(0.03, 0.01, 0.01, [0xF2B632, 0x3D7BFF, CL.white][i % 3], Math.cos(a) * 0.15, 0.86 + Math.sin(a) * 0.15, -0.03).rotation.z = a * 2; }
+      },
+      bubbletea() {
+        shop(0xE9F5E1, 0x8B5E3C, 0x8B5E3C, 0xF6EEDC);
+        cyl(0.14, 0.1, 0.36, 0xD9B48F, 0, 0.77, -0.1, 14); dome(0.14, 0xF6EEDC, 0, 0.95, -0.1);
+        cyl(0.015, 0.015, 0.35, 0xE5484D, 0.04, 1.1, -0.1, 6).rotation.z = -0.2;
+        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ball(0.03, 0x2E1A12, Math.cos(a) * 0.1, 0.64, -0.1 + Math.sin(a) * 0.1); }
+      },
+      fruit() {
+        box(0.9, 0.45, 0.55, 0xFFF6E5, 0, 0.225, -0.25); box(0.94, 0.05, 0.59, 0x2FA36B, 0, 0.475, -0.25);
+        box(0.2, 0.26, 0.02, CL.door, 0, 0.13, 0.026); awning(0.9, 0.03, 0.38, 0x2FA36B, CL.white);
+        [[-0.3, 0xE5484D], [0, 0xF5A524], [0.3, 0xF2B632]].forEach(([x, c]) => { box(0.24, 0.1, 0.18, CL.wood, x, 0.05, 0.38); for (let i = 0; i < 4; i++) ball(0.045, c, x - 0.06 + (i % 2) * 0.12, 0.13, 0.34 + Math.floor(i / 2) * 0.08); });
+        ball(0.17, 0xE5484D, 0, 0.66, -0.25, { flatShading: false }); cyl(0.012, 0.012, 0.08, CL.wood, 0, 0.85, -0.25, 5);
+        box(0.08, 0.015, 0.04, 0x4CAF62, 0.05, 0.86, -0.25).rotation.z = 0.4;
+      },
+      fishmarket() {
+        box(1.0, 0.5, 0.65, 0xDCE6F0, 0, 0.25, -0.15); box(1.04, 0.05, 0.69, 0x2E7DD8, 0, 0.525, -0.15);
+        box(0.8, 0.22, 0.02, CL.dark, 0, 0.2, 0.18); box(0.9, 0.08, 0.22, CL.white, 0, 0.08, 0.32);
+        for (let i = 0; i < 5; i++) ball(0.04, i % 2 ? 0xE5484D : 0x9AA4AE, -0.32 + i * 0.16, 0.13, 0.32).scale.set(1.8, 0.6, 0.8);
+        ball(0.16, 0x5FA8C8, 0, 0.72, -0.15).scale.set(1.8, 1, 0.5);
+        cone(0.12, 0.16, 0x5FA8C8, 0.38, 0.72, -0.15, 4).rotation.z = Math.PI / 2; ball(0.025, CL.dark, -0.18, 0.76, -0.08);
+      },
+      bowling() {
+        box(1.0, 0.55, 0.7, 0x3D4A8A, 0, 0.275); box(1.04, 0.05, 0.74, 0x1E2233, 0, 0.575);
+        box(1.0, 0.04, 0.02, 0xFF4FD8, 0, 0.5, 0.355, { emissive: 0xFF4FD8, emissiveIntensity: 0.7 });
+        wins(1.0, 0.355, 0.32, 4); box(0.22, 0.26, 0.02, CL.glass, 0, 0.13, 0.355, { metalness: 0.3 });
+        const pin = [[0, 0], [0.08, 0.02], [0.11, 0.12], [0.08, 0.26], [0.045, 0.34], [0.065, 0.42], [0.05, 0.48], [0, 0.5]];
+        at(new THREE.LatheGeometry(pin.map(([r, y]) => new THREE.Vector2(r, y)), 14), CL.white, -0.1, 0.6, 0);
+        [0.94, 0.98].forEach((y) => { at(new THREE.TorusGeometry(0.05, 0.01, 4, 14), 0xE5484D, -0.1, y, 0).rotation.x = Math.PI / 2; });
+        ball(0.13, 0x2E3A46, 0.25, 0.73, 0.05, { metalness: 0.3, roughness: 0.3 });
+        [[0.21, 0.8], [0.27, 0.8], [0.24, 0.74]].forEach(([x, y]) => ball(0.018, 0x111827, x, y, 0.17));
+      },
+      tennis() {
+        lawn(0x5DBB63); box(1.0, 0.01, 0.7, 0x2E7DD8, 0, 0.045);
+        [-0.35, 0.35].forEach((z) => box(1.0, 0.005, 0.012, CL.white, 0, 0.052, z)); [-0.5, 0.5].forEach((x) => box(0.012, 0.005, 0.7, CL.white, x, 0.052, 0));
+        box(0.6, 0.005, 0.01, CL.white, 0, 0.052, 0);
+        box(0.01, 0.1, 0.72, CL.white, 0, 0.1, 0, { transparent: true, opacity: 0.7 }); [-0.37, 0.37].forEach((z) => cyl(0.012, 0.012, 0.14, CL.gray, 0, 0.11, z, 5));
+        box(1.1, 0.3, 0.01, CL.dark, 0, 0.19, -0.5, { transparent: true, opacity: 0.35 });
+        ball(0.035, 0xD7F23F, 0.25, 0.12, 0.15);
+      },
+      soccer() {
+        lawn(0x4CAF62);
+        for (let i = 0; i < 7; i++) if (i % 2) box(0.16, 0.005, 0.9, 0x5DBB63, -0.48 + i * 0.16, 0.043, 0);
+        [-0.45, 0.45].forEach((z) => box(1.0, 0.005, 0.012, CL.white, 0, 0.046, z)); [-0.5, 0, 0.5].forEach((x) => box(0.012, 0.005, 0.9, CL.white, x, 0.046, 0));
+        at(new THREE.TorusGeometry(0.12, 0.006, 4, 24), CL.white, 0, 0.046, 0).rotation.x = Math.PI / 2;
+        [-1, 1].forEach((s) => {
+          [-0.15, 0.15].forEach((z) => box(0.02, 0.18, 0.02, CL.white, s * 0.5, 0.13, z)); box(0.02, 0.02, 0.32, CL.white, s * 0.5, 0.22, 0);
+          box(0.1, 0.18, 0.3, CL.white, s * 0.55, 0.13, 0, { transparent: true, opacity: 0.35 });
+        });
+        ball(0.045, CL.white, 0.1, 0.085, 0.1);
+      },
+      skate() {
+        lawn(0xD8DEE4);
+        cyl(0.5, 0.5, 0.04, 0xD8F0FF, 0, 0.06, 0, 28, { metalness: 0.2, roughness: 0.15 }).scale.z = 0.75;
+        const rim = at(new THREE.TorusGeometry(0.5, 0.03, 6, 28), 0x3D7BFF, 0, 0.08, 0); rim.rotation.x = Math.PI / 2; rim.scale.y = 0.75;
+        [[0.12, 0.05, 0xE5484D], [-0.15, -0.1, 0x9B6BDE]].forEach(([x, z, c]) => { cone(0.05, 0.16, c, x, 0.16, z, 8); ball(0.035, 0xF1C9A5, x, 0.27, z); box(0.06, 0.02, 0.03, CL.gray, x, 0.085, z); });
+        tree(0.5, -0.48, 1.1); tree(-0.5, 0.48, 0.9);
+      },
+      baseball() {
+        lawn(0x4CAF62);
+        box(0.55, 0.01, 0.55, 0xC8925B, 0, 0.045, 0.05).rotation.y = Math.PI / 4; box(0.36, 0.012, 0.36, 0x5DBB63, 0, 0.047, 0.05).rotation.y = Math.PI / 4;
+        [[0, 0.38], [0.33, 0.05], [0, -0.28], [-0.33, 0.05]].forEach(([x, z]) => box(0.05, 0.015, 0.05, CL.white, x, 0.055, z).rotation.y = Math.PI / 4);
+        cyl(0.05, 0.06, 0.03, 0xC8925B, 0, 0.06, 0.05, 12);
+        box(0.4, 0.3, 0.02, CL.dark, 0, 0.17, 0.5, { transparent: true, opacity: 0.35 });
+        box(0.44, 0.24, 0.04, CL.dark, 0, 0.4, -0.52); box(0.38, 0.16, 0.045, 0x2FA36B, 0, 0.42, -0.52); [-0.15, 0.15].forEach((x) => cyl(0.015, 0.015, 0.3, CL.gray, x, 0.15, -0.52, 5));
+        [-0.52, 0.52].forEach((x) => { cyl(0.012, 0.012, 0.85, CL.gray, x, 0.45, -0.45, 5); box(0.12, 0.06, 0.04, 0xFFF4C2, x, 0.88, -0.45, { emissive: 0xFFE27A, emissiveIntensity: 0.8 }); });
+      },
+      photo() {
+        shop(0xF4F5F2, 0x2E3A46, 0x2E3A46, CL.white);
+        box(0.42, 0.24, 0.18, CL.dark, 0, 0.72, -0.1);
+        cyl(0.09, 0.1, 0.1, 0x3E4A58, 0, 0.72, 0.02, 16).rotation.x = Math.PI / 2; cyl(0.065, 0.065, 0.02, CL.glass, 0, 0.72, 0.075, 16, { metalness: 0.5 }).rotation.x = Math.PI / 2;
+        box(0.1, 0.05, 0.1, 0x9AA4AE, -0.12, 0.86, -0.1); box(0.06, 0.04, 0.02, 0xFFF4C2, 0.14, 0.8, -0.005, { emissive: 0xFFE27A, emissiveIntensity: 0.6 });
+      },
+      clothes() {
+        shop(0xFDE8EF, 0x9B6BDE, 0x9B6BDE, CL.white);
+        box(0.26, 0.3, 0.04, 0x3D7BFF, 0, 0.76, -0.1);
+        [-1, 1].forEach((s) => { box(0.13, 0.1, 0.04, 0x3D7BFF, s * 0.17, 0.86, -0.1).rotation.z = -s * 0.5; });
+        box(0.08, 0.025, 0.045, CL.white, 0, 0.9, -0.1); cyl(0.01, 0.01, 0.08, CL.gray, 0, 0.95, -0.1, 5); at(new THREE.TorusGeometry(0.025, 0.006, 4, 10, Math.PI), CL.gray, 0.025, 0.99, -0.1);
+      },
+      shoes() {
+        shop(0xE6F4FF, 0x2E3A46, 0x3D7BFF, CL.white);
+        box(0.5, 0.05, 0.18, CL.white, 0, 0.62, -0.1); box(0.3, 0.14, 0.16, 0xE5484D, -0.08, 0.715, -0.1);
+        ball(0.09, 0xE5484D, 0.12, 0.67, -0.1).scale.set(1.4, 0.8, 0.95); box(0.1, 0.04, 0.165, CL.white, -0.2, 0.8, -0.1);
+        for (let i = 0; i < 3; i++) box(0.02, 0.01, 0.1, CL.white, -0.1 + i * 0.05, 0.79, -0.1);
+      },
+      glasses() {
+        shop(0xFFF8E8, 0x2E3A46, 0x2E3A46, 0xF2B632);
+        [-0.13, 0.13].forEach((x) => { at(new THREE.TorusGeometry(0.1, 0.018, 6, 20), CL.dark, x, 0.71, -0.05); cyl(0.09, 0.09, 0.01, 0xBFE9FF, x, 0.71, -0.05, 16, { transparent: true, opacity: 0.6 }).rotation.x = Math.PI / 2; });
+        box(0.08, 0.02, 0.02, CL.dark, 0, 0.73, -0.05); [-1, 1].forEach((s) => box(0.02, 0.02, 0.24, CL.dark, s * 0.23, 0.73, -0.17));
+      },
+      music() {
+        shop(0xF1E3C8, 0x7A3E9D, 0x7A3E9D, 0xF2B632);
+        ball(0.13, 0xE07B39, 0, 0.73, -0.05).scale.z = 0.35; ball(0.1, 0xE07B39, 0, 0.89, -0.05).scale.z = 0.35;
+        cyl(0.035, 0.035, 0.01, CL.dark, 0, 0.8, -0.002, 12).rotation.x = Math.PI / 2;
+        box(0.05, 0.36, 0.03, 0x6B3F23, 0, 1.13, -0.05); box(0.08, 0.1, 0.03, CL.dark, 0, 1.35, -0.05);
+        box(0.06, 0.015, 0.02, CL.dark, 0, 0.66, -0.01);
+      },
+      artshop() {
+        shop(0xFFFDF5, 0xF2B632, 0xE5484D, 0x3D7BFF); box(0.06, 0.1, 0.06, CL.dark, 0, 0.64, -0.1);
+        cyl(0.25, 0.25, 0.03, 0xE9C28A, 0, 0.84, -0.08, 20).rotation.x = Math.PI / 2;
+        [0xE5484D, 0xF2B632, 0x3D7BFF, 0x2FA36B, 0x9B6BDE].forEach((c, i) => { const a = 0.4 + i * 0.85; cyl(0.04, 0.04, 0.02, c, Math.cos(a) * 0.16, 0.84 + Math.sin(a) * 0.16, -0.06, 12).rotation.x = Math.PI / 2; });
+        cyl(0.035, 0.035, 0.04, 0x8A5A3B, -0.05, 0.76, -0.08, 12).rotation.x = Math.PI / 2;
+        cyl(0.012, 0.012, 0.4, CL.wood, 0.25, 0.85, -0.02, 6).rotation.z = -0.6; cone(0.02, 0.06, CL.dark, 0.37, 1.02, -0.02, 6).rotation.z = -0.6;
+      },
+      parking() {
+        lawn(0x8F969E);
+        for (let i = 0; i < 5; i++) [-0.3, 0.3].forEach((z) => box(0.012, 0.005, 0.3, CL.white, -0.45 + i * 0.225, 0.045, z));
+        car(-0.3375, -0.3, 0xE5484D, true); car(0.1125, -0.3, 0x3D7BFF, true); car(-0.1125, 0.3, 0x2FA36B, true); car(0.3375, 0.3, 0xF2B632, true);
+        cyl(0.015, 0.015, 0.6, CL.gray, 0.5, 0.33, 0, 5); box(0.18, 0.18, 0.03, 0x2E66D9, 0.5, 0.66, 0);
+        box(0.03, 0.12, 0.035, CL.white, 0.47, 0.66, 0); box(0.06, 0.025, 0.035, CL.white, 0.5, 0.71, 0); box(0.06, 0.025, 0.035, CL.white, 0.5, 0.65, 0); box(0.025, 0.06, 0.035, CL.white, 0.53, 0.68, 0);
+      },
+      carwash() {
+        lawn(0xB9C0C7);
+        [-0.41, 0.41].forEach((x) => box(0.08, 0.55, 0.6, 0x38C6D9, x, 0.315, -0.1));
+        box(0.9, 0.1, 0.6, 0x38C6D9, 0, 0.54, -0.1); box(0.92, 0.04, 0.62, CL.white, 0, 0.61, -0.1); box(0.74, 0.45, 0.04, 0x2E7DD8, 0, 0.265, -0.38);
+        [-0.28, 0.28].forEach((x) => { cyl(0.08, 0.08, 0.4, 0x3D7BFF, x, 0.27, 0.05, 10).userData.spin = [0, 3, 0]; });
+        car(0, -0.05, 0xF2B632, false);
+        [[-0.05, 0.25, 0], [0.06, 0.27, -0.08], [0.0, 0.3, 0.04]].forEach(([x, y, z]) => ball(0.04, 0xEAF6FB, x, y, -0.05 + z, { transparent: true, opacity: 0.7 }));
+        box(0.4, 0.14, 0.04, CL.white, 0, 0.7, -0.1); cone(0.04, 0.08, 0x3D7BFF, 0, 0.72, -0.075, 10);
+      },
+      subway() {
+        lawn(0xCFD6DD);
+        box(0.9, 0.35, 0.3, 0xDCE6F0, 0, 0.215, -0.38); box(0.94, 0.04, 0.34, 0x2FA36B, 0, 0.41, -0.38); wins(0.9, -0.228, 0.24, 5);
+        box(0.36, 0.005, 0.5, 0x1E2233, 0, 0.043, 0.12); for (let i = 1; i < 6; i++) box(0.34, 0.006, 0.01, 0x5B6670, 0, 0.046, -0.13 + i * 0.085);
+        [-0.2, 0.2].forEach((x) => box(0.04, 0.16, 0.5, CL.stone, x, 0.12, 0.12));
+        [[-0.2, -0.12], [0.2, -0.12], [-0.2, 0.36], [0.2, 0.36]].forEach(([x, z]) => cyl(0.01, 0.01, 0.4, CL.gray, x, 0.24, z, 5));
+        box(0.46, 0.02, 0.54, CL.glass, 0, 0.44, 0.12, { transparent: true, opacity: 0.55, metalness: 0.3 });
+        cyl(0.015, 0.015, 0.6, CL.gray, -0.38, 0.33, 0.35, 5); cyl(0.08, 0.08, 0.02, 0x2FA36B, -0.38, 0.66, 0.35, 16, { emissive: 0x2FA36B, emissiveIntensity: 0.5 }).rotation.x = Math.PI / 2;
+      },
+      bike() {
+        lawn(0xCFD6DD);
+        box(1.0, 0.03, 0.03, CL.gray, 0, 0.18, -0.3); [-0.45, 0.45].forEach((x) => cyl(0.015, 0.015, 0.16, CL.gray, x, 0.1, -0.3, 5));
+        [0xE5484D, 0x2FA36B, 0x3D7BFF, 0xF2B632].forEach((c, i) => {
+          const x = -0.36 + i * 0.22;
+          [-0.18, 0.08].forEach((z) => { at(new THREE.TorusGeometry(0.075, 0.012, 6, 16), CL.dark, x, 0.09, z).rotation.y = Math.PI / 2; });
+          box(0.015, 0.015, 0.22, c, x, 0.17, -0.05); box(0.015, 0.13, 0.015, c, x, 0.12, -0.12).rotation.x = -0.3; box(0.015, 0.13, 0.015, c, x, 0.13, 0.06).rotation.x = 0.3;
+          box(0.03, 0.015, 0.06, CL.dark, x, 0.21, -0.14); box(0.1, 0.015, 0.015, CL.dark, x, 0.22, 0.08);
+        });
+        box(0.2, 0.4, 0.15, 0x2FA36B, 0.4, 0.24, 0.4); box(0.12, 0.1, 0.01, 0x5CE1E6, 0.4, 0.32, 0.478, { emissive: 0x2EC4F0, emissiveIntensity: 0.5 });
+      },
+      recycling() {
+        lawn(0xCFD6DD);
+        [[0x3D7BFF, -0.36], [0x2FA36B, -0.12], [0xF2B632, 0.12], [0xE5484D, 0.36]].forEach(([c, x]) => { box(0.2, 0.32, 0.24, c, x, 0.2, -0.05); box(0.22, 0.03, 0.26, CL.dark, x, 0.375, -0.05); box(0.12, 0.04, 0.01, CL.white, x, 0.28, 0.075); });
+        [-0.5, 0.5].forEach((x) => cyl(0.015, 0.015, 0.52, CL.gray, x, 0.3, -0.05, 5)); box(1.05, 0.03, 0.4, 0x5DBB63, 0, 0.57, -0.05);
+        at(new THREE.TorusGeometry(0.12, 0.025, 6, 3), 0x2FA36B, 0, 0.75, -0.05);
+      },
+      solar() {
+        lawn(0x9BCB6B);
+        for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+          const x = -0.36 + c * 0.36, z = -0.35 + r * 0.3;
+          box(0.3, 0.02, 0.2, 0x1F3A93, x, 0.18, z, { metalness: 0.5, roughness: 0.25 }).rotation.x = 0.5;
+          box(0.005, 0.021, 0.2, CL.white, x, 0.181, z).rotation.x = 0.5; cyl(0.01, 0.01, 0.16, CL.gray, x, 0.1, z, 4);
+        }
+        cyl(0.012, 0.012, 0.6, CL.gray, 0.52, 0.32, 0.45, 5); ball(0.07, 0xFFD23F, 0.52, 0.66, 0.45, { emissive: 0xFFB300, emissiveIntensity: 0.8 });
+      },
+      windpower() {
+        lawn(0x9BCB6B);
+        cyl(0.03, 0.06, 1.4, CL.white, 0, 0.74, 0, 10); box(0.1, 0.08, 0.22, CL.white, 0, 1.46, 0);
+        const hub = new THREE.Group(); hub.position.set(0, 1.46, 0.13); g.add(hub);
+        for (let i = 0; i < 3; i++) { const arm = new THREE.Group(); arm.rotation.z = (i * Math.PI * 2) / 3; const bl = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.55, 0.015), M(CL.white)); bl.position.y = 0.29; arm.add(bl); hub.add(arm); }
+        hub.add(new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), M(CL.gray)));
+        hub.userData.spin = [0, 0, 1.2];
+        box(0.24, 0.18, 0.2, 0xDCE6F0, 0.35, 0.13, 0.35); prism(0.26, 0.22, 0.08, 0x2E7DD8, 0.35, 0.22, 0.35);
+      },
+      greenhouse() {
+        lawn(0x9C7A54);
+        at(new THREE.CylinderGeometry(0.4, 0.4, 1.0, 16, 1, false, 0, Math.PI), 0xE6F4FF, 0, 0.04, 0, { transparent: true, opacity: 0.4, side: THREE.DoubleSide }).rotation.z = Math.PI / 2;
+        [-0.5, -0.25, 0, 0.25, 0.5].forEach((x) => { at(new THREE.TorusGeometry(0.4, 0.008, 4, 16, Math.PI), CL.white, x, 0.04, 0).rotation.y = Math.PI / 2; });
+        [-0.2, 0, 0.2].forEach((z) => { for (let i = 0; i < 6; i++) { const x = -0.38 + i * 0.15; ball(0.05, 0x4CAF62, x, 0.08, z); if (i % 2) ball(0.02, 0xE5484D, x + 0.03, 0.11, z + 0.03); } });
+      },
+      orchard() {
+        lawn(0x8BC34A);
+        [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.2], [0.3, 0.2]].forEach(([x, z]) => {
+          cyl(0.035, 0.045, 0.25, CL.wood, x, 0.165, z, 6); ball(0.17, 0x3E9E57, x, 0.42, z);
+          for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; ball(0.03, 0xF5A524, x + Math.cos(a) * 0.15, 0.4 + (i % 2) * 0.08, z + Math.sin(a) * 0.15); }
+        });
+        cyl(0.1, 0.08, 0.1, 0xC69A6B, 0.02, 0.09, 0.45, 12); [-0.03, 0.04, 0.0].forEach((x, i) => ball(0.03, 0xF5A524, 0.02 + x, 0.15, 0.45 + (i - 1) * 0.03));
+      },
+      beehive() {
+        lawn(0x9BCB6B);
+        [-0.32, 0, 0.32].forEach((x) => { box(0.22, 0.12, 0.2, CL.white, x, 0.1, -0.15); box(0.22, 0.1, 0.2, 0xF2B632, x, 0.21, -0.15); box(0.26, 0.03, 0.24, CL.wood, x, 0.275, -0.15); box(0.08, 0.02, 0.01, CL.dark, x, 0.06, -0.045); });
+        [0xE5484D, 0xF27BA8, 0x9B6BDE, CL.white, 0xF5A524, 0xE5484D, 0xF27BA8].forEach((c, i) => { const x = -0.42 + i * 0.14; cyl(0.006, 0.006, 0.1, 0x3E9E57, x, 0.09, 0.35, 4); ball(0.035, c, x, 0.15, 0.35); });
+        const bees = new THREE.Group(); bees.position.set(0, 0.45, 0.1); g.add(bees);
+        [[0.2, 0, 0], [-0.15, 0.08, 0.12], [0.02, -0.04, -0.2]].forEach(([x, y, z]) => { const b = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), M(0xF2B632)); b.position.set(x, y, z); bees.add(b); const s = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.062, 0.062), M(CL.dark)); s.position.set(x, y, z); bees.add(s); });
+        bees.userData.spin = [0, 1, 0];
+        cyl(0.012, 0.012, 0.35, CL.wood, 0, 0.47, -0.3, 5); cyl(0.17, 0.17, 0.04, 0xF2B632, 0, 0.75, -0.3, 6).rotation.x = Math.PI / 2;
+      },
+      broadcast() {
+        box(0.8, 0.7, 0.6, 0xDCE6F0, 0, 0.35, 0.05); box(0.84, 0.05, 0.64, 0x2E3A46, 0, 0.725, 0.05);
+        wins(0.8, 0.355, 0.3, 4, 2, 0.22); box(0.2, 0.24, 0.02, CL.glass, 0, 0.12, 0.355, { metalness: 0.3 });
+        cone(0.12, 1.0, 0xE5484D, -0.2, 1.25, -0.05, 4, { wireframe: true }); ball(0.03, 0xFF6B6B, -0.2, 1.77, -0.05, { emissive: 0xFF3B3B, emissiveIntensity: 0.8 });
+        dome(0.15, CL.white, 0.22, 0.78, 0.05).rotation.x = -0.8;
+      },
+      airport() {
+        lawn(0x9BCB6B);
+        box(1.15, 0.01, 0.26, 0x3E4A58, 0, 0.045, 0.3); for (let i = 0; i < 6; i++) box(0.1, 0.005, 0.02, CL.white, -0.45 + i * 0.18, 0.052, 0.3);
+        box(0.7, 0.28, 0.3, 0xDCE6F0, -0.15, 0.18, -0.25); box(0.66, 0.16, 0.01, CL.glass, -0.15, 0.2, -0.098, { metalness: 0.3 });
+        at(new THREE.CylinderGeometry(0.17, 0.17, 0.72, 12, 1, false, 0, Math.PI), 0xB9C0C7, -0.15, 0.32, -0.25).rotation.z = Math.PI / 2;
+        cyl(0.05, 0.06, 0.6, CL.white, 0.42, 0.34, -0.3, 10); cyl(0.11, 0.08, 0.1, CL.glass, 0.42, 0.69, -0.3, 10, { metalness: 0.3 }); cone(0.12, 0.06, CL.dark, 0.42, 0.77, -0.3, 10);
+        cyl(0.05, 0.05, 0.5, CL.white, 0, 0.13, 0.3, 12).rotation.z = Math.PI / 2; ball(0.05, CL.white, 0.25, 0.13, 0.3);
+        cone(0.05, 0.12, CL.white, -0.31, 0.13, 0.3, 12).rotation.z = Math.PI / 2;
+        box(0.14, 0.015, 0.6, CL.white, 0.02, 0.12, 0.3); box(0.08, 0.1, 0.015, 0x2E66D9, -0.29, 0.21, 0.3); box(0.06, 0.01, 0.2, CL.white, -0.29, 0.14, 0.3);
+        box(0.36, 0.015, 0.102, 0x2E66D9, 0, 0.145, 0.3);
+      },
+      port() {
+        lawn(0x3BA3D9, { metalness: 0.2, roughness: 0.2 });
+        box(1.15, 0.1, 0.5, 0xA9A49A, 0, 0.07, -0.32);
+        [[-0.42, 0.18, 0xE5484D], [-0.42, 0.28, 0x3D7BFF], [-0.16, 0.18, 0x2FA36B], [-0.42, 0.38, 0xF2B632], [-0.16, 0.28, 0xF5A524]].forEach(([x, y, c]) => box(0.24, 0.1, 0.13, c, x, y, -0.35));
+        [-0.4, -0.2].forEach((z) => box(0.04, 0.6, 0.04, 0xF2B632, 0.25, 0.42, z)); box(0.04, 0.04, 0.75, 0xF2B632, 0.25, 0.74, -0.05);
+        cyl(0.005, 0.005, 0.2, CL.dark, 0.25, 0.62, 0.22, 4); box(0.05, 0.04, 0.05, CL.dark, 0.25, 0.5, 0.22);
+        box(0.6, 0.1, 0.18, 0xC0392B, -0.1, 0.08, 0.32); box(0.58, 0.03, 0.17, CL.white, -0.1, 0.145, 0.32); box(0.12, 0.12, 0.12, CL.white, -0.32, 0.22, 0.32);
+        [[0x3D7BFF, -0.1], [0x2FA36B, 0.06]].forEach(([c, x]) => box(0.14, 0.07, 0.12, c, x, 0.195, 0.32));
+      },
+      waterpark() {
+        lawn(0xE6EEF2);
+        box(0.96, 0.06, 0.56, CL.white, 0, 0.07, 0.25); box(0.9, 0.02, 0.5, 0x3BB3E8, 0, 0.1, 0.25, { metalness: 0.2, roughness: 0.15 });
+        box(0.25, 0.7, 0.25, 0xF2B632, -0.35, 0.39, -0.35); cone(0.2, 0.18, 0xE5484D, -0.35, 0.83, -0.35, 4).rotation.y = Math.PI / 4;
+        [[[-0.3, 0.7, -0.25], [0.1, 0.62, -0.4], [0.38, 0.42, -0.2], [0.15, 0.26, 0.0], [0.05, 0.12, 0.2]], 0xE5484D, [[-0.25, 0.5, -0.22], [-0.48, 0.36, 0.0], [-0.22, 0.22, 0.08], [-0.28, 0.12, 0.25]], 0x2E66D9]
+          .reduce((a, v, i, arr) => (i % 2 ? a : a.concat([[v, arr[i + 1]]])), [])
+          .forEach(([pts, c]) => at(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), 40, 0.04, 8, false), c, 0, 0, 0));
+        [[0.05, 0.16, 0.22], [-0.28, 0.16, 0.28]].forEach(([x, y, z]) => ball(0.05, CL.white, x, y, z, { transparent: true, opacity: 0.7 }));
+        [0.38, 0.22].forEach((x) => { cyl(0.008, 0.008, 0.3, CL.gray, x, 0.25, -0.05, 4); cone(0.12, 0.06, 0xF27BA8, x, 0.42, -0.05, 10); });
+      },
+      circus() {
+        lawn(0x9BCB6B);
+        for (let i = 0; i < 12; i++) {
+          const c = i % 2 ? CL.white : 0xE5484D, a = (i * Math.PI) / 6;
+          at(new THREE.CylinderGeometry(0.42, 0.42, 0.4, 2, 1, true, a, Math.PI / 6), c, 0, 0.24, 0);
+          at(new THREE.ConeGeometry(0.48, 0.45, 2, 1, false, a, Math.PI / 6), c, 0, 0.665, 0);
+        }
+        cyl(0.008, 0.008, 0.2, CL.gray, 0, 0.98, 0, 4); box(0.12, 0.07, 0.01, 0xF2B632, 0.06, 1.04, 0);
+        box(0.2, 0.26, 0.02, 0x7A3E9D, 0, 0.17, 0.42); box(0.24, 0.04, 0.03, 0xF2B632, 0, 0.32, 0.42);
+      },
+      skyscraper() {
+        box(1.0, 0.04, 1.0, 0xCFD6DD, 0, 0.02);
+        box(0.5, 1.5, 0.5, 0x5A7FA8, 0, 0.79, 0, { metalness: 0.5, roughness: 0.2 });
+        for (let y = 0.2; y < 1.5; y += 0.18) box(0.51, 0.02, 0.51, 0xDCE6F0, 0, y, 0);
+        box(0.36, 0.25, 0.36, 0x5A7FA8, 0, 1.665, 0, { metalness: 0.5, roughness: 0.2 }); box(0.22, 0.15, 0.22, 0x5A7FA8, 0, 1.865, 0, { metalness: 0.5, roughness: 0.2 });
+        cyl(0.01, 0.015, 0.4, CL.gray, 0, 2.14, 0, 5); ball(0.025, 0xFF6B6B, 0, 2.35, 0, { emissive: 0xFF3B3B, emissiveIntensity: 0.8 });
+        box(0.2, 0.18, 0.02, CL.door, 0, 0.13, 0.255);
+      },
+      igloo() {
+        lawn(0xF4F7FA);
+        dome(0.36, CL.white, 0, 0.04, 0);
+        [0.12, 0.24].forEach((h) => { at(new THREE.TorusGeometry(Math.sqrt(0.1296 - h * h), 0.008, 4, 20), 0xD8E2EA, 0, 0.04 + h, 0).rotation.x = Math.PI / 2; });
+        cyl(0.13, 0.13, 0.25, CL.white, 0, 0.04, 0.36, 12).rotation.x = Math.PI / 2; cyl(0.09, 0.09, 0.01, CL.dark, 0, 0.04, 0.49, 12).rotation.x = Math.PI / 2;
+        ball(0.07, CL.dark, 0.38, 0.13, 0.3).scale.y = 1.3; ball(0.055, CL.white, 0.38, 0.12, 0.34).scale.y = 1.2; cone(0.015, 0.04, 0xF5A524, 0.38, 0.2, 0.37, 6).rotation.x = Math.PI / 2;
+        cyl(0.12, 0.12, 0.01, 0x3BA3D9, -0.35, 0.045, 0.35, 16);
+        [[-0.4, -0.35], [-0.3, -0.42]].forEach(([x, z]) => box(0.1, 0.08, 0.1, 0xD8F0FF, x, 0.08, z, { transparent: true, opacity: 0.8 }));
+      },
+      treehouse() {
+        lawn(0x8BC34A);
+        cyl(0.1, 0.14, 0.9, CL.wood, 0, 0.49, -0.1, 8);
+        ball(0.36, 0x3E9E57, 0, 1.25, -0.15); ball(0.24, 0x4CAF62, -0.3, 1.1, -0.1); ball(0.24, 0x4CAF62, 0.3, 1.12, -0.2);
+        box(0.6, 0.03, 0.5, 0x8A5A3B, 0, 0.55, 0); box(0.36, 0.26, 0.3, 0xC69A6B, 0.05, 0.695, 0.05); prism(0.4, 0.36, 0.14, 0xC0392B, 0.05, 0.825, 0.05);
+        box(0.1, 0.1, 0.01, CL.glass, 0.1, 0.72, 0.205); box(0.08, 0.16, 0.01, CL.door, -0.05, 0.65, 0.205);
+        [-0.25, -0.15].forEach((x) => rod([x, 0.04, 0.42], [x, 0.56, 0.24], 0.01, CL.wood));
+        for (let i = 1; i < 6; i++) { const t = i / 6; box(0.1, 0.012, 0.012, CL.wood, -0.2, 0.04 + t * 0.52, 0.42 - t * 0.18); }
+      },
+      dino() {
+        lawn(0x8BC34A);
+        const c = 0x9B6BDE;
+        ball(0.22, c, 0, 0.38, 0).scale.set(1.4, 1, 0.9);
+        [[-0.16, -0.1], [0.16, -0.1], [-0.16, 0.1], [0.16, 0.1]].forEach(([x, z]) => cyl(0.05, 0.06, 0.25, c, x, 0.16, z, 8));
+        cyl(0.05, 0.07, 0.55, c, 0.25, 0.72, 0, 8).rotation.z = -0.5; ball(0.08, c, 0.42, 1.0, 0).scale.x = 1.4;
+        [-0.04, 0.04].forEach((z) => ball(0.015, CL.dark, 0.48, 1.03, z));
+        cone(0.08, 0.5, c, -0.45, 0.35, 0, 8).rotation.z = Math.PI / 2 + 0.3;
+        [[-0.1, 0.6], [0.05, 0.6], [0.18, 0.55]].forEach(([x, y]) => ball(0.04, 0xC9B3F0, x, y, 0));
+        cyl(0.025, 0.035, 0.5, CL.wood, -0.42, 0.29, -0.38, 6);
+        for (let i = 0; i < 5; i++) { const lf = box(0.24, 0.015, 0.07, 0x3E9E57, -0.42, 0.53, -0.38); lf.rotation.set(0, (i / 5) * Math.PI * 2, -0.35); lf.translateX(0.1); }
+      },
+      cablecar() {
+        lawn(0x9BCB6B);
+        cone(0.45, 0.8, 0x7A8C6E, -0.25, 0.44, -0.2, 7); cone(0.152, 0.27, CL.white, -0.25, 0.705, -0.2, 7);
+        box(0.25, 0.2, 0.25, CL.white, 0.4, 0.14, 0.35); box(0.27, 0.03, 0.27, 0xE5484D, 0.4, 0.255, 0.35);
+        const a = [0.4, 0.34, 0.35], b = [-0.2, 0.86, -0.18];
+        rod(a, b, 0.006, CL.dark);
+        const t = 0.45, p = a.map((v, i) => v + (b[i] - v) * t);
+        rod(p, [p[0], p[1] - 0.1, p[2]], 0.005, CL.dark); box(0.12, 0.1, 0.1, 0xE5484D, p[0], p[1] - 0.15, p[2]); box(0.1, 0.04, 0.102, CL.glass, p[0], p[1] - 0.13, p[2], { metalness: 0.3 });
+      },
+      geobukseon() {
+        lawn(0x3BA3D9, { metalness: 0.2, roughness: 0.2 });
+        ball(0.4, 0x8A5A3B, 0, 0.12, 0).scale.set(1.3, 0.35, 0.55);
+        ball(0.36, 0x4A4F57, 0, 0.2, 0).scale.set(1.25, 0.45, 0.5);
+        for (let i = -3; i <= 3; i++) for (const zz of [-0.08, 0, 0.08]) { const x = i * 0.1, q = 1 - (x / 0.45) ** 2 - (zz / 0.18) ** 2; if (q > 0) cone(0.012, 0.05, CL.gray, x, 0.2 + 0.162 * Math.sqrt(q) + 0.02, zz, 4); }
+        box(0.12, 0.08, 0.1, 0xC0392B, 0.52, 0.24, 0); ball(0.06, 0xF2B632, 0.6, 0.3, 0); [-0.03, 0.03].forEach((z) => cone(0.012, 0.06, 0xF2B632, 0.6, 0.37, z, 4));
+        for (let i = 0; i < 6; i++) [-1, 1].forEach((s) => { box(0.015, 0.015, 0.2, CL.wood, -0.3 + i * 0.12, 0.1, s * 0.26).rotation.x = s * 0.5; });
+        [-0.15, 0.15].forEach((x) => { cyl(0.012, 0.012, 0.6, CL.wood, x, 0.55, 0, 5); box(0.2, 0.24, 0.01, 0xF2E6CF, x, 0.6, 0.02); box(0.06, 0.04, 0.005, 0xE5484D, x + 0.03, 0.87, 0); });
+      },
+      liberty() {
+        lawn(0x3BA3D9, { metalness: 0.2, roughness: 0.2 });
+        cyl(0.5, 0.52, 0.06, 0x9BCB6B, 0, 0.07, 0, 8);
+        box(0.4, 0.12, 0.4, CL.stone, 0, 0.16, 0); box(0.3, 0.35, 0.3, 0xD9CFBF, 0, 0.395, 0); box(0.34, 0.04, 0.34, CL.stone, 0, 0.59, 0);
+        const c = 0x6FB5A0;
+        cone(0.13, 0.55, c, 0, 0.885, 0, 10); cyl(0.06, 0.08, 0.15, c, 0, 1.1, 0, 10); ball(0.06, c, 0, 1.22, 0);
+        for (let i = 0; i < 7; i++) { const a = (i / 6 - 0.5) * Math.PI * 0.8; cone(0.012, 0.07, c, Math.sin(a) * 0.07, 1.25 + Math.cos(a) * 0.05, 0, 4).rotation.z = -a; }
+        cyl(0.022, 0.022, 0.3, c, 0.08, 1.31, 0, 6).rotation.z = -0.2; cyl(0.03, 0.02, 0.04, CL.gold, 0.11, 1.48, 0, 8, { metalness: 0.5 });
+        cone(0.035, 0.09, 0xF2B632, 0.11, 1.54, 0, 8, { emissive: 0xFFB300, emissiveIntensity: 0.9 });
+        box(0.07, 0.11, 0.03, c, -0.07, 1.08, 0.06).rotation.z = 0.3;
+      },
+      ufo() {
+        lawn(0x6B7B8C);
+        cyl(0.42, 0.44, 0.04, 0xCFD6DD, 0, 0.06, 0, 24);
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; ball(0.025, 0x5BFF8A, Math.cos(a) * 0.38, 0.09, Math.sin(a) * 0.38, { emissive: 0x2EE86A, emissiveIntensity: 0.9 }); }
+        cone(0.32, 0.6, 0x9BFFB0, 0, 0.38, 0, 24, { transparent: true, opacity: 0.3, emissive: 0x5BFF8A, emissiveIntensity: 0.5 });
+        const u = new THREE.Group(); u.position.y = 0.82; g.add(u);
+        const disk = new THREE.Mesh(new THREE.SphereGeometry(0.4, 24, 12), M(0xB9C0C7, { metalness: 0.6, roughness: 0.3 })); disk.scale.y = 0.22; u.add(disk);
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.17, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2), M(CL.glass, { transparent: true, opacity: 0.6, metalness: 0.3, roughness: 0.1 })); top.position.y = 0.05; u.add(top);
+        const al = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), M(0x7BE07B)); al.position.y = 0.1; u.add(al);
+        for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2, l = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), M(i % 2 ? 0xFFE27A : 0xFF7AD9, { emissive: i % 2 ? 0xFFC83D : 0xFF4FD8, emissiveIntensity: 0.9 })); l.position.set(Math.cos(a) * 0.36, -0.01, Math.sin(a) * 0.36); u.add(l); }
+        u.userData.spin = [0, 0.8, 0];
       },
     };
     (B[key] || B.hospital)();

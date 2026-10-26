@@ -33,9 +33,14 @@ const BUILDINGS = {
   pcroom: 10, convenience: 10, pharmacy: 10, bookstore: 10, cinema: 10, karaoke: 10, gym: 10, bunsik: 10,
   chicken: 10, icecream: 10, laundry: 10, hairshop: 10, apartment: 10, hotel: 10, gas: 10, bus: 10,
   playground: 10, farm: 10, arcade: 10, toystore: 10, vet: 10, camp: 10, court: 10,
+  dentist: 10, academy: 10, kindergarten: 10, burger: 10, pizza: 10, ramen: 10, donut: 10, bubbletea: 10,
+  fruit: 10, fishmarket: 10, bowling: 10, tennis: 10, soccer: 10, skate: 10, baseball: 10, photo: 10,
+  clothes: 10, shoes: 10, glasses: 10, music: 10, artshop: 10, parking: 10, carwash: 10, subway: 10,
+  bike: 10, recycling: 10, solar: 10, windpower: 10, greenhouse: 10, orchard: 10, beehive: 10, broadcast: 10,
   hanok: 4, tower: 4, ferris: 4, lighthouse: 4, observatory: 4,
   cheomseongdae: 4, zoo: 4, aquarium: 4, coaster: 4, pyramid: 4, balloon: 4,
-  castle: 1, bulguksa: 1, rocket: 1
+  airport: 4, port: 4, waterpark: 4, circus: 4, skyscraper: 4, igloo: 4, treehouse: 4, dino: 4, cablecar: 4,
+  castle: 1, bulguksa: 1, rocket: 1, geobukseon: 1, liberty: 1, ufo: 1
 };
 
 function tab_(name, header) {
