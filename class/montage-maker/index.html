@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montage Maker</title>
+<style>
+  :root {
+    --bg: #f2f4f8;
+    --card: #ffffff;
+    --ink: #24283a;
+    --muted: #7d8399;
+    --line: #dfe3ec;
+    --accent: #2f6fd6;
+    --accent-bg: #e8f0fd;
+    --ok: #2e8b57;
+    --ok-bg: #e3f5ea;
+    --err: #d0452f;
+    --blank: #fff7d6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .hidden { display: none !important; }
+  header { text-align: center; padding: 18px 16px 4px; }
+  header h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 0.92rem; }
+  #who { color: var(--muted); font-size: 0.92rem; text-align: center; margin-bottom: 8px; }
+  #who button { border: 0; background: none; color: var(--accent); text-decoration: underline; padding: 0 0 0 6px; font-size: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 14px 60px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .narrow { max-width: 460px; margin: 14px auto 0; }
+  label.f { display: block; font-weight: 600; margin: 12px 0 4px; }
+  .narrow input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; font-size: 1.05rem; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  .btn { display: block; width: 100%; margin-top: 14px; padding: 13px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font-size: 1.08rem; font-weight: 700; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .msg { min-height: 1.3em; margin-top: 6px; font-size: 0.92rem; color: var(--err); }
+  .msg.ok { color: var(--ok); }
+  .foot { text-align: center; margin-top: 30px; font-size: 0.82rem; }
+  .foot a { color: var(--muted); }
+
+  /* ===== 만들기 화면 ===== */
+  .maker { display: grid; grid-template-columns: 340px 1fr; grid-template-areas: "stage panel" "out panel"; gap: 14px; align-items: start; }
+  .stage { grid-area: stage; position: sticky; top: 10px; z-index: 5; }
+  .out { grid-area: out; }
+  .work { grid-area: panel; }
+  .poster { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .poster .ttl { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #24283a; color: #fff; font-weight: 800; letter-spacing: .08em; }
+  .poster .ttl small { font-weight: 500; letter-spacing: 0; opacity: .8; }
+  .poster svg { display: block; width: 100%; height: auto; max-height: 62vh; background: #EEF1F6; }
+  .pron { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--line); align-items: center; font-size: 0.92rem; }
+  .pron button { flex: 1; padding: 6px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; }
+  .pron button.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+  .out h3 { margin: 0 0 6px; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .out h3 .sp { flex: 1; }
+  .out h3 button { border: 1.5px solid var(--line); background: #fff; border-radius: 10px; padding: 3px 10px; font-size: 0.88rem; }
+  .sents { margin: 0; padding-left: 1.3em; font-size: 1.02rem; }
+  .sents li { margin: 2px 0; }
+  .sents .none { color: var(--muted); list-style: none; margin-left: -1.3em; font-size: 0.92rem; }
+  .cnt { color: var(--muted); font-size: 0.85rem; margin-top: 6px; }
+
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .tabs button { flex: 1; min-width: 92px; padding: 10px 6px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; font-size: 0.98rem; position: relative; }
+  .tabs button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .tabs button .dot { display: block; font-size: 0.72rem; font-weight: 500; opacity: .8; }
+
+  .cat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+  .cat.done { border-color: #9fd3b4; }
+  .cat h3 { margin: 0 0 8px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+  .cat h3 .en { color: var(--muted); font-weight: 500; font-size: 0.85rem; }
+  .cat h3 .sp { flex: 1; }
+  .cat h3 .reset { border: 0; background: none; color: var(--muted); font-size: 0.85rem; text-decoration: underline; }
+  .frame { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 1.2rem; font-weight: 600; padding: 10px 12px; border-radius: 12px; background: #f7f8fb; }
+  .frame input {
+    flex: 1 1 160px; min-width: 120px; max-width: 320px; padding: 6px 10px; font-size: 1.12rem; font-weight: 600;
+    border: 2px dashed #e0b84a; border-radius: 10px; background: var(--blank); color: #1d3f8a;
+  }
+  .frame input.good { border: 2px solid var(--ok); background: var(--ok-bg); color: var(--ok); }
+  .frame input.bad { border-color: var(--err); }
+  .frame .go { padding: 7px 14px; border: 0; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 700; font-size: 0.98rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--ok-bg); color: var(--ok); border-radius: 999px; padding: 3px 6px 3px 12px; font-size: 0.95rem; font-weight: 600; }
+  .chip button { border: 0; background: #fff; color: var(--muted); border-radius: 999px; width: 22px; height: 22px; line-height: 1; padding: 0; }
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; margin-top: 10px; }
+  .opt { border: 1.5px solid var(--line); border-radius: 12px; background: #fff; padding: 6px 6px 8px; text-align: center; }
+  .opt svg { display: block; width: 100%; height: 92px; background: #f4f6fa; border-radius: 8px; }
+  .opt b { display: block; margin-top: 5px; font-size: 1rem; color: #1d3f8a; word-break: keep-all; }
+  .opt span { display: block; font-size: 0.78rem; color: var(--muted); }
+  .opt.on { border-color: var(--ok); background: var(--ok-bg); }
+  .colors { margin-top: 10px; padding: 8px 10px; border-radius: 12px; background: #fbf8ee; font-size: 0.88rem; }
+  .colors .sw { display: inline-flex; align-items: center; gap: 4px; margin: 3px 8px 3px 0; font-weight: 700; color: #3c3c3c; }
+  .colors .sw i { width: 16px; height: 16px; border-radius: 5px; border: 1px solid #0003; display: inline-block; }
+  .tip { color: var(--muted); font-size: 0.85rem; margin: 6px 0 0; }
+
+  /* ===== 교사 ===== */
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .bar select { padding: 8px 12px; font-size: 0.98rem; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; }
+  .bar button { padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font-size: 0.95rem; }
+  .bar .sp { flex: 1; }
+  .bar label { font-size: 0.95rem; display: flex; align-items: center; gap: 4px; }
+  #sum { color: var(--muted); font-size: 0.92rem; margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 12px; }
+  .tcard { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; }
+  .tcard svg { display: block; width: 100%; height: 220px; background: #eef1f6; }
+  .tcard .nm { padding: 8px 10px; font-weight: 700; }
+  .tcard .nm small { color: var(--muted); font-weight: 500; }
+  body.nonames .nm .who, body.nonames .mname { visibility: hidden; }
+  .modal { position: fixed; inset: 0; background: #0008; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 14px; }
+  .mbox { background: #fff; border-radius: 18px; width: min(1100px, 100%); max-height: 100%; overflow: auto; display: grid; grid-template-columns: minmax(240px, 380px) 1fr; }
+  .mbox svg { display: block; width: 100%; height: auto; max-height: 86vh; background: #eef1f6; }
+  .mside { padding: 18px 20px; display: flex; flex-direction: column; }
+  .mside .top { display: flex; gap: 8px; align-items: center; }
+  .mside .top button { border: 1.5px solid var(--line); background: #fff; border-radius: 10px; padding: 6px 12px; }
+  .mside .top .sp { flex: 1; }
+  .mname { font-size: 1.3rem; font-weight: 800; margin: 10px 0 6px; }
+  .mside ol { font-size: 1.25rem; padding-left: 1.4em; margin: 0; }
+  body.big .mside ol { font-size: 1.6rem; }
+  .mside .del { margin-top: auto; align-self: flex-end; border: 0; background: none; color: #bbb; padding-top: 14px; }
+  .mside .del:hover { color: var(--err); }
+
+  @media (max-width: 860px) {
+    .maker { grid-template-columns: 1fr; grid-template-areas: "stage" "panel" "out"; }
+    .stage { top: 0; margin: 0 -14px; }
+    .poster { border-radius: 0 0 16px 16px; display: grid; grid-template-columns: 1fr auto; }
+    .poster .ttl { grid-column: 1 / -1; }
+    .poster svg { max-height: 30vh; }
+    #fig { background: #EEF1F6; }
+    .pron { flex-direction: column; border-top: 0; border-left: 1px solid var(--line); justify-content: center; }
+    .pron button { flex: 0; padding: 12px 16px; }
+    .mbox { grid-template-columns: 1fr; }
+    .mbox svg { max-height: 50vh; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🕵️ Montage Maker</h1>
+  <p id="sub">영어 문장으로 인물의 몽타주를 완성해 보세요!</p>
+</header>
+<div id="who"></div>
+
+<div class="wrap">
+  <!-- 학생: 입장 -->
+  <section id="login" class="panel narrow hidden">
+    <label class="f" for="sid">학번 (5자리)</label>
+    <input id="sid" type="text" inputmode="numeric" maxlength="5" placeholder="예: 20315" autocomplete="off">
+    <label class="f" for="sname">이름</label>
+    <input id="sname" type="text" maxlength="20" placeholder="예: 홍길동" autocomplete="off">
+    <div class="msg" id="loginMsg"></div>
+    <button class="btn" id="enterBtn">입장하기</button>
+    <div class="foot"><a href="#teacher" id="toTeacher">교사 모드</a></div>
+  </section>
+
+  <!-- 학생: 몽타주 만들기 -->
+  <section id="maker" class="maker hidden">
+    <div class="stage">
+      <div class="poster">
+        <div class="ttl">MONTAGE <small id="whoTag"></small></div>
+        <div id="fig"></div>
+        <div class="pron">
+          <button data-p="he">He</button>
+          <button data-p="she">She</button>
+        </div>
+      </div>
+    </div>
+    <div class="work">
+      <div class="tabs" id="tabs"></div>
+      <div id="cats"></div>
+    </div>
+    <div class="out panel">
+      <h3>📝 내가 쓴 문장 <span class="sp"></span><button id="sayBtn">🔊 듣기</button></h3>
+      <ol class="sents" id="sents"></ol>
+      <div class="cnt" id="cnt"></div>
+      <button class="btn" id="sendBtn">제출하기</button>
+      <div class="msg" id="sendMsg"></div>
+    </div>
+  </section>
+
+  <!-- 교사 -->
+  <section id="tLogin" class="panel narrow hidden">
+    <label class="f" for="tpw">교사 암호</label>
+    <input id="tpw" type="password" autocomplete="off">
+    <div class="msg" id="tMsg"></div>
+    <button class="btn" id="tBtn">들어가기</button>
+  </section>
+
+  <section id="tView" class="hidden">
+    <div class="bar">
+      <select id="fClass"></select>
+      <span class="sp"></span>
+      <label><input type="checkbox" id="optNames" checked> 이름 보기</label>
+      <label><input type="checkbox" id="optBig"> 큰 글씨</label>
+      <button id="refreshBtn">🔄 새로고침</button>
+      <button id="copyBtn">📋 엑셀용 복사</button>
+    </div>
+    <div id="sum"></div>
+    <div class="grid" id="tList"></div>
+  </section>
+</div>
+
+<div class="modal hidden" id="modal"></div>
+
+<script src="parts.js"></script>
+<script>
+  // 구글 시트에 연결한 Apps Script 웹 앱 주소 (비어 있으면 이 기기에만 저장되는 연습 모드)
+  const SHEET_URL = "";
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const STORE_KEY = "mt-student";
+  const T_KEY = "mt-teacher";
+  const LOCAL_KEY = "mt-local-rows";
+  const isTeacher = location.hash === "#teacher";
+
+  const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+  function show(...ids) {
+    ["login", "maker", "tLogin", "tView"].forEach(id => $(id).classList.toggle("hidden", !ids.includes(id)));
+  }
+
+  async function call(body) {
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
+  function sentencesOf(st) {
+    const out = [];
+    for (const g of GROUPS) for (const id of g.cats) {
+      const cat = CATS[id], v = st[id];
+      if (cat.multi) (v || []).forEach(x => out.push(sentenceOf(cat, x, st.pron)));
+      else if (v) out.push(sentenceOf(cat, v, st.pron));
+    }
+    return out;
+  }
+
+  function speak(text) {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "en-US"; u.rate = 0.9;
+      speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  // ================= 학생 =================
+  // 새로고침해도 그대로 돌아오도록 모든 걸 store 에 저장
+  const store = load(STORE_KEY, {});
+  store.state = Object.assign({ pron: "he", features: [], acc: [] }, store.state || {});
+  store.drafts = store.drafts || {};
+  store.group = store.group || "face";
+  store.scroll = store.scroll || {};
+  const st = store.state;
+  const persist = () => save(STORE_KEY, store);
+
+  function parseSid(s) {
+    if (!/^\d{5}$/.test(s)) return null;
+    const grade = +s[0], cls = +s.slice(1, 3), num = +s.slice(3);
+    if (grade < 1 || grade > 3 || cls < 1 || num < 1) return null;
+    return { grade, cls, num };
+  }
+
+  function setWho() {
+    const me = store.me;
+    $("who").innerHTML = me
+      ? `${me.grade}학년 ${me.cls}반 ${me.num}번 <b>${esc(me.name)}</b> <button id="outBtn">나가기</button>`
+      : "";
+    $("whoTag").textContent = me ? `${me.cls}반 ${me.num}번 ${me.name}` : "";
+    if (me) $("outBtn").onclick = () => {
+      if (!confirm("나가면 이 기기에서 만들던 몽타주가 지워져요. 나갈까요?")) return;
+      try { localStorage.removeItem(STORE_KEY); } catch {}
+      location.reload();
+    };
+  }
+
+  function enter() {
+    const sid = $("sid").value.trim(), name = $("sname").value.trim();
+    const p = parseSid(sid);
+    if (!p) { $("loginMsg").textContent = "학번 5자리를 확인해 주세요. (예: 2학년 3반 15번 → 20315)"; return; }
+    if (!name) { $("loginMsg").textContent = "이름을 써 주세요."; return; }
+    store.me = { sid, name, ...p };
+    persist();
+    openMaker();
+  }
+
+  function openMaker() {
+    setWho();
+    show("maker");
+    renderTabs();
+    renderCats();
+    renderFig();
+    // 보던 위치로
+    requestAnimationFrame(() => window.scrollTo(0, store.scroll[store.group] || 0));
+  }
+
+  function renderFig() {
+    $("fig").innerHTML = svgOf(st, "full");
+    document.querySelectorAll(".pron button").forEach(b => b.classList.toggle("on", b.dataset.p === st.pron));
+    const list = sentencesOf(st);
+    $("sents").innerHTML = list.length
+      ? list.map(s => `<li>${esc(s)}</li>`).join("")
+      : `<li class="none">아직 문장이 없어요. 오른쪽(아래) 빈칸에 표현을 써 넣어 보세요.</li>`;
+    const filled = Object.keys(CATS).filter(id => CATS[id].multi ? (st[id] || []).length : st[id]).length;
+    $("cnt").textContent = `${Object.keys(CATS).length}개 항목 중 ${filled}개 완성 · 문장 ${list.length}개` + (store.sentAt ? ` · 마지막 제출 ${new Date(store.sentAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : "");
+  }
+
+  function renderTabs() {
+    $("tabs").innerHTML = GROUPS.map(g => {
+      const done = g.cats.filter(id => CATS[id].multi ? (st[id] || []).length : st[id]).length;
+      return `<button data-g="${g.id}" class="${g.id === store.group ? "on" : ""}">${g.icon} ${g.ko}<span class="dot">${done}/${g.cats.length}</span></button>`;
+    }).join("");
+  }
+
+  function catHTML(id) {
+    const cat = CATS[id];
+    const S = st.pron === "she" ? "She" : "He", P = st.pron === "she" ? "Her" : "His";
+    const [a, b] = cat.frame.map(t => t.replace("{S}", S).replace("{P}", P));
+    const v = st[id];
+    const has = cat.multi ? (v || []).length > 0 : !!v;
+    const draft = store.drafts[id] ?? (cat.multi || !v ? "" : valueText(cat, v));
+    const applied = !cat.multi && v && normText(draft) === normText(valueText(cat, v));
+    const selected = o => cat.multi ? (v || []).some(x => (x.item || x) === o.en) : v && (v.item || v) === o.en;
+
+    let h = `<div class="cat ${has ? "done" : ""}" data-c="${id}">
+      <h3>${has ? "✅" : "⬜"} ${cat.ko} <span class="sp"></span>${has ? `<button class="reset">지우기</button>` : ""}</h3>
+      <div class="frame">
+        <span>${esc(a)}</span>
+        <input type="text" class="${applied ? "good" : ""}" value="${esc(draft)}" placeholder="(          )" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+        ${b === "." ? "<span>.</span>" : `<span>${esc(b)}</span>`}
+        <button class="go">${cat.multi ? "추가" : "적용"}</button>
+      </div>
+      <div class="msg"></div>`;
+    if (cat.multi && has) {
+      h += `<div class="chips">${v.map((x, i) => `<span class="chip">${esc(sentenceOf(cat, x, st.pron))}<button data-i="${i}" title="빼기">✕</button></span>`).join("")}</div>`;
+    }
+    if (cat.color) {
+      h += `<div class="colors">🎨 색깔을 넣어도 돼요 (예: <b>${esc(valueText(cat, { item: cat.opts.find(o => !o.plural)?.en || cat.opts[0].en, color: "blue" }))}</b>, <b>${esc(valueText(cat, { item: cat.opts[0].en, color: "orange" }))}</b>)<br>` +
+        Object.entries(CLOTH_COLORS).map(([n, c]) => `<span class="sw"><i style="background:${c}"></i>${n}</span>`).join("") + `</div>`;
+    }
+    h += `<div class="opts">` + cat.opts.map(o => {
+      const preview = Object.assign({}, st);
+      if (cat.multi) {
+        const one = cat.color ? { item: o.en, color: null } : o.en;
+        // 샘플에는 그 장신구 하나만 (다른 장신구에 가려지지 않게)
+        preview[id] = [one];
+      } else {
+        preview[id] = cat.color ? { item: o.en, color: null } : o.en;
+      }
+      // 머리 색깔 카드는 현재 머리 모양으로 (머리가 없으면 짧은 머리로)
+      if (id === "hairColor" && (!st.hair || st.hair === "no")) preview.hair = "short";
+      if ((id === "eyes" || id === "brows") && !preview.eyes) preview.eyes = "small";
+      return `<button class="opt ${selected(o) ? "on" : ""}" data-en="${esc(optLabel(cat, o))}">${svgOf(preview, id === "acc" ? ACC_VIEW[o.en] : cat.view)}<b>${esc(optLabel(cat, o))}</b><span>${esc(o.ko)}</span></button>`;
+    }).join("") + `</div>`;
+    if (!cat.color && !cat.multi) h += `<p class="tip">카드를 누르면 발음을 들을 수 있어요. 빈칸에는 직접 타이핑해요.</p>`;
+    if (cat.multi) h += `<p class="tip">여러 개를 하나씩 추가할 수 있어요.</p>`;
+    return h + `</div>`;
+  }
+
+  function renderCats() {
+    const g = GROUPS.find(g => g.id === store.group) || GROUPS[0];
+    $("cats").innerHTML = g.cats.map(catHTML).join("");
+  }
+
+  function refreshCat(id, keepMsg) {
+    const old = document.querySelector(`.cat[data-c="${id}"]`);
+    if (!old) return;
+    const msg = old.querySelector(".msg");
+    const tmp = document.createElement("div");
+    tmp.innerHTML = catHTML(id);
+    const nu = tmp.firstElementChild;
+    if (keepMsg) { nu.querySelector(".msg").className = msg.className; nu.querySelector(".msg").textContent = msg.textContent; }
+    old.replaceWith(nu);
+  }
+
+  function apply(id) {
+    const box = document.querySelector(`.cat[data-c="${id}"]`);
+    const input = box.querySelector("input"), msg = box.querySelector(".msg");
+    const cat = CATS[id];
+    const r = parseBlank(cat, input.value, st.pron);
+    if (!r.ok) {
+      msg.className = "msg"; msg.textContent = "🤔 " + r.msg;
+      input.classList.add("bad"); input.classList.remove("good");
+      return;
+    }
+    if (cat.multi) {
+      const list = st[id] || [];
+      const key = r.value.item || r.value;
+      let next = list.filter(x => (x.item || x) !== key);
+      if (cat.color && ACC_SLOT[key]) next = next.filter(x => ACC_SLOT[x.item] !== ACC_SLOT[key]);
+      next.push(r.value);
+      st[id] = next;
+      store.drafts[id] = "";
+    } else {
+      st[id] = r.value;
+      store.drafts[id] = valueText(cat, r.value);
+    }
+    persist();
+    msg.className = "msg ok";
+    msg.textContent = "✅ " + sentenceOf(cat, r.value, st.pron);
+    renderFig(); renderTabs();
+    // 같은 그룹의 다른 카드 그림도 새로 (모습이 바뀌었으니)
+    const g = GROUPS.find(g => g.id === store.group);
+    g.cats.forEach(c => refreshCat(c, c === id));
+    if (cat.multi) document.querySelector(`.cat[data-c="${id}"] input`).focus();
+  }
+
+  function rerenderAll() {
+    renderFig(); renderTabs(); renderCats();
+  }
+
+  $("enterBtn").onclick = enter;
+  $("sname").addEventListener("keydown", e => { if (e.key === "Enter") enter(); });
+
+  $("tabs").onclick = e => {
+    const b = e.target.closest("button[data-g]");
+    if (!b) return;
+    store.scroll[store.group] = window.scrollY;
+    store.group = b.dataset.g;
+    persist();
+    renderTabs(); renderCats();
+    const top = $("tabs").getBoundingClientRect().top + window.scrollY - (matchMedia("(max-width: 860px)").matches ? $("fig").offsetHeight + 60 : 10);
+    window.scrollTo(0, Math.min(window.scrollY, Math.max(0, top)));
+  };
+
+  $("cats").addEventListener("click", e => {
+    const box = e.target.closest(".cat");
+    if (!box) return;
+    const id = box.dataset.c;
+    if (e.target.closest(".go")) return apply(id);
+    if (e.target.closest(".reset")) {
+      st[id] = CATS[id].multi ? [] : null;
+      store.drafts[id] = "";
+      persist(); rerenderAll();
+      return;
+    }
+    const chip = e.target.closest(".chip button");
+    if (chip) {
+      st[id].splice(+chip.dataset.i, 1);
+      persist(); rerenderAll();
+      return;
+    }
+    const opt = e.target.closest(".opt");
+    if (opt) speak(opt.dataset.en);
+  });
+  $("cats").addEventListener("keydown", e => {
+    if (e.key === "Enter" && e.target.matches(".frame input")) { e.preventDefault(); apply(e.target.closest(".cat").dataset.c); }
+  });
+  $("cats").addEventListener("input", e => {
+    if (!e.target.matches(".frame input")) return;
+    const id = e.target.closest(".cat").dataset.c;
+    store.drafts[id] = e.target.value;
+    e.target.classList.remove("good", "bad");
+    persist();
+  });
+
+  document.querySelectorAll(".pron button").forEach(b => b.onclick = () => {
+    st.pron = b.dataset.p;
+    // 빈칸 앞뒤 말이 바뀌니 적용된 값은 그대로, 문장만 다시
+    persist(); rerenderAll();
+  });
+
+  $("sayBtn").onclick = () => speak(sentencesOf(st).join(" "));
+
+  let scrollT = 0;
+  window.addEventListener("scroll", () => {
+    if (isTeacher || !store.me) return;
+    clearTimeout(scrollT);
+    scrollT = setTimeout(() => { store.scroll[store.group] = window.scrollY; persist(); }, 200);
+  });
+
+  $("sendBtn").onclick = async () => {
+    const list = sentencesOf(st);
+    const msg = $("sendMsg");
+    if (list.length < 5) { msg.className = "msg"; msg.textContent = `문장을 5개 이상 만들어야 제출할 수 있어요. (지금 ${list.length}개)`; return; }
+    const me = store.me;
+    const row = { sid: me.sid, grade: me.grade, cls: me.cls, num: me.num, name: me.name, sentences: list.join("\n"), state: JSON.stringify(st) };
+    $("sendBtn").disabled = true;
+    msg.className = "msg"; msg.textContent = "제출하는 중…";
+    try {
+      if (SHEET_URL) {
+        const r = await call({ action: "save", row });
+        if (!r.ok) throw new Error(r.error);
+      } else {
+        const rows = load(LOCAL_KEY, []).filter(x => x.sid !== row.sid);
+        rows.push({ ...row, time: new Date().toISOString() });
+        save(LOCAL_KEY, rows);
+      }
+      store.sentAt = Date.now(); persist();
+      msg.className = "msg ok";
+      msg.textContent = SHEET_URL ? "✅ 제출했어요! 고쳐서 다시 제출하면 새 것으로 바뀌어요." : "✅ 저장했어요 (연습 모드: 이 기기에만 저장)";
+      renderFig();
+    } catch (err) {
+      msg.className = "msg"; msg.textContent = "제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    }
+    $("sendBtn").disabled = false;
+  };
+
+  // ================= 교사 =================
+  const tst = load(T_KEY, { cls: "", names: true, big: false, open: null });
+  let rows = [];
+  let tpw = "";
+  let view = [];
+
+  async function tEnter() {
+    tpw = $("tpw").value;
+    $("tMsg").textContent = "불러오는 중…";
+    if (!(await tLoad())) return;
+    try { sessionStorage.setItem("mt-tpw", tpw); } catch {}
+    $("tMsg").textContent = "";
+    show("tView");
+    renderT();
+    if (tst.open) openModal(tst.open);
+  }
+
+  async function tLoad() {
+    if (!SHEET_URL) { rows = load(LOCAL_KEY, []); return true; }
+    try {
+      const r = await call({ action: "list", pw: tpw });
+      if (!r.ok) {
+        try { sessionStorage.removeItem("mt-tpw"); } catch {}
+        show("tLogin");
+        $("tMsg").textContent = r.error === "pw" ? "암호가 틀렸어요." : "불러오지 못했어요.";
+        return false;
+      }
+      rows = r.rows;
+      return true;
+    } catch {
+      show("tLogin");
+      $("tMsg").textContent = "불러오지 못했어요. 인터넷 연결을 확인해 주세요.";
+      return false;
+    }
+  }
+
+  const clsKey = r => `${r.grade}-${r.cls}`;
+  const stateOf = r => { try { return Object.assign({ features: [], acc: [] }, JSON.parse(r.state)); } catch { return { features: [], acc: [] }; } };
+
+  function renderT() {
+    document.body.classList.toggle("nonames", !tst.names);
+    document.body.classList.toggle("big", tst.big);
+    $("optNames").checked = tst.names; $("optBig").checked = tst.big;
+    const keys = [...new Set(rows.map(clsKey))].sort((a, b) => { const [ga, ca] = a.split("-"), [gb, cb] = b.split("-"); return ga - gb || ca - cb; });
+    if (tst.cls && !keys.includes(tst.cls)) keys.push(tst.cls);
+    $("fClass").innerHTML = `<option value="">전체 반</option>` + keys.map(k => { const [g, c] = k.split("-"); return `<option value="${k}">${g}학년 ${c}반</option>`; }).join("");
+    $("fClass").value = tst.cls;
+    view = rows.filter(r => !tst.cls || clsKey(r) === tst.cls).sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
+    $("sum").textContent = `${view.length}명 제출` + (SHEET_URL ? "" : " (연습 모드: 이 기기에 저장된 것만 보여요)");
+    $("tList").innerHTML = view.map(r => `<button class="tcard" data-sid="${esc(r.sid)}">${svgOf(stateOf(r), "fig")}<div class="nm"><span class="who">${r.cls}반 ${r.num}번 ${esc(r.name)}</span> <small>· 문장 ${String(r.sentences).split("\n").filter(Boolean).length}개</small></div></button>`).join("")
+      || `<p style="color:var(--muted)">아직 제출한 몽타주가 없어요.</p>`;
+  }
+
+  function openModal(sid) {
+    const i = view.findIndex(r => r.sid === sid);
+    if (i < 0) { tst.open = null; save(T_KEY, tst); return; }
+    const r = view[i];
+    tst.open = sid; save(T_KEY, tst);
+    $("modal").innerHTML = `<div class="mbox">${svgOf(stateOf(r), "fig")}<div class="mside">
+      <div class="top"><button data-m="prev" ${i ? "" : "disabled"}>◀ 이전</button><button data-m="next" ${i < view.length - 1 ? "" : "disabled"}>다음 ▶</button><span class="sp"></span><button data-m="say">🔊</button><button data-m="close">✕ 닫기</button></div>
+      <div class="mname">${r.cls}반 ${r.num}번 ${esc(r.name)}</div>
+      <ol>${String(r.sentences).split("\n").filter(Boolean).map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+      <button class="del" data-m="del">🗑 삭제</button>
+    </div></div>`;
+    $("modal").classList.remove("hidden");
+  }
+  function closeModal() { tst.open = null; save(T_KEY, tst); $("modal").classList.add("hidden"); }
+
+  $("modal").onclick = async e => {
+    if (e.target === $("modal")) return closeModal();
+    const b = e.target.closest("[data-m]");
+    if (!b) return;
+    const i = view.findIndex(r => r.sid === tst.open);
+    const m = b.dataset.m;
+    if (m === "close") closeModal();
+    if (m === "prev" && i > 0) openModal(view[i - 1].sid);
+    if (m === "next" && i < view.length - 1) openModal(view[i + 1].sid);
+    if (m === "say") speak(String(view[i].sentences).replace(/\n/g, " "));
+    if (m === "del") {
+      const r = view[i];
+      if (!confirm(`${r.cls}반 ${r.num}번 ${r.name}의 몽타주를 지울까요?`)) return;
+      if (SHEET_URL) {
+        const res = await call({ action: "del", pw: tpw, sid: r.sid }).catch(() => ({}));
+        if (!res.ok) return alert("지우지 못했어요.");
+      } else save(LOCAL_KEY, load(LOCAL_KEY, []).filter(x => x.sid !== r.sid));
+      rows = rows.filter(x => x.sid !== r.sid);
+      closeModal(); renderT();
+    }
+  };
+  document.addEventListener("keydown", e => {
+    if ($("modal").classList.contains("hidden")) return;
+    if (e.key === "Escape") closeModal();
+    if (e.key === "ArrowLeft") $("modal").querySelector('[data-m="prev"]')?.click();
+    if (e.key === "ArrowRight") $("modal").querySelector('[data-m="next"]')?.click();
+  });
+
+  $("tList").onclick = e => { const c = e.target.closest(".tcard"); if (c) openModal(c.dataset.sid); };
+  $("fClass").onchange = () => { tst.cls = $("fClass").value; save(T_KEY, tst); renderT(); };
+  $("optNames").onchange = () => { tst.names = $("optNames").checked; save(T_KEY, tst); renderT(); };
+  $("optBig").onchange = () => { tst.big = $("optBig").checked; save(T_KEY, tst); renderT(); };
+  $("refreshBtn").onclick = async () => { if (await tLoad()) renderT(); };
+  $("copyBtn").onclick = async () => {
+    const lines = [["학번", "반", "번호", "이름", "문장"].join("\t")].concat(view.map(r => [r.sid, r.cls, r.num, r.name, String(r.sentences).replace(/\n/g, " ")].join("\t")));
+    try { await navigator.clipboard.writeText(lines.join("\n")); alert("복사했어요. 엑셀에 붙여넣기 하세요."); } catch { alert("복사하지 못했어요."); }
+  };
+  $("tBtn").onclick = tEnter;
+  $("tpw").addEventListener("keydown", e => { if (e.key === "Enter") tEnter(); });
+
+  // ================= 시작 =================
+  if (isTeacher) {
+    document.title = "Montage Maker · 교사";
+    $("sub").textContent = "교사 모드 · 반별 몽타주와 문장 보기" + (SHEET_URL ? "" : " (연습 모드)");
+    let saved = "";
+    try { saved = sessionStorage.getItem("mt-tpw") || ""; } catch {}
+    if (!SHEET_URL || saved) { $("tpw").value = saved; tEnter(); } else show("tLogin");
+  } else if (store.me) {
+    openMaker();
+  } else {
+    show("login");
+  }
+  window.addEventListener("hashchange", () => location.reload());
+</script>
+</body>
+</html>
