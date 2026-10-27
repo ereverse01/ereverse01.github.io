@@ -97,10 +97,13 @@
   .full td.hl { background: #fff3a8; }
   .full td.slot { cursor: pointer; }
   table.full { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-  .full td.drag-src { outline: 3px dashed var(--accent); outline-offset: -3px; opacity: .6; }
-  .full td.drop-ok { box-shadow: inset 0 0 0 3px #22c55e; }
-  .full td.drop-warn { box-shadow: inset 0 0 0 3px #fb923c; }
-  .full td.drop-hover { background: #bfdbfe !important; }
+  .full td.drag-src, .cell.drag-src { outline: 3px dashed var(--accent); outline-offset: -3px; opacity: .6; }
+  #result td.drop-ok { box-shadow: inset 0 0 0 3px #22c55e; }
+  #result td.drop-warn { box-shadow: inset 0 0 0 3px #fb923c; }
+  #result td.drop-hover { background: #bfdbfe !important; }
+  .ghost .to { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line); font-weight: 600; color: #1d4ed8; }
+  body.admin #result .tt .cell[data-key], body.admin #result .tt .cell[data-open] { cursor: grab; }
+  body.admin #result table.tt { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   .ghost { position: fixed; z-index: 60; pointer-events: none; background: #fff; border: 2px solid var(--accent); border-radius: 8px;
     padding: 4px 8px; font-size: 13px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
   .full td.slot:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -368,6 +371,7 @@
 
   function showAdmin() {
     $('loader').hidden = $('calCard').hidden = !adminPw;
+    document.body.classList.toggle('admin', !!adminPw);
     $('fileShort').textContent = '· ' + [D ? '3학년 ✔' : '3학년 없음', W ? '1·2학년 ✔' : '1·2학년 없음'].join(' · ') + (server.updated ? ' · 마지막 저장 ' + fmtTime(server.updated) : '') + ' (눌러서 펼치기)';
     $('adminBtn').textContent = adminPw ? '🔓 담당자 모드 끝내기' : '🔐 담당자';
     $('fileState').innerHTML =
@@ -669,16 +673,16 @@
             const small = [c.g < 3 ? c.s : c.s ? '3학년 ' + c.s : ''];
             if (c.changed) small.push('교체');
             if (c.dup) small.push('⚠ 겹침');
-            ls.push({ k: k + (c.changed ? ' chg' : '') + (c.dup ? ' dup' : '') + (sel === d + '|' + c.p + '|' + c.col ? ' sel' : ''), big: study ? '도서관 자습감독' : colLabel(c.col), small: small.filter(Boolean).join(' · ') });
+            ls.push({ k: k + (c.changed ? ' chg' : '') + (c.dup ? ' dup' : '') + (sel === d + '|' + c.p + '|' + c.col ? ' sel' : ''), big: study ? '도서관 자습감독' : colLabel(c.col), small: small.filter(Boolean).join(' · '), key: d + '|' + c.p + '|' + c.col });
           });
           // 원래 내 수업이었는데 교체로 빠진 칸
           Object.values(dcs[d].cells).filter(c => c.p === p && c.changed && c.base && names(c.base.t).includes(name) && !names(c.t).includes(name))
-            .forEach(c => ls.push({ k: 'del', big: colLabel(c.col), small: '교체로 빠짐' }));
+            .forEach(c => ls.push({ k: 'del', big: colLabel(c.col), small: '교체로 빠짐', open: d + '|' + c.p + '|' + c.col }));
           (del3[d + '|' + p] || []).forEach(l => ls.push({ k: 'del', big: place3(l.place), small: '삭제' }));
           if (!ls.length && p > dmax[d]) { body += '<td class="none"></td>'; return; }
-          body += '<td>' + ls.map(c => {
+          body += '<td data-dp="' + d + '|' + p + '">' + ls.map(c => {
             if (c.k !== 'del') weekCount++;
-            return '<div class="cell ' + c.k + '">' + esc(c.big) + (c.small ? '<small>' + esc(c.small) + '</small>' : '') + '</div>';
+            return '<div class="cell ' + c.k + '"' + (c.key ? ' data-key="' + esc(c.key) + '"' : c.open ? ' data-open="' + esc(c.open) + '"' : '') + '>' + esc(c.big) + (c.small ? '<small>' + esc(c.small) + '</small>' : '') + '</div>';
           }).join('') + '</td>';
         });
         body += '</tr>';
@@ -726,6 +730,9 @@
       + '<span><i style="background:var(--event)"></i>학교 행사</span>'
       + '<span><s style="color:var(--del)">3-3</s> 삭제된 수업</span>'
       + '<span><i style="background:repeating-linear-gradient(135deg,#fafbfc 0 3px,#e5e8ec 3px 6px)"></i>수업 없는 교시</span></div>'
+      + '<div class="legend no-print" style="margin-top:4px"><span>' + (adminPw
+        ? '✏️ 수업을 끌어다 다른 교시에 놓으면 그 시간 같은 반 수업과 맞바꿔요 (터치는 꾹 눌렀다 끌기) · <b style="color:#16a34a">초록 테두리</b>=교체 가능, <b style="color:#ea580c">주황</b>=겹침 · 수업을 누르면 직접 바꾸기. 바꾼 내용은 전체시간표에도 바로 반영돼요.'
+        : '수업 바꾸기는 담당자 모드에서 할 수 있어요.') + '</span></div>'
       + '</div>';
     $('printBtn').onclick = () => window.print();
   }
@@ -951,7 +958,7 @@
     const { d, p, col } = splitKey(key);
     const c1 = cellOf(key);
     const A = names(c1.t);
-    const name = who && A.includes(who) ? who : A[0];
+    const name = who || A[0];
     if (!name && !adminPw) return;
     const days = weekDays(d);
     const g12 = col.startsWith('a:');
@@ -989,10 +996,19 @@
 
   // ---------- 끌어다 놓기 (마우스: 바로 끌기 / 터치: 꾹 눌렀다 끌기) ----------
   let drag = null;   // {key, ghost, x0, y0, started, over}
-  function dropState(srcKey, td) {
-    const a = splitKey(srcKey), b = splitKey(td.dataset.key);
-    if (b.col !== a.col || td.dataset.key === srcKey) return '';
-    const A = names(cellOf(srcKey).t), B = names(cellOf(td.dataset.key).t);
+  // 놓을 곳: 전체시간표는 칸 그대로, 개인시간표는 그 교시의 같은 반 칸
+  const TARGETS = '#result td.slot, #result td[data-dp]';
+  function dropKey(el, srcKey) {
+    const td = el && el.closest && el.closest(TARGETS);
+    if (!td) return null;
+    if (td.dataset.key) return { td, key: td.dataset.key };
+    const { col } = splitKey(srcKey), [d, ps] = td.dataset.dp.split('|');
+    return dayCells(d).valid(+ps, col) ? { td, key: d + '|' + ps + '|' + col } : null;
+  }
+  function dropState(srcKey, tgtKey) {
+    const a = splitKey(srcKey), b = splitKey(tgtKey);
+    if (b.col !== a.col || tgtKey === srcKey) return '';
+    const A = names(cellOf(srcKey).t), B = names(cellOf(tgtKey).t);
     if (!A.length && !B.length) return '';
     const bad = A.some(n => busyAt(n, b.d, b.p, b.col).length) || B.some(n => busyAt(n, a.d, a.p, a.col).length);
     return bad ? 'drop-warn' : 'drop-ok';
@@ -1002,11 +1018,12 @@
     const key = td.dataset.key;
     if (!names(cellOf(key).t).length && !td.classList.contains('vac')) return false;
     drag.started = true;
+    drag.personal = td.classList.contains('cell');
     td.classList.add('drag-src');
-    document.querySelectorAll('#result td.slot').forEach(t => { const st = dropState(key, t); if (st) t.classList.add(st); });
+    document.querySelectorAll(TARGETS).forEach(t => { const k = dropKey(t, key); const st = k && dropState(key, k.key); if (st) t.classList.add(st); });
     const g = drag.ghost = document.createElement('div');
     g.className = 'ghost';
-    g.innerHTML = td.innerHTML;
+    g.innerHTML = td.innerHTML + (drag.personal ? '<div class="to"></div>' : '');
     document.body.appendChild(g);
     dragMove(x, y);
     return true;
@@ -1015,11 +1032,16 @@
     if (!drag || !drag.started) return;
     drag.ghost.style.left = (x + 12) + 'px';
     drag.ghost.style.top = (y + 12) + 'px';
-    const el = document.elementFromPoint(x, y);
-    const td = el && el.closest && el.closest('#result td.slot');
+    const tg = dropKey(document.elementFromPoint(x, y), drag.key);
+    const td = tg && tg.key !== drag.key ? tg.td : null;
     if (drag.over && drag.over !== td) drag.over.classList.remove('drop-hover');
-    drag.over = td || null;
-    if (td && td.dataset.key !== drag.key) td.classList.add('drop-hover');
+    drag.over = td;
+    if (td) td.classList.add('drop-hover');
+    // 개인시간표: 어느 수업과 바뀌는지 보여 주기
+    if (drag.personal) {
+      const { d, p } = td ? splitKey(tg.key) : {};
+      drag.ghost.querySelector('.to').textContent = td ? '↔ ' + slotName(d, p) + ' ' + (cellOf(tg.key).t || '빈 칸') : '';
+    }
   }
   function dragEnd(x, y) {
     if (!drag) return;
@@ -1029,16 +1051,16 @@
     d.ghost.remove();
     document.querySelectorAll('#result .drag-src, #result .drop-ok, #result .drop-warn, #result .drop-hover')
       .forEach(t => t.classList.remove('drag-src', 'drop-ok', 'drop-warn', 'drop-hover'));
-    const el = document.elementFromPoint(x, y);
-    const td = el && el.closest && el.closest('#result td.slot');
-    if (td && td.dataset.key !== d.key) swapKeys(d.key, td.dataset.key);
+    const tg = dropKey(document.elementFromPoint(x, y), d.key);
+    if (tg && tg.key !== d.key) swapKeys(d.key, tg.key);
     suppressClick = true;
     setTimeout(() => { suppressClick = false; }, 50);
   }
   let suppressClick = false;
+  const SOURCES = '#result td.slot, #result .tt .cell[data-key]';
   // 마우스
   document.addEventListener('mousedown', e => {
-    const td = e.button === 0 && e.target.closest('#result td.slot');
+    const td = e.button === 0 && e.target.closest(SOURCES);
     if (!td) return;
     drag = { key: td.dataset.key, td, x0: e.clientX, y0: e.clientY, started: false };
   });
@@ -1054,7 +1076,7 @@
   document.addEventListener('mouseup', e => dragEnd(e.clientX, e.clientY));
   // 터치: 0.35초 꾹 누르면 끌기 시작 (그 전에 움직이면 그냥 스크롤)
   document.addEventListener('touchstart', e => {
-    const td = e.target.closest && e.target.closest('#result td.slot');
+    const td = e.target.closest && e.target.closest(SOURCES);
     if (!td || e.touches.length > 1) return;
     const t = e.touches[0];
     drag = { key: td.dataset.key, td, x0: t.clientX, y0: t.clientY, x: t.clientX, y: t.clientY, started: false };
@@ -1133,7 +1155,7 @@
   $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
   $('suggest').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('name').value = b.dataset.n; render(); } });
   $('pickBtn').onclick = () => $('file').click();
-  $('adminBtn').onclick = async () => { await adminToggle(); renderCal(); };
+  $('adminBtn').onclick = async () => { await adminToggle(); renderCal(); render(); };
   $('file').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
   const drop = $('drop');
   ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
@@ -1144,6 +1166,9 @@
   $('result').addEventListener('click', e => {
     const td = e.target.closest('td.slot');
     if (td) { if (!suppressClick) openTeacher(td.dataset.key); return; }
+    // 개인시간표 수업 누르기 → 그 칸 직접 바꾸기 (담당자)
+    const pc = adminPw && e.target.closest('.tt .cell[data-key], .tt .cell[data-open]');
+    if (pc) { if (!suppressClick) openTeacher(pc.dataset.key || pc.dataset.open, findTeacher($('name').value.trim()).name); return; }
     const u = e.target.closest('[data-undo]');
     if (u && confirm('이 교체를 되돌릴까요?')) undo(+u.dataset.undo);
   });
