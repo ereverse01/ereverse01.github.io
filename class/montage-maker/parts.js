@@ -142,6 +142,16 @@ function parseBlank(cat, raw, pron) {
   return { ok: true, value: { item: o.en, color } };
 }
 
+// 퀴즈 채점: 학생이 쓴 표현이 몽타주 값과 맞는지 (색깔은 쓴 경우에만 비교, 몽타주에 색이 없으면 아무 색이나 인정)
+function judge(cat, text, v, pron) {
+  const r = parseBlank(cat, text, pron);
+  if (!r.ok) return false;
+  const vals = cat.multi ? (v || []) : (v ? [v] : []);
+  return vals.some(x => cat.color
+    ? x.item === r.value.item && (!r.value.color || !x.color || x.color === r.value.color)
+    : x === r.value);
+}
+
 function missMsg(cat, t, list) {
   let best = null, bd = 99;
   for (const e of list) {

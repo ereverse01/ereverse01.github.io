@@ -126,7 +126,65 @@
   .mside .del { margin-top: auto; align-self: flex-end; border: 0; background: none; color: #bbb; padding-top: 14px; }
   .mside .del:hover { color: var(--err); }
 
+  /* ===== 퀴즈 ===== */
+  .modes { display: flex; gap: 6px; justify-content: center; margin: 4px auto 12px; max-width: 460px; }
+  .modes button { flex: 1; padding: 9px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; }
+  .modes button.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .qbox { max-width: 760px; margin: 0 auto; }
+  .qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .qhead h2 { margin: 0; font-size: 1.35rem; }
+  .qhead .sp { flex: 1; }
+  .wait { text-align: center; padding: 40px 16px; color: var(--muted); font-size: 1.1rem; }
+  .wait .big { font-size: 3rem; display: block; margin-bottom: 8px; animation: bob 1.6s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-8px); } }
+  .bank { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .bank span { font-size: 0.85rem; padding: 2px 9px; border-radius: 999px; background: #eef2fb; color: #2b4b8c; }
+  .res { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 1.05rem; }
+  .res .mine { padding: 3px 10px; border-radius: 8px; background: #f3f3f3; }
+  .res.right .mine { background: var(--ok-bg); color: var(--ok); }
+  .res.wrong .mine { background: #fde8e4; color: var(--err); text-decoration: line-through; }
+  .ansline { margin-top: 6px; font-weight: 700; color: var(--ok); }
+  .score { font-size: 1.3rem; font-weight: 800; text-align: center; padding: 10px; border-radius: 12px; background: var(--ok-bg); color: var(--ok); margin-bottom: 12px; }
+
+  .tcard { position: relative; }
+  .tcard .pick { position: absolute; top: 6px; right: 6px; min-width: 34px; height: 34px; border-radius: 999px; background: #fff; border: 2px solid var(--line); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: var(--muted); }
+  .tcard.picked { outline: 3px solid #f0a020; }
+  .tcard.picked .pick { background: #f0a020; border-color: #f0a020; color: #fff; }
+  #quizBtn { background: #f0a020; border-color: #f0a020; color: #fff; font-weight: 700; }
+  #quizBtn:disabled { opacity: .45; }
+  .qv { display: grid; grid-template-columns: minmax(240px, 360px) 1fr; gap: 14px; align-items: start; }
+  .qv .qfig { background: #eef1f6; border-radius: 16px; overflow: hidden; position: sticky; top: 10px; }
+  .qv .qfig svg { display: block; width: 100%; height: auto; max-height: 82vh; }
+  .qv .owner { padding: 8px 12px; background: #fff; font-weight: 700; text-align: center; }
+  .qbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .qbar h2 { margin: 0 8px 0 0; font-size: 1.4rem; }
+  .qbar .sp { flex: 1; }
+  .qbar button { padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: #fff; font-weight: 700; }
+  .qbar button.main { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qbar label { display: flex; align-items: center; gap: 4px; font-size: 0.95rem; }
+  .qcats { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .qcats button { padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--line); background: #fff; }
+  .qcats button.on { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+  .qframes { margin: 10px 0; padding: 0; list-style: none; }
+  .qframes li { font-size: 1.35rem; font-weight: 600; padding: 6px 12px; margin: 6px 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .qframes .bl { display: inline-block; min-width: 120px; border-bottom: 3px solid #e0b84a; text-align: center; color: var(--ok); }
+  .qframes .ck { display: inline-block; min-width: 82px; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+  .qframes .rate { float: right; font-size: 0.95rem; color: var(--muted); font-weight: 500; margin-top: 4px; }
+  .qinfo { color: var(--muted); margin: 6px 0; }
+  .atable { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; font-size: 1.02rem; }
+  .atable th, .atable td { border-bottom: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  .atable th { background: #f5f6fa; font-size: 0.9rem; color: var(--muted); }
+  .atable td.r { background: var(--ok-bg); color: var(--ok); }
+  .atable td.w { background: #fde8e4; color: var(--err); }
+  .atable td.e { color: #c4c8d2; }
+  .atable .sc { font-weight: 800; white-space: nowrap; }
+  body.big .atable { font-size: 1.3rem; }
+  .atable .blur { filter: blur(6px); }
+
   @media (max-width: 860px) {
+    .qv { grid-template-columns: 1fr; }
+    .qv .qfig { position: static; }
+    .qv .qfig svg { max-height: 45vh; margin: 0 auto; }
     .maker { grid-template-columns: 1fr; grid-template-areas: "stage" "panel" "out"; }
     .stage { top: 0; margin: 0 -14px; }
     .poster { border-radius: 0 0 16px 16px; display: grid; grid-template-columns: 1fr auto; }
@@ -146,6 +204,10 @@
   <p id="sub">영어 문장으로 인물의 몽타주를 완성해 보세요!</p>
 </header>
 <div id="who"></div>
+<div class="modes hidden" id="modes">
+  <button data-mode="make">✏️ 몽타주 만들기</button>
+  <button data-mode="quiz">🎯 퀴즈 참여</button>
+</div>
 
 <div class="wrap">
   <!-- 학생: 입장 -->
@@ -184,6 +246,9 @@
     </div>
   </section>
 
+  <!-- 학생: 퀴즈 -->
+  <section id="quiz" class="qbox hidden"></section>
+
   <!-- 교사 -->
   <section id="tLogin" class="panel narrow hidden">
     <label class="f" for="tpw">교사 암호</label>
@@ -200,10 +265,13 @@
       <label><input type="checkbox" id="optBig"> 큰 글씨</label>
       <button id="refreshBtn">🔄 새로고침</button>
       <button id="copyBtn">📋 엑셀용 복사</button>
+      <button id="quizBtn" disabled>🎯 퀴즈 시작</button>
     </div>
     <div id="sum"></div>
     <div class="grid" id="tList"></div>
   </section>
+
+  <section id="qView" class="hidden"></section>
 </div>
 
 <div class="modal hidden" id="modal"></div>
@@ -211,7 +279,8 @@
 <script src="parts.js"></script>
 <script>
   // 구글 시트에 연결한 Apps Script 웹 앱 주소 (비어 있으면 이 기기에만 저장되는 연습 모드)
-  const SHEET_URL = "https://script.google.com/macros/s/AKfycbxps0Y92pwfLsCUKkY6hnzgf1zPfJ6OwXq-gPcyLhdHt-1PLRNAc0_FmS2mzZxs2oc/exec";
+  // 주소 뒤에 ?local 을 붙이면 시트 없이 이 기기에서만 연습
+  const SHEET_URL = new URLSearchParams(location.search).has("local") ? "" : "https://script.google.com/macros/s/AKfycbxps0Y92pwfLsCUKkY6hnzgf1zPfJ6OwXq-gPcyLhdHt-1PLRNAc0_FmS2mzZxs2oc/exec";
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -224,7 +293,7 @@
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 
   function show(...ids) {
-    ["login", "maker", "tLogin", "tView"].forEach(id => $(id).classList.toggle("hidden", !ids.includes(id)));
+    ["login", "maker", "quiz", "tLogin", "tView", "qView"].forEach(id => $(id).classList.toggle("hidden", !ids.includes(id)));
   }
 
   async function call(body) {
@@ -278,6 +347,8 @@
       ? `${me.grade}학년 ${me.cls}반 ${me.num}번 <b>${esc(me.name)}</b> <button id="outBtn">나가기</button>`
       : "";
     $("whoTag").textContent = me ? `${me.cls}반 ${me.num}번 ${me.name}` : "";
+    $("modes").classList.toggle("hidden", !me);
+    document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === (store.mode || "make")));
     if (me) $("outBtn").onclick = () => {
       if (!confirm("나가면 이 기기에서 만들던 몽타주가 지워져요. 나갈까요?")) return;
       try { localStorage.removeItem(STORE_KEY); } catch {}
@@ -292,10 +363,12 @@
     if (!name) { $("loginMsg").textContent = "이름을 써 주세요."; return; }
     store.me = { sid, name, ...p };
     persist();
-    openMaker();
+    store.mode === "quiz" ? openQuiz() : openMaker();
   }
 
   function openMaker() {
+    store.mode = "make"; persist();
+    stopQuiz();
     setWho();
     show("maker");
     renderTabs();
@@ -507,8 +580,144 @@
     $("sendBtn").disabled = false;
   };
 
+  // ================= 학생: 퀴즈 =================
+  // 선생님 화면의 몽타주를 보고, 문장 틀 빈칸에 알맞은 표현을 써서 제출
+  const QS_KEY = "mt-local-quiz";      // 연습 모드: 퀴즈 상태
+  const QA_KEY = "mt-local-qans";      // 연습 모드: 퀴즈 답
+  let qs = null, qsKey = "", qTimer = 0, qOn = false;
+
+  function openQuiz() {
+    store.mode = "quiz"; persist();
+    setWho();
+    show("quiz");
+    qsKey = "";
+    renderQuiz();
+    if (!qOn) { qOn = true; pollQuiz(); }
+  }
+  function stopQuiz() { qOn = false; clearTimeout(qTimer); }
+
+  async function pollQuiz() {
+    if (!qOn) return;
+    if (!document.hidden) {
+      try {
+        const s = SHEET_URL ? (await call({ action: "qget" })).state : load(QS_KEY, null);
+        const key = JSON.stringify(s);
+        if (key !== qsKey) { qsKey = key; qs = s; renderQuiz(); }
+      } catch {}
+    }
+    if (qOn) qTimer = setTimeout(pollQuiz, SHEET_URL ? 3000 + Math.random() * 1500 : 1000);
+  }
+
+  function myQuiz() {
+    const me = store.me;
+    if (!qs || qs.phase === "off") return null;
+    if (qs.cls && qs.cls !== `${me.grade}-${me.cls}`) return null;
+    return qs;
+  }
+
+  function qFrame(cat, pron) {
+    const S = pron === "she" ? "She" : "He", P = pron === "she" ? "Her" : "His";
+    return cat.frame.map(t => t.replace("{S}", S).replace("{P}", P));
+  }
+
+  function renderQuiz() {
+    const q = myQuiz();
+    const box = $("quiz");
+    if (!q || q.phase === "wait") {
+      box.innerHTML = `<div class="panel wait"><span class="big">🕵️</span>${q ? `<b>문제 ${q.no}</b> 준비 중이에요.<br>` : ""}선생님이 문제를 내면 여기에 빈칸이 나타나요.<br>잠시 기다려 주세요.</div>`;
+      return;
+    }
+    // 이 문제의 내 답 (새로고침해도 남게)
+    if (!store.qd || store.qd.qid !== q.qid) { store.qd = { qid: q.qid, a: {}, sent: false }; persist(); }
+    const qd = store.qd;
+    let h = `<div class="qhead"><h2>🎯 문제 ${q.no}${q.total ? ` / ${q.total}` : ""}</h2><span class="sp"></span></div>`;
+
+    if (q.phase === "reveal") {
+      const ans = q.ans || {};
+      const right = q.cats.filter(id => judge(CATS[id], qd.a[id], ans[id], q.pron)).length;
+      h += `<div class="score">${qd.sent ? `${q.cats.length}문제 중 ${right}개 정답! ${right === q.cats.length ? "🎉" : ""}` : "이번 문제는 제출하지 않았어요."}</div>`;
+      h += q.cats.map(id => {
+        const cat = CATS[id];
+        const ok = judge(cat, qd.a[id], ans[id], q.pron);
+        const v = ans[id];
+        const sents = (cat.multi ? (v || []) : v ? [v] : []).map(x => sentenceOf(cat, x, q.pron));
+        const why = !ok && qd.a[id] ? parseBlank(cat, qd.a[id], q.pron) : null;
+        return `<div class="cat"><h3>${ok ? "✅" : "❌"} ${cat.ko}</h3>
+          <div class="res ${ok ? "right" : "wrong"}">내 답: <span class="mine">${esc(qd.a[id] || "(안 씀)")}</span></div>
+          ${why && !why.ok ? `<div class="tip">🤔 ${esc(why.msg)}</div>` : ""}
+          <div class="ansline">정답: ${sents.map(esc).join(" / ")}</div></div>`;
+      }).join("");
+      box.innerHTML = h;
+      return;
+    }
+
+    // 문제 풀기
+    h += `<p class="tip" style="margin:0 0 10px">선생님 화면 속 인물을 보고, 빈칸에 알맞은 표현을 써요.</p>`;
+    h += q.cats.map(id => {
+      const cat = CATS[id];
+      const [a, b] = qFrame(cat, q.pron);
+      return `<div class="cat" data-q="${id}"><h3>${cat.ko}</h3>
+        <div class="frame"><span>${esc(a)}</span>
+          <input type="text" value="${esc(qd.a[id] || "")}" placeholder="(          )" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next">
+          <span>${esc(b)}</span></div>
+        <div class="bank">${cat.opts.map(o => `<span>${esc(optLabel(cat, o))}</span>`).join("")}</div>
+        ${cat.color ? `<div class="bank">${Object.keys(CLOTH_COLORS).map(c => `<span style="background:#fbf8ee;color:#555">${c}</span>`).join("")}</div>` : ""}
+      </div>`;
+    }).join("");
+    h += `<button class="btn" id="qSend">${qd.sent ? "고쳐서 다시 제출하기" : "제출하기"}</button><div class="msg ${qd.sent ? "ok" : ""}" id="qMsg">${qd.sent ? "✅ 제출했어요. 정답 공개 전까지 고칠 수 있어요." : ""}</div>`;
+    box.innerHTML = h;
+  }
+
+  $("quiz").addEventListener("input", e => {
+    const c = e.target.closest("[data-q]");
+    if (!c || !store.qd) return;
+    store.qd.a[c.dataset.q] = e.target.value;
+    persist();
+  });
+  $("quiz").addEventListener("keydown", e => {
+    if (e.key !== "Enter" || !e.target.matches("input")) return;
+    e.preventDefault();
+    const all = [...$("quiz").querySelectorAll("input")];
+    const nx = all[all.indexOf(e.target) + 1];
+    nx ? nx.focus() : e.target.blur();
+  });
+  $("quiz").addEventListener("click", async e => {
+    if (e.target.id !== "qSend") return;
+    const q = myQuiz(), me = store.me, msg = $("qMsg");
+    if (!q || q.phase !== "open") return;
+    const answers = {};
+    q.cats.forEach(id => { answers[id] = String(store.qd.a[id] || "").trim(); });
+    if (!Object.values(answers).some(Boolean)) { msg.className = "msg"; msg.textContent = "빈칸을 하나 이상 채워 주세요."; return; }
+    const row = { qid: q.qid, sid: me.sid, cls: me.cls, num: me.num, name: me.name, answers };
+    e.target.disabled = true;
+    msg.className = "msg"; msg.textContent = "제출하는 중…";
+    try {
+      if (SHEET_URL) {
+        const r = await call({ action: "qans", row });
+        if (!r.ok) throw new Error(r.error);
+      } else {
+        const cur = load(QS_KEY, null);
+        if (!cur || cur.phase !== "open" || cur.qid !== q.qid) throw new Error("closed");
+        save(QA_KEY, load(QA_KEY, []).filter(x => !(x.qid === q.qid && x.sid === me.sid)).concat([{ ...row, time: new Date().toISOString() }]));
+      }
+      store.qd.sent = true; persist();
+      msg.className = "msg ok"; msg.textContent = "✅ 제출했어요. 정답 공개 전까지 고칠 수 있어요.";
+      e.target.textContent = "고쳐서 다시 제출하기";
+    } catch (err) {
+      msg.className = "msg";
+      msg.textContent = err.message === "closed" ? "이미 마감된 문제예요." : "제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.";
+    }
+    e.target.disabled = false;
+  });
+
+  $("modes").onclick = e => {
+    const b = e.target.closest("button[data-mode]");
+    if (!b || !store.me) return;
+    b.dataset.mode === "quiz" ? openQuiz() : openMaker();
+  };
+
   // ================= 교사 =================
-  const tst = load(T_KEY, { cls: "", names: true, big: false, open: null });
+  const tst = Object.assign({ cls: "", names: true, big: false, open: null, pick: [], quiz: null }, load(T_KEY, {}));
   let rows = [];
   let tpw = "";
   let view = [];
@@ -519,8 +728,10 @@
     if (!(await tLoad())) return;
     try { sessionStorage.setItem("mt-tpw", tpw); } catch {}
     $("tMsg").textContent = "";
-    show("tView");
     renderT();
+    if (tst.quiz && rows.some(r => r.sid === tst.quiz.list[tst.quiz.i])) return openTQuiz();
+    tst.quiz = null; save(T_KEY, tst);
+    show("tView");
     if (tst.open) openModal(tst.open);
   }
 
@@ -556,7 +767,13 @@
     $("fClass").value = tst.cls;
     view = rows.filter(r => !tst.cls || clsKey(r) === tst.cls).sort((a, b) => a.grade - b.grade || a.cls - b.cls || a.num - b.num);
     $("sum").textContent = `${view.length}명 제출` + (SHEET_URL ? "" : " (연습 모드: 이 기기에 저장된 것만 보여요)");
-    $("tList").innerHTML = view.map(r => `<button class="tcard" data-sid="${esc(r.sid)}">${svgOf(stateOf(r), "fig")}<div class="nm"><span class="who">${r.cls}반 ${r.num}번 ${esc(r.name)}</span> <small>· 문장 ${String(r.sentences).split("\n").filter(Boolean).length}개</small></div></button>`).join("")
+    tst.pick = tst.pick.filter(sid => rows.some(r => r.sid === sid));
+    $("quizBtn").disabled = !tst.pick.length;
+    $("quizBtn").textContent = tst.pick.length ? `🎯 퀴즈 시작 (${tst.pick.length}문제)` : "🎯 퀴즈: 카드의 ☆를 눌러 고르기";
+    $("tList").innerHTML = view.map(r => {
+      const p = tst.pick.indexOf(r.sid);
+      return `<button class="tcard ${p >= 0 ? "picked" : ""}" data-sid="${esc(r.sid)}"><span class="pick" title="퀴즈에 넣기">${p >= 0 ? p + 1 : "☆"}</span>${svgOf(stateOf(r), "fig")}<div class="nm"><span class="who">${r.cls}반 ${r.num}번 ${esc(r.name)}</span> <small>· 문장 ${String(r.sentences).split("\n").filter(Boolean).length}개</small></div></button>`;
+    }).join("")
       || `<p style="color:var(--muted)">아직 제출한 몽타주가 없어요.</p>`;
   }
 
@@ -603,7 +820,182 @@
     if (e.key === "ArrowRight") $("modal").querySelector('[data-m="next"]')?.click();
   });
 
-  $("tList").onclick = e => { const c = e.target.closest(".tcard"); if (c) openModal(c.dataset.sid); };
+  $("tList").onclick = e => {
+    const c = e.target.closest(".tcard");
+    if (!c) return;
+    if (e.target.closest(".pick")) {
+      const sid = c.dataset.sid, i = tst.pick.indexOf(sid);
+      i >= 0 ? tst.pick.splice(i, 1) : tst.pick.push(sid);
+      save(T_KEY, tst); renderT();
+      return;
+    }
+    openModal(c.dataset.sid);
+  };
+  $("quizBtn").onclick = startQuiz;
+
+  // ================= 교사: 퀴즈 =================
+  // 고른 몽타주를 차례로 보여 주고, 학생들이 빈칸에 쓴 표현을 모아 보기
+  let qrows = [], qaTimer = 0;
+  const pickCats = st => {
+    const filled = Object.keys(CATS).filter(id => CATS[id].multi ? (st[id] || []).length : st[id]);
+    return sortCats(filled.sort(() => Math.random() - 0.5).slice(0, 4));
+  };
+  const sortCats = ids => ids.sort((a, b) => Object.keys(CATS).indexOf(a) - Object.keys(CATS).indexOf(b));
+  const curRow = () => rows.find(r => r.sid === tst.quiz.list[tst.quiz.i]);
+
+  function startQuiz() {
+    tst.quiz = { list: tst.pick.slice(), i: 0, cls: tst.cls, showAns: true };
+    tst.open = null;
+    $("modal").classList.add("hidden");
+    prepQuestion();
+  }
+
+  function prepQuestion() {
+    const q = tst.quiz;
+    q.qid = Date.now().toString(36);
+    q.phase = "wait";
+    q.cats = pickCats(stateOf(curRow()));
+    save(T_KEY, tst);
+    pushQuiz();
+    openTQuiz();
+  }
+
+  async function pushQuiz() {
+    const q = tst.quiz;
+    let state = { phase: "off" };
+    if (q) {
+      const r = curRow(), mst = stateOf(r);
+      state = { qid: q.qid, no: q.i + 1, total: q.list.length, cls: q.cls, phase: q.phase, cats: q.cats, pron: mst.pron, msid: r.sid };
+      if (q.phase === "reveal") { state.ans = {}; q.cats.forEach(id => { state.ans[id] = mst[id]; }); }
+    }
+    if (!SHEET_URL) { save(QS_KEY, state); return; }
+    try {
+      const res = await call({ action: "qset", pw: tpw, state });
+      if (!res.ok) alert("퀴즈 상태를 바꾸지 못했어요. 다시 눌러 주세요.");
+    } catch { alert("인터넷 연결을 확인해 주세요."); }
+  }
+
+  async function loadAnswers() {
+    const q = tst.quiz;
+    if (!q) return;
+    if (!SHEET_URL) { qrows = load(QA_KEY, []).filter(x => x.qid === q.qid); return; }
+    try {
+      const r = await call({ action: "qlist", pw: tpw, qid: q.qid });
+      if (r.ok && tst.quiz && r.rows && q.qid === tst.quiz.qid) qrows = r.rows;
+    } catch {}
+  }
+
+  async function pollAnswers() {
+    clearTimeout(qaTimer);
+    if (!tst.quiz || tst.quiz.phase === "wait") return;
+    await loadAnswers();
+    renderAnswers();
+    if (tst.quiz && tst.quiz.phase === "open") qaTimer = setTimeout(pollAnswers, SHEET_URL ? 3000 : 1000);
+  }
+
+  function openTQuiz() {
+    show("qView");
+    qrows = [];
+    renderTQuiz();
+    pollAnswers();
+  }
+
+  function renderTQuiz() {
+    const q = tst.quiz, r = curRow(), mst = stateOf(r);
+    document.body.classList.toggle("nonames", !tst.names);
+    document.body.classList.toggle("big", tst.big);
+    const last = q.i >= q.list.length - 1;
+    let h = `<div class="qv"><div class="qfig">${svgOf(mst, "fig")}
+      ${q.phase === "reveal" ? `<div class="owner">🕵️ <span class="mname">${r.cls}반 ${r.num}번 ${esc(r.name)}</span>의 몽타주</div>` : ""}</div><div>
+      <div class="qbar"><h2>🎯 문제 ${q.i + 1} / ${q.list.length}</h2>
+        ${q.phase === "wait" ? `<button class="main" data-q="open">📣 문제 내기</button>` : ""}
+        ${q.phase === "open" ? `<button class="main" data-q="reveal">✅ 정답 공개</button>` : ""}
+        ${q.phase === "reveal" ? (last ? `<button class="main" data-q="end">🏁 퀴즈 끝내기</button>` : `<button class="main" data-q="next">다음 문제 ▶</button>`) : ""}
+        <span class="sp"></span>
+        <label><input type="checkbox" data-opt="showAns" ${q.showAns ? "checked" : ""}> 답 보기</label>
+        <label><input type="checkbox" data-opt="names" ${tst.names ? "checked" : ""}> 이름 보기</label>
+        <label><input type="checkbox" data-opt="big" ${tst.big ? "checked" : ""}> 큰 글씨</label>
+        ${q.phase !== "reveal" || !last ? `<button data-q="end">✕ 끝내기</button>` : ""}
+      </div>`;
+    if (q.phase === "wait") {
+      const filled = Object.keys(CATS).filter(id => CATS[id].multi ? (mst[id] || []).length : mst[id]);
+      h += `<p class="qinfo">물어볼 항목을 고르고 <b>📣 문제 내기</b>를 누르면 학생 화면에 빈칸이 나타나요. (지금은 학생들이 기다리는 중)</p>
+        <div class="qcats">${filled.map(id => `<button data-cat="${id}" class="${q.cats.includes(id) ? "on" : ""}">${CATS[id].ko}</button>`).join("")}</div>`;
+    }
+    h += `<ol class="qframes">${q.cats.map(id => {
+      const cat = CATS[id], [a, b] = qFrame(cat, mst.pron), v = mst[id];
+      const fill = q.phase === "reveal" ? (cat.multi ? v.map(x => valueText(cat, x)).join(" / ") : valueText(cat, v)) : "&nbsp;";
+      return `<li><small class="ck">${cat.ko}</small>${esc(a)} <span class="bl">${q.phase === "reveal" ? esc(fill) : fill}</span> ${b === "." ? "." : esc(b)}<span class="rate" data-rate="${id}"></span></li>`;
+    }).join("")}</ol>`;
+    h += q.phase === "wait" ? "" : `<div class="qinfo" id="qCount"></div><div id="qAns"></div>`;
+    $("qView").innerHTML = h + `</div></div>`;
+    renderAnswers();
+  }
+
+  function renderAnswers() {
+    const q = tst.quiz;
+    if (!q || q.phase === "wait" || !$("qAns")) return;
+    const mst = stateOf(curRow());
+    const rv = q.phase === "reveal";
+    const list = qrows.slice().sort((a, b) => a.cls - b.cls || a.num - b.num);
+    $("qCount").textContent = `제출 ${list.length}명` + (rv ? "" : " · 학생들이 제출하는 대로 보여요");
+    if (!list.length) { $("qAns").innerHTML = ""; return; }
+    const right = {};
+    let h = `<table class="atable"><tr><th>학생</th>${q.cats.map(id => `<th>${CATS[id].ko}</th>`).join("")}${rv ? "<th>점수</th>" : ""}</tr>`;
+    for (const a of list) {
+      let sc = 0;
+      h += `<tr><td class="nm"><span class="who">${a.num}번 ${esc(a.name)}</span></td>`;
+      for (const id of q.cats) {
+        const t = (a.answers || {})[id] || "";
+        const ok = rv && t && judge(CATS[id], t, mst[id], mst.pron);
+        if (ok) { sc++; right[id] = (right[id] || 0) + 1; }
+        const cls = !t ? "e" : rv ? (ok ? "r" : "w") : "";
+        h += `<td class="${cls}"><span class="${!rv && !q.showAns && t ? "blur" : ""}">${t ? esc(t) : "—"}</span></td>`;
+      }
+      h += rv ? `<td class="sc">${sc} / ${q.cats.length}</td></tr>` : "</tr>";
+    }
+    $("qAns").innerHTML = h + "</table>";
+    document.querySelectorAll("[data-rate]").forEach(el => {
+      el.textContent = rv ? `정답 ${right[el.dataset.rate] || 0} / ${list.length}명` : "";
+    });
+  }
+
+  $("qView").addEventListener("click", async e => {
+    const q = tst.quiz;
+    const cb = e.target.closest("[data-cat]");
+    if (cb && q.phase === "wait") {
+      const id = cb.dataset.cat, i = q.cats.indexOf(id);
+      if (i >= 0) { if (q.cats.length > 1) q.cats.splice(i, 1); } else sortCats(q.cats.concat(id)).forEach((c, k) => { q.cats[k] = c; });
+      save(T_KEY, tst); pushQuiz(); renderTQuiz();
+      return;
+    }
+    const b = e.target.closest("[data-q]");
+    if (!b) return;
+    const act = b.dataset.q;
+    if (act === "open" || act === "reveal") {
+      if (act === "reveal") await loadAnswers();
+      q.phase = act; save(T_KEY, tst);
+      b.disabled = true;
+      await pushQuiz();
+      renderTQuiz(); pollAnswers();
+    }
+    if (act === "next") { q.i++; prepQuestion(); }
+    if (act === "end") {
+      if (q.phase !== "reveal" && !confirm("퀴즈를 끝낼까요? 학생 화면도 대기 화면으로 바뀌어요.")) return;
+      clearTimeout(qaTimer);
+      tst.quiz = null; save(T_KEY, tst);
+      await pushQuiz();
+      show("tView"); renderT();
+    }
+  });
+  $("qView").addEventListener("change", e => {
+    const o = e.target.dataset.opt;
+    if (!o) return;
+    if (o === "showAns") tst.quiz.showAns = e.target.checked;
+    else tst[o] = e.target.checked;
+    save(T_KEY, tst);
+    renderTQuiz();
+  });
   $("fClass").onchange = () => { tst.cls = $("fClass").value; save(T_KEY, tst); renderT(); };
   $("optNames").onchange = () => { tst.names = $("optNames").checked; save(T_KEY, tst); renderT(); };
   $("optBig").onchange = () => { tst.big = $("optBig").checked; save(T_KEY, tst); renderT(); };
@@ -623,7 +1015,7 @@
     try { saved = sessionStorage.getItem("mt-tpw") || ""; } catch {}
     if (!SHEET_URL || saved) { $("tpw").value = saved; tEnter(); } else show("tLogin");
   } else if (store.me) {
-    openMaker();
+    store.mode === "quiz" ? openQuiz() : openMaker();
   } else {
     show("login");
   }
