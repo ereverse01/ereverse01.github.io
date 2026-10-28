@@ -152,6 +152,26 @@ function judge(cat, text, v, pron) {
     : x === r.value);
 }
 
+// 퀴즈 보기: 정답 1개 + 오답 2~3개 (섞어서). 오답은 judge 로 틀린 것만 남김
+function makeChoices(cat, v, pron) {
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const vals = cat.multi ? (v || []) : v ? [v] : [];
+  if (!vals.length) return [];
+  const pick = vals[Math.floor(Math.random() * vals.length)];
+  const right = cat.color ? valueText(cat, pick) : pick;
+  let pool;
+  if (cat.color) {
+    const colors = Object.keys(CLOTH_COLORS).filter(c => c !== pick.color);
+    pool = cat.opts.filter(o => o.en !== pick.item).map(o => valueText(cat, { item: o.en, color: pick.color }));
+    // 같은 옷인데 색깔만 다른 보기도 섞기 (몽타주에 색깔이 있을 때만 오답이 됨)
+    if (pick.color) pool = pool.concat(shuffle(colors).slice(0, 2).map(c => valueText(cat, { item: pick.item, color: c })));
+  } else {
+    pool = cat.opts.map(o => o.en).filter(e => e !== right);
+  }
+  const wrong = shuffle(pool).filter(t => !judge(cat, t, v, pron)).slice(0, cat.opts.length > 4 ? 3 : 2);
+  return shuffle([right, ...wrong]);
+}
+
 function missMsg(cat, t, list) {
   let best = null, bd = 99;
   for (const e of list) {

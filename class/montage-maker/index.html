@@ -138,6 +138,11 @@
   .wait .big { font-size: 3rem; display: block; margin-bottom: 8px; animation: bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(-8px); } }
   .bank { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .choices span { font-size: 1.05rem; font-weight: 600; padding: 6px 14px; border-radius: 12px; background: #eef2fb; color: #1d3f8a; border: 1.5px solid #d3ddf3; }
+  .choices span.ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .choices b { color: var(--muted); margin-right: 2px; }
+  .qframes .choices span { font-size: 1.1rem; }
   .bank span { font-size: 0.85rem; padding: 2px 9px; border-radius: 999px; background: #eef2fb; color: #2b4b8c; }
   .res { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 1.05rem; }
   .res .mine { padding: 3px 10px; border-radius: 8px; background: #f3f3f3; }
@@ -620,6 +625,11 @@
     return cat.frame.map(t => t.replace("{S}", S).replace("{P}", P));
   }
 
+  const CIRCLED = ["①", "②", "③", "④"];
+  // isRight 를 주면 정답 보기를 초록으로 (정답 공개 때)
+  const choicesHTML = (list, isRight) => list && list.length
+    ? `<div class="choices">${list.map((t, i) => `<span class="${isRight && isRight(t) ? "ok" : ""}"><b>${CIRCLED[i]}</b> ${esc(t)}</span>`).join("")}</div>` : "";
+
   function renderQuiz() {
     const q = myQuiz();
     const box = $("quiz");
@@ -652,7 +662,7 @@
     }
 
     // 문제 풀기
-    h += `<p class="tip" style="margin:0 0 10px">선생님 화면 속 인물을 보고, 빈칸에 알맞은 표현을 써요.</p>`;
+    h += `<p class="tip" style="margin:0 0 10px">선생님 화면 속 인물을 보고, 보기 중 알맞은 표현을 골라 빈칸에 <b>그대로</b> 써요.</p>`;
     h += q.cats.map(id => {
       const cat = CATS[id];
       const [a, b] = qFrame(cat, q.pron);
@@ -660,8 +670,7 @@
         <div class="frame"><span>${esc(a)}</span>
           <input type="text" value="${esc(qd.a[id] || "")}" placeholder="(          )" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next">
           <span>${esc(b)}</span></div>
-        <div class="bank">${cat.opts.map(o => `<span>${esc(optLabel(cat, o))}</span>`).join("")}</div>
-        ${cat.color ? `<div class="bank">${Object.keys(CLOTH_COLORS).map(c => `<span style="background:#fbf8ee;color:#555">${c}</span>`).join("")}</div>` : ""}
+        ${choicesHTML((q.choices || {})[id])}
       </div>`;
     }).join("");
     h += `<button class="btn" id="qSend">${qd.sent ? "고쳐서 다시 제출하기" : "제출하기"}</button><div class="msg ${qd.sent ? "ok" : ""}" id="qMsg">${qd.sent ? "✅ 제출했어요. 정답 공개 전까지 고칠 수 있어요." : ""}</div>`;
@@ -841,6 +850,7 @@
     return sortCats(filled.sort(() => Math.random() - 0.5).slice(0, 4));
   };
   const sortCats = ids => ids.sort((a, b) => Object.keys(CATS).indexOf(a) - Object.keys(CATS).indexOf(b));
+  const addChoices = id => { const m = stateOf(curRow()); tst.quiz.choices[id] = makeChoices(CATS[id], m[id], m.pron); };
   const curRow = () => rows.find(r => r.sid === tst.quiz.list[tst.quiz.i]);
 
   function startQuiz() {
@@ -855,6 +865,8 @@
     q.qid = Date.now().toString(36);
     q.phase = "wait";
     q.cats = pickCats(stateOf(curRow()));
+    q.choices = {};
+    q.cats.forEach(id => addChoices(id));
     save(T_KEY, tst);
     pushQuiz();
     openTQuiz();
@@ -865,7 +877,7 @@
     let state = { phase: "off" };
     if (q) {
       const r = curRow(), mst = stateOf(r);
-      state = { qid: q.qid, no: q.i + 1, total: q.list.length, cls: q.cls, phase: q.phase, cats: q.cats, pron: mst.pron, msid: r.sid };
+      state = { qid: q.qid, no: q.i + 1, total: q.list.length, cls: q.cls, phase: q.phase, cats: q.cats, choices: q.choices, pron: mst.pron, msid: r.sid };
       if (q.phase === "reveal") { state.ans = {}; q.cats.forEach(id => { state.ans[id] = mst[id]; }); }
     }
     if (!SHEET_URL) { save(QS_KEY, state); return; }
@@ -894,6 +906,8 @@
   }
 
   function openTQuiz() {
+    const q = tst.quiz;
+    if (!q.choices) { q.choices = {}; q.cats.forEach(id => addChoices(id)); save(T_KEY, tst); if (q.phase !== "wait") pushQuiz(); }
     show("qView");
     qrows = [];
     renderTQuiz();
@@ -925,7 +939,7 @@
     h += `<ol class="qframes">${q.cats.map(id => {
       const cat = CATS[id], [a, b] = qFrame(cat, mst.pron), v = mst[id];
       const fill = q.phase === "reveal" ? (cat.multi ? v.map(x => valueText(cat, x)).join(" / ") : valueText(cat, v)) : "&nbsp;";
-      return `<li><small class="ck">${cat.ko}</small>${esc(a)} <span class="bl">${q.phase === "reveal" ? esc(fill) : fill}</span> ${b === "." ? "." : esc(b)}<span class="rate" data-rate="${id}"></span></li>`;
+      return `<li><small class="ck">${cat.ko}</small>${esc(a)} <span class="bl">${q.phase === "reveal" ? esc(fill) : fill}</span> ${b === "." ? "." : esc(b)}<span class="rate" data-rate="${id}"></span>${choicesHTML(q.choices[id], q.phase === "reveal" && (t => judge(cat, t, v, mst.pron)))}</li>`;
     }).join("")}</ol>`;
     h += q.phase === "wait" ? "" : `<div class="qinfo" id="qCount"></div><div id="qAns"></div>`;
     $("qView").innerHTML = h + `</div></div>`;
@@ -965,7 +979,7 @@
     const cb = e.target.closest("[data-cat]");
     if (cb && q.phase === "wait") {
       const id = cb.dataset.cat, i = q.cats.indexOf(id);
-      if (i >= 0) { if (q.cats.length > 1) q.cats.splice(i, 1); } else sortCats(q.cats.concat(id)).forEach((c, k) => { q.cats[k] = c; });
+      if (i >= 0) { if (q.cats.length > 1) q.cats.splice(i, 1); } else { sortCats(q.cats.concat(id)).forEach((c, k) => { q.cats[k] = c; }); addChoices(id); }
       save(T_KEY, tst); pushQuiz(); renderTQuiz();
       return;
     }
