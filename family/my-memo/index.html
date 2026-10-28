@@ -461,7 +461,34 @@ function newNote(parentId = '', extra = {}) {
 /* ---------- 동기화 ---------- */
 let syncT;
 function scheduleSync(ms = 1500) { if (!syncOn()) return; clearTimeout(syncT); syncT = setTimeout(sync, ms); }
-async function post(body) {
+// 보낼 글자 만들기와 받은 글자 읽기(사진 있는 페이지는 수 MB)를 화면 뒤의 일꾼(Worker)이 맡아서 그동안 타이핑이 멈칫하지 않게.
+// 서버는 방금 올린 페이지도 되돌려 주는데, 일꾼이 그건 빼고 넘겨 줌 (sent: 올린 페이지 id → updated)
+const SYNC_WORKER = `onmessage = async e => {
+  const { id, url, body, sent } = e.data;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 45000);
+  try {
+    const r = await fetch(url, { method: 'POST', body: JSON.stringify(body), signal: ctl.signal });
+    const txt = await r.text(); let res;
+    try { res = JSON.parse(txt) } catch (x) { throw new Error('서버 응답을 읽지 못했어요') }
+    if (res && Array.isArray(res.notes) && sent) res.notes = res.notes.filter(n => sent[n.id] !== n.updated);
+    postMessage({ id, res });
+  } catch (err) { postMessage({ id, err: err.message, abort: err.name === 'AbortError' }) }
+  finally { clearTimeout(t) }
+};`;
+let syncWorker = null, swSeq = 0; const swWait = new Map();
+try {
+  syncWorker = new Worker(URL.createObjectURL(new Blob([SYNC_WORKER], { type: 'text/javascript' })));
+  syncWorker.onmessage = e => { const w = swWait.get(e.data.id); if (w) { swWait.delete(e.data.id); w(e.data); } };
+  syncWorker.onerror = () => { syncWorker = null; for (const w of swWait.values()) w({ fallback: true }); swWait.clear(); };
+} catch (e) { syncWorker = null; }
+async function post(body, sent) {
+  if (syncWorker) {
+    const d = await new Promise(res => { const id = ++swSeq; swWait.set(id, res); syncWorker.postMessage({ id, url: cfg.url, body, sent }); });
+    if (!d.fallback) {
+      if (d.err) { const er = new Error(d.err); if (d.abort) er.name = 'AbortError'; throw er; }
+      return d.res;
+    }
+  }
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 45000);
   try {
     const r = await fetch(cfg.url, { method: 'POST', body: JSON.stringify(body), signal: ctl.signal });
@@ -487,7 +514,8 @@ async function sync(force) {
       const dirty = [...S.notes.values()].filter(n => n._dirty);
       const batch = []; let size = 0;
       for (const n of dirty) { const w = wire(n); const sz = w.content.length + 400; if (batch.length && size + sz > 3e6) break; batch.push(w); size += sz; }
-      const res = await post({ action: 'sync', key: cfg.key, since: S.rev, changes: batch });
+      const sent = {}; for (const w of batch) sent[w.id] = w.updated;
+      const res = await post({ action: 'sync', key: cfg.key, since: S.rev, changes: batch }, sent);
       if (res.error === 'auth') { setStatus('auth'); askPassword(true); return; }
       if (res.error) throw new Error(res.error);
       if (res.reset) { S.rev = 0; for (const n of S.notes.values()) { n._dirty = true; persist(n); } continue; }
@@ -707,7 +735,7 @@ function renderPage(keepScroll) {
   $('#btnStar').hidden = false; $('#btnMore').hidden = false; $('#btnTb').hidden = false;
   $('#picon').textContent = n.icon || ''; $('#picon').hidden = !n.icon; $('#addIcon').hidden = !!n.icon;
   if (titleEl.textContent !== n.title) titleEl.textContent = n.title || ''; titleEl.classList.toggle('long', (n.title || '').length > 40);
-  editor.innerHTML = n.content || '<p><br></p>';
+  editor.innerHTML = n.content || '<p><br></p>'; liteImgs(editor);
   S.edDirty = false; $('#banner').hidden = true;
   fixNewlines(editor); normalize(); refreshPageLinks(); renderMeta(); renderKids(); renderCrumbs();
   document.title = (n.title || '제목 없음');
@@ -824,11 +852,29 @@ function flushSoon() {
 }
 editor.addEventListener('compositionstart', () => { S.composing = true; S.lastInput = Date.now(); });
 editor.addEventListener('compositionend', () => { S.composing = false; S.lastInput = Date.now(); });
+// 사진은 data: 주소(사진 한 장에 수십만 글자)로 저장되는데, 화면에도 그대로 두면 저장할 때마다 editor.innerHTML 이
+// 그 글자를 전부 다시 만들어서 사진 있는 긴 페이지에서 타이핑이 멈칫함 → 화면에서는 짧은 blob: 주소로 바꿔 두고 저장할 때만 되돌림
+const IMG = new Map(), IMG_REV = new Map();   // blob: → data:, data: → blob:
+function dataToBlob(d) {
+  const i = d.indexOf(','), meta = d.slice(5, i);
+  const raw = /;base64$/i.test(meta) ? atob(d.slice(i + 1)) : decodeURIComponent(d.slice(i + 1));
+  const a = new Uint8Array(raw.length); for (let k = 0; k < raw.length; k++) a[k] = raw.charCodeAt(k);
+  return new Blob([a], { type: meta.split(';')[0] });
+}
+function liteImgs(root) {
+  for (const img of root.querySelectorAll('img[src^="data:"]')) {
+    const d = img.getAttribute('src'); let u = IMG_REV.get(d);
+    if (!u) { try { u = URL.createObjectURL(dataToBlob(d)); } catch (e) { continue; } IMG.set(u, d); IMG_REV.set(d, u); }
+    img.setAttribute('src', u);
+  }
+}
+const fullImgs = h => h.indexOf('blob:') < 0 ? h : h.replace(/blob:[^"'\s)<>]+/g, u => IMG.get(u) || u);
 function flushEditor() {
   clearTimeout(edT);
   if (!S.edDirty || !S.cur) return;
   S.edDirty = false;
-  const html = cleanHTML(editor.innerHTML);
+  liteImgs(editor);
+  const html = fullImgs(cleanHTML(editor.innerHTML));
   if (html !== S.cur.content) { S.cur.content = html; touch(S.cur); renderMeta(); }
 }
 function markChanged() { S.edDirty = true; S.lastInput = Date.now(); clearTimeout(edT); edT = setTimeout(flushSoon, 700); if (syncOn()) setStatus('pending'); }
@@ -893,7 +939,7 @@ document.addEventListener('selectionchange', () => {
   const s = getSelection();
   if (s.rangeCount && editor.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange();
   // 글자마다 도구 모음 상태를 계산하면 타이핑이 무거워져서, 잠깐 멈췄을 때 한 번만
-  clearTimeout(selT); selT = setTimeout(() => { updatePlaceholder(); if (!document.body.classList.contains('tb-off')) updateToolbarState(); }, 120);
+  clearTimeout(selT); selT = setTimeout(() => { updatePlaceholder(); rememberSpot(); if (!document.body.classList.contains('tb-off')) updateToolbarState(); }, 120);
 });
 let selT;
 let phEl = null;
@@ -1543,7 +1589,7 @@ function sanitize(html) {
         if (c.classList.contains('pagelink') && c.dataset.id) { el.className = 'pagelink'; el.dataset.id = c.dataset.id; el.setAttribute('href', '#' + c.dataset.id); el.setAttribute('contenteditable', 'false'); }
         else { const h = c.getAttribute('href') || ''; if (/^(https?:|mailto:|tel:|file:\/\/\/)/i.test(h)) el.setAttribute('href', h); else { walk(c, dst); continue; } }
       }
-      if (t === 'img') { const s = c.getAttribute('src') || ''; if (/^(https?:|data:image\/)/i.test(s)) el.setAttribute('src', s); else continue; }
+      if (t === 'img') { let s = c.getAttribute('src') || ''; if (IMG.has(s)) s = IMG.get(s); if (/^(https?:|data:image\/)/i.test(s)) el.setAttribute('src', s); else continue; }
       if (t === 'ul' && c.classList.contains('todo')) el.className = 'todo';
       if (t === 'ul' && c.classList.contains('note')) el.className = 'note';
       if (t === 'li' && c.hasAttribute('data-checked')) el.setAttribute('data-checked', '');
@@ -1574,6 +1620,19 @@ editor.addEventListener('paste', e => {
   if (lines.length === 1) exec('insertText', text);
   else exec('insertHTML', lines.map(l => `<p>${esc(l) || '<br>'}</p>`).join(''));
 });
+// 사진이 든 부분을 복사하면 다른 프로그램에도 사진이 가도록 blob: 주소를 원래 data: 주소로 바꿔 넣음
+function copyImgs(e) {
+  const s = getSelection(); if (!s.rangeCount || s.isCollapsed || !e.clipboardData) return;
+  const frag = s.getRangeAt(0).cloneContents();
+  if (!frag.querySelector('img[src^="blob:"]')) return;
+  const box = document.createElement('div'); box.append(frag);
+  e.preventDefault();
+  e.clipboardData.setData('text/html', fullImgs(cleanHTML(box.innerHTML)));
+  e.clipboardData.setData('text/plain', s.toString());
+  if (e.type === 'cut') exec('delete');
+}
+editor.addEventListener('copy', copyImgs);
+editor.addEventListener('cut', copyImgs);
 editor.addEventListener('drop', e => {
   const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
   if (!files.length) return;
@@ -2006,7 +2065,65 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { S.composing = false; flushEditor(); flushPersist(); if (anyDirty()) sync(true); }
   else sync();
 });
-window.addEventListener('pagehide', () => { flushEditor(); flushPersist(); });
+window.addEventListener('pagehide', () => { flushEditor(); flushPersist(); saveSpots(); });
+
+/* ---------- 새로고침해도 커서 자리 그대로 ---------- */
+// 페이지마다 마지막 커서 자리(제목/본문, 몇 번째 블록 안의 몇 번째 글자)와 스크롤 위치를 기억 (여러 창이어도 페이지별로).
+// 스크롤은 커서가 있던 블록에서 얼마나 떨어졌는지로 기억 → 창 너비가 바뀌어 줄바꿈이 달라져도 같은 곳이 보임
+const SPOT_KEY = 'memo.spots';
+let spots = {}, spotT;
+try { spots = JSON.parse(localStorage.getItem(SPOT_KEY) || '{}') || {} } catch (e) {}
+function rememberSpot() {
+  const s = getSelection(); if (!S.cur || !s.rangeCount) return;
+  const node = s.focusNode, inTitle = titleEl.contains(node);
+  if (!inTitle && !editor.contains(node)) return;
+  const root = inTitle ? titleEl : editor;
+  const el = node.nodeType === 1 ? node : node.parentElement;
+  const path = []; for (let x = el; x && x !== root; x = x.parentElement) path.unshift([...x.parentElement.children].indexOf(x));
+  const r = document.createRange(); r.selectNodeContents(el); r.setEnd(node, s.focusOffset);
+  setSpot({ t: inTitle ? 1 : 0, p: path, o: r.toString().length });
+}
+function setSpot(sp) {
+  delete spots[S.cur.id]; spots[S.cur.id] = sp;   // 최근 것이 뒤로 → 오래된 것부터 지움
+  const ids = Object.keys(spots); if (ids.length > 60) ids.slice(0, ids.length - 60).forEach(k => delete spots[k]);
+  clearTimeout(spotT); spotT = setTimeout(saveSpots, 1000);
+}
+const spotAnchor = sp => (!sp.t && sp.p && sp.p.length && editor.children[sp.p[0]]) || null;
+const topIn = el => el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+function saveSpots() {
+  clearTimeout(spotT);
+  const cur = S.cur && spots[S.cur.id];
+  if (cur && !scroller.hidden) { const a = spotAnchor(cur); cur.d = Math.round(scroller.scrollTop - (a ? topIn(a) : 0)); }
+  // 다른 창이 그사이 저장한 페이지 자리를 덮어쓰지 않게 합쳐서 저장
+  try {
+    const o = JSON.parse(localStorage.getItem(SPOT_KEY) || '{}') || {};
+    for (const k of Object.keys(spots)) delete o[k];
+    spots = Object.assign(o, spots);
+    localStorage.setItem(SPOT_KEY, JSON.stringify(spots));
+  } catch (e) {}
+}
+scroller.addEventListener('scroll', () => {
+  if (S.cur && spots[S.cur.id]) { clearTimeout(spotT); spotT = setTimeout(saveSpots, 1000); }
+}, { passive: true });
+function restoreSpot() {
+  const sp = S.cur && spots[S.cur.id]; if (!sp) return;
+  const root = sp.t ? titleEl : editor;
+  let el = root; for (const i of sp.p || []) { el = el.children[i]; if (!el) return; }
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let left = sp.o || 0, n, node = null;
+  while ((n = w.nextNode())) { if (left <= n.data.length) { node = n; break; } left -= n.data.length; }
+  const r = document.createRange();
+  if (node) r.setStart(node, left); else { r.selectNodeContents(el); r.collapse(!sp.o); }
+  r.collapse(true);
+  root.focus({ preventScroll: true });
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  const a = spotAnchor(sp), want = () => (a && a.isConnected ? topIn(a) : 0) + (sp.d || 0);
+  scroller.scrollTop = want(); const st = scroller.scrollTop;
+  // 사진이 늦게 뜨면서 글이 밀리면 한 번 더 맞춤 (그사이 직접 스크롤하거나 입력했으면 그대로 둠)
+  const id = S.cur.id, li = S.lastInput;
+  Promise.all($$('img', editor).map(i => i.decode ? i.decode().catch(() => {}) : 0)).then(() => {
+    if (S.cur && S.cur.id === id && S.lastInput === li && Math.abs(scroller.scrollTop - st) < 4) scroller.scrollTop = want();
+  });
+}
 window.addEventListener('online', () => sync());
 window.addEventListener('offline', () => setStatus(syncOn() ? 'offline' : 'local'));
 setInterval(() => { if (!document.hidden && syncOn() && cfg.key) sync(); }, 15000);
@@ -2037,7 +2154,7 @@ async function init() {
   if (params.has('new')) { history.replaceState(null, '', location.pathname); createPage('', {}); }
   else {
     const startId = (hashId && get(hashId) && alive(get(hashId))) ? hashId : (cfg.last && get(cfg.last) && alive(get(cfg.last)) ? cfg.last : (childrenOf('')[0] || {}).id);
-    if (startId) { history.replaceState({ id: startId }, '', '#' + startId); openPage(startId, { noPush: true }); }
+    if (startId) { history.replaceState({ id: startId }, '', '#' + startId); openPage(startId, { noPush: true }); restoreSpot(); }
     else showEmpty(syncOn() ? '메모를 불러오는 중…' : '');
   }
   if (!syncOn()) { setStatus('local'); afterFirstSync(); }
