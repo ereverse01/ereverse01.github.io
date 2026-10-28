@@ -58,6 +58,10 @@
   };
   const getPw = () => { try { return sessionStorage.getItem("wp-pw") || ""; } catch { return ""; } };
   const setPw = (v) => { try { sessionStorage.setItem("wp-pw", v); } catch {} };
+  // 새로고침해도 보던 화면(탭·열어 둔 마을·명단·게임 진행)을 그대로 — 이 탭 안에서만 기억한다
+  const UI_KEY = "wp-ui:" + location.pathname + location.search;
+  const ui = (() => { try { return JSON.parse(sessionStorage.getItem(UI_KEY)) || {}; } catch { return {}; } })();
+  const saveUI = () => { try { sessionStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch {} };
 
   /* ---------- text tools ---------- */
   function tokenize(text) {
@@ -251,18 +255,19 @@
   /* ---------- view switching ---------- */
   let view = null;
   function showView(v) {
-    view = v;
+    view = v; ui.view = v; saveUI();
     for (const k of ["setup", "saved", "game", "village"]) {
       $("#view-" + k).hidden = v !== k;
       $("#tab-" + k).setAttribute("aria-selected", v === k);
     }
     if (v === "game" && !STUDENT) {
-      if (!G) startGame(validSet(draft) || SAMPLE);
+      if (!G && ui.game?.set) startGame(ui.game.set, ui.game);
+      else if (!G) startGame(validSet(draft) || SAMPLE);
       else requestAnimationFrame(layoutPuzzle);
     }
     if (v === "game" && STUDENT && G) requestAnimationFrame(layoutPuzzle);
     if (v === "saved") loadSets();
-    if (v === "village") { closeVillage(); loadVillage(villageOpen); villageOpen = null; }
+    if (v === "village") { closeVillage(); ui.cls = villageOpen; saveUI(); loadVillage(villageOpen); villageOpen = null; }
   }
   $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-view]"); if (b) showView(b.dataset.view); });
 
@@ -563,7 +568,7 @@ ${draft.passage.trim().slice(0, 12000)}
     if (b.dataset.act === "qr") showQRBig(studentLink(id), s.title);
     if (b.dataset.act === "link") { const ok = await copyText(studentLink(id)); b.textContent = ok ? "복사했어요" : studentLink(id); }
     if (b.dataset.act === "skip") toggleSkip(s, b);
-    if (b.dataset.act === "roster") { rosterId = id; $("#roster-title").textContent = `명단 · ${s.title}`; loadRoster(); }
+    if (b.dataset.act === "roster") { rosterId = id; $("#roster-title").textContent = `명단 · ${s.title}`; ui.roster = { id, title: s.title }; saveUI(); loadRoster(); }
     if (b.dataset.act === "edit") {
       try {
         const { set } = await API.get({ action: "set", id });
@@ -608,7 +613,7 @@ ${draft.passage.trim().slice(0, 12000)}
     return fontsReady;
   }
 
-  async function startGame(set) {
+  async function startGame(set, prog) {
     disposeThree();
     G = {
       set: clone(set),
@@ -616,6 +621,8 @@ ${draft.passage.trim().slice(0, 12000)}
       matched: new Set(), placed: new Set(), filled: new Set(),
       miss: 0, energy: 0, stage: 1, t0: Date.now(), submitted: false, selEn: null, selKo: null, selChip: null, selSlot: null,
     };
+    if (prog) Object.assign(G, { restoring: true, miss: prog.miss || 0, t0: prog.t0 || Date.now(), endAt: prog.endAt, built: prog.built, builtMsg: prog.builtMsg, builtCls: prog.builtCls });
+    const g = G;
     $("#g-title").textContent = set.title || "";
     $("#done").hidden = true; $("#done").innerHTML = "";
     $("#stage1").hidden = false; $("#stage2").hidden = true; $("#to-stage2").hidden = true;
@@ -624,15 +631,57 @@ ${draft.passage.trim().slice(0, 12000)}
     updateStepper(); updateMiss(); updateSkip();
     buildMatch();
     await waitFonts();
+    if (G !== g) return;
     buildPuzzle();
     layoutPuzzle();
+    if (prog) restoreGame(prog);
+    saveGame();
   }
   $("#restart").addEventListener("click", () => { if (G) startGame(G.set); });
   function updateStepper() {
     $("#st1").className = G.stage === 1 ? "on" : "done";
     $("#st2").className = G.stage === 2 ? "on" : "";
+    saveGame();
   }
-  function updateMiss() { $("#g-miss").textContent = `실수 ${G.miss}`; }
+  function updateMiss() { $("#g-miss").textContent = `실수 ${G.miss}`; saveGame(); }
+
+  /* ---------- 진행 저장·복원 (새로고침해도 이어서) ---------- */
+  function saveGame() {
+    if (!G || G.restoring) return;
+    ui.game = { set: G.set, stage: G.stage, matched: [...G.matched], placed: [...G.placed], filled: [...G.filled], miss: G.miss, t0: G.t0, endAt: G.endAt, built: G.built, builtMsg: G.builtMsg, builtCls: G.builtCls };
+    saveUI();
+  }
+  // 같은 문제일 때만 이어서 한다 (선생님이 문제를 고쳤으면 처음부터)
+  const progFor = (set) => (ui.game?.set && JSON.stringify(ui.game.set.items) === JSON.stringify(set.items) ? ui.game : null);
+  function restoreGame(prog) {
+    const has = (id) => id >= 0 && id < G.items.length;
+    for (const id of prog.matched || []) {
+      if (!has(id) || G.matched.has(id)) continue;
+      G.matched.add(id);
+      for (const c of [$(`#col-en .card[data-id="${id}"]`), $(`#col-ko .card[data-id="${id}"]`)]) if (c) { c.classList.add("ok"); c.disabled = true; }
+      unlockPiece(id);
+    }
+    for (const id of prog.placed || []) {
+      const p = G.matched.has(id) && G.pz.pieces.find((q) => q.itemId === id); if (!p) continue;
+      p.state = "placed"; p.el.classList.add("placed"); p.el.style.zIndex = 2; G.placed.add(id);
+    }
+    updateMatchCount(); updatePuzzleCount(); layoutPuzzle();
+    if (prog.stage !== 2) { G.restoring = false; checkStage1(); return; }
+    startStage2();
+    for (const id of prog.filled || []) {
+      if (!has(id) || G.filled.has(id)) continue;
+      G.filled.add(id);
+      $(`#bank .chip[data-id="${id}"]`)?.remove();
+      const slot = $(`#blanks .slot[data-id="${id}"]`);
+      slot.textContent = G.items[id].answer; slot.classList.add("ok"); slot.disabled = true; slot.closest("li").classList.add("ok");
+      $("#collected").insertAdjacentHTML("beforeend", `<li><b>${esc(G.items[id].word)}</b> · ${esc(G.items[id].meaning)}</li>`);
+      G.energy++; addEnergyBlock();
+    }
+    if (G.energy) $("#three-empty").hidden = true;
+    updateBlankCount(); updateEnergy();
+    G.restoring = false;
+    if (G.filled.size === G.items.length) finish();
+  }
 
   /* ---------- 1단계 건너뛰기: 교사가 '내 문제' 탭에서 허용하면 버튼이 나온다 (미리보기에서는 늘 보임) ---------- */
   function updateSkip() {
@@ -658,7 +707,7 @@ ${draft.passage.trim().slice(0, 12000)}
     for (const it of shuffle(G.items)) ko.insertAdjacentHTML("beforeend", `<button class="card ko" data-id="${it.id}">${esc(it.meaning)}</button>`);
     updateMatchCount();
   }
-  function updateMatchCount() { $("#match-count").textContent = `${G.matched.size} / ${G.items.length}`; }
+  function updateMatchCount() { $("#match-count").textContent = `${G.matched.size} / ${G.items.length}`; saveGame(); }
   function onCard(e) {
     const b = e.target.closest(".card"); if (!b || !G || G.stage !== 1) return;
     const id = Number(b.dataset.id); const side = b.classList.contains("en") ? "selEn" : "selKo";
@@ -807,7 +856,7 @@ ${draft.passage.trim().slice(0, 12000)}
     G.pz = { cols, rows, W, H, poster, pieces, trayOrder: [], s: 1, z: 10 };
     updatePuzzleCount();
   }
-  function updatePuzzleCount() { $("#puzzle-count").textContent = `조각 ${G.placed.size} / ${G.items.length}`; }
+  function updatePuzzleCount() { $("#puzzle-count").textContent = `조각 ${G.placed.size} / ${G.items.length}`; saveGame(); }
   function layoutPuzzle() {
     if (!G?.pz || G.stage !== 1 || $("#view-game").hidden) return;
     const pz = G.pz, host = $("#puzzle-host"), stage = $("#pstage");
@@ -928,7 +977,7 @@ ${draft.passage.trim().slice(0, 12000)}
     initThree();
     window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
   }
-  function updateBlankCount() { $("#blank-count").textContent = `${G.filled.size} / ${G.items.length}`; }
+  function updateBlankCount() { $("#blank-count").textContent = `${G.filled.size} / ${G.items.length}`; saveGame(); }
   function renderS2Sel() {
     for (const c of $$("#bank .chip")) c.classList.toggle("sel", Number(c.dataset.id) === G.selChip);
     for (const s of $$("#blanks .slot")) s.classList.toggle("target", Number(s.dataset.id) === G.selSlot);
@@ -1015,18 +1064,29 @@ ${draft.passage.trim().slice(0, 12000)}
   function finish() {
     const n = G.items.length, miss = G.miss;
     const stars = miss === 0 ? 3 : miss <= Math.ceil(n / 3) ? 2 : 1;
-    const seconds = Math.round((Date.now() - G.t0) / 1000);
+    if (!G.endAt) { G.endAt = Date.now(); saveGame(); }
+    const seconds = Math.round((G.endAt - G.t0) / 1000);
     const d = $("#done");
     d.innerHTML = `<span class="stars" aria-label="별 ${stars}개">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</span><div class="done-text"><h2 id="done-h">에너지 가득!</h2><p>${n}개 단어 · 실수 ${miss}번 · ${fmtDur(seconds)}</p><p id="submit-status"></p></div><div class="done-acts" id="done-acts"><button class="btn big" id="again">다시 하기</button></div>`;
     d.hidden = false;
     $("#again").addEventListener("click", () => startGame(G.set));
     $("#st2").className = "done";
+    if (G.built) { showBuilt(); return; } // 새로고침 뒤: 이미 지은 기관을 다시 보여 준다
     const real = STUDENT && studentName && SET_ID !== "sample" && API.ready();
     if (real) { if (!G.submitted) submitResult({ stars, seconds, miss, n }); return; }
     // 미리보기·연습: 마을에는 넣지 않고 기관만 뽑아 보여 준다
-    const key = pickBuildingLocal();
-    $("#submit-status").textContent = STUDENT ? "연습용 문제라 마을에는 세워지지 않아요." : "미리보기라 마을에는 세워지지 않아요.";
-    completeBuilding(key);
+    G.built = pickBuildingLocal();
+    G.builtMsg = STUDENT ? "연습용 문제라 마을에는 세워지지 않아요." : "미리보기라 마을에는 세워지지 않아요.";
+    saveGame(); showBuilt();
+  }
+  function showBuilt() {
+    $("#submit-status").textContent = G.builtMsg || "";
+    completeBuilding(G.built);
+    const cls = G.builtCls;
+    if (cls && !$("#to-village")) {
+      $("#done-acts").insertAdjacentHTML("afterbegin", `<button class="btn primary big" id="to-village">우리 반 마을 보기 →</button>`);
+      $("#to-village").addEventListener("click", () => openVillageFromGame(cls));
+    }
   }
   async function submitResult(r) {
     G.submitted = true;
@@ -1038,12 +1098,11 @@ ${draft.passage.trim().slice(0, 12000)}
       setSiteBusy(false);
       if (!j.building || !BUILDINGS[j.building]) { s.textContent = `${studentName} 이름으로 선생님께 제출했어요.`; return; }
       const b = BUILDINGS[j.building], cls = parseSid(studentName);
-      s.textContent = j.dup
+      G.built = j.building; G.builtCls = cls ? cls.cls : null;
+      G.builtMsg = j.dup
         ? `이 활동으로는 이미 ${b[0]}을(를) 지었어요. 마을에는 그대로 하나만 있어요.`
         : `${cls ? clsLabel(cls.cls) + " " : ""}마을에 세워졌어요!`;
-      completeBuilding(j.building);
-      if (cls) $("#done-acts").insertAdjacentHTML("afterbegin", `<button class="btn primary big" id="to-village">우리 반 마을 보기 →</button>`);
-      if (cls) $("#to-village").addEventListener("click", () => openVillageFromGame(cls.cls));
+      saveGame(); showBuilt();
     } catch (e) {
       setSiteBusy(false);
       G.submitted = false;
@@ -2248,6 +2307,7 @@ ${draft.passage.trim().slice(0, 12000)}
   function openVillage(cls) {
     const list = VIL?.[cls];
     if (!list) { setStatus("#village-status", `${esc(clsLabel(cls))}에는 아직 기관이 없어요.`); return; }
+    ui.cls = cls; saveUI();
     $("#vil-list").hidden = true; $("#vil-reset").hidden = true; $("#vil-detail").hidden = false;
     $("#vd-title").textContent = `${clsLabel(cls)} 마을`;
     $("#vd-level").textContent = `${levelOf(list.length)} · 기관 ${list.length}개`;
@@ -2259,6 +2319,7 @@ ${draft.passage.trim().slice(0, 12000)}
   }
   function closeVillage() {
     disposeVillageView();
+    if (ui.cls) { ui.cls = null; saveUI(); }
     $("#vil-detail").hidden = true; $("#vil-list").hidden = false; if (VIL) renderResetPanel();
   }
   function initVillageView(cls, list) {
@@ -2321,12 +2382,16 @@ ${draft.passage.trim().slice(0, 12000)}
   if (!API.ready()) $("#api-notice").hidden = STUDENT;
   if (!API.ready() && !STUDENT) $("#api-notice").hidden = false;
 
+  const lastView = ui.view, lastCls = ui.cls;
   if (VILLAGE !== null) {
     $("#tabs").hidden = true;
+    if (lastView === "village" && lastCls) villageOpen = lastCls;
     showView("village");
   } else if (!STUDENT) {
     renderPicker(); renderItems();
-    showView("setup");
+    if (lastView === "village" && lastCls) villageOpen = lastCls;
+    if (ui.roster) { rosterId = ui.roster.id; $("#roster-title").textContent = `명단 · ${ui.roster.title}`; if ($("#pw2").value) loadRoster(); }
+    showView(["setup", "saved", "game", "village"].includes(lastView) ? lastView : "setup");
   } else {
     $("#tabs").hidden = true;
     for (const k of ["setup", "saved"]) $("#view-" + k).hidden = true;
@@ -2348,7 +2413,9 @@ ${draft.passage.trim().slice(0, 12000)}
     loadSet().then((s) => {
       theSet = s; go.disabled = false; setStatus("#gate-status", "");
       $("#gate-title").textContent = s.title || "낱말 조각 공방";
+      if (ui.playing && studentName) begin(); // 새로고침 전에 하던 활동으로 바로
     }).catch((e) => setStatus("#gate-status", esc(e.message || "문제를 불러오지 못했어요. 링크를 다시 확인해 주세요."), "err"));
+    if (lastView === "village") openVillageFromGame(lastCls);
     const begin = () => {
       const nm = $("#student-name").value.trim();
       if (!nm) { setStatus("#gate-status", "학번과 이름을 적어 주세요.", "err"); $("#student-name").focus(); return; }
@@ -2357,7 +2424,9 @@ ${draft.passage.trim().slice(0, 12000)}
       studentName = nm; try { sessionStorage.setItem("wp-name", nm); } catch {}
       $("#gate").hidden = true; $("#game-body").hidden = false;
       $("#g-name").hidden = false; $("#g-name").textContent = nm;
-      startGame(theSet);
+      const prog = ui.playing ? progFor(theSet) : null;
+      ui.playing = true; saveUI();
+      startGame(theSet, prog);
     };
     go.addEventListener("click", begin);
     $("#student-name").addEventListener("keydown", (e) => { if (e.key === "Enter") begin(); });
