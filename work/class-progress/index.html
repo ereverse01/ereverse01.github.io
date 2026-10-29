@@ -571,6 +571,9 @@ const PLAN_LISTS = COMMON_PLANS.map(plan => {
   return { classes: plan.classes, items };
 });
 
+const lessonById = {};
+days.forEach(d => d.lessons.forEach(L => lessonById[L.id] = L));
+
 // 주 단위로 묶기 (월~금)
 const weeks = [];
 days.forEach(day => {
@@ -629,6 +632,14 @@ function setRec(id, patch) {
   save();
 }
 const planText = title => (data.plan[title] || {}).text || '';
+// 반 카드 기본 내용 = 공통 차시 제목 + 차시 메뉴에 적은 설명
+//  (반 카드에서 직접 고친 반은 r.text 가 있어서 설명이 바뀌어도 그대로)
+function defaultText(L) {
+  const c = COMMON_TEXT[L.id] || '';
+  const d = c ? planText(c) : '';
+  return d ? `${c}\n${d}` : c;
+}
+const shownText = L => rec(L.id).text || defaultText(L);
 
 function fmtTime(iso) {
   if (!iso) return '';
@@ -725,7 +736,7 @@ function lessonCard(L, inGrid) {
         <span class="meta"><b>${mdDow(L.key)}</b><br>${L.p}교시</span>
         ${check}
       </div>
-      <textarea rows="1" placeholder="내용">${esc(r.text || COMMON_TEXT[L.id] || '')}</textarea>
+      <textarea rows="1" placeholder="내용">${esc(shownText(L))}</textarea>
     </div>`;
   // 주간 카드: 윗줄 = 반 · 교시 · 차시 (한 줄), 아랫줄 = 내용 + 체크
   return `
@@ -737,7 +748,7 @@ function lessonCard(L, inGrid) {
       </div>
       ${late ? '<div class="latetag">체크 안 됨</div>' : ''}
       <div class="lbody">
-        <textarea rows="1" placeholder="내용 적기">${esc(r.text || COMMON_TEXT[L.id] || '')}</textarea>
+        <textarea rows="1" placeholder="내용 적기">${esc(shownText(L))}</textarea>
         ${check}
       </div>
     </div>`;
@@ -754,7 +765,9 @@ function wireCards(root) {
   root.addEventListener('input', e => {
     if (e.target.tagName !== 'TEXTAREA') return;
     const card = e.target.closest('.lesson');
-    setRec(card.dataset.id, { text: e.target.value });
+    // 기본 내용과 똑같이 되돌리면 '안 고친 반'으로 → 차시 설명이 바뀌면 다시 따라감
+    const def = defaultText(lessonById[card.dataset.id]);
+    setRec(card.dataset.id, { text: e.target.value === def ? '' : e.target.value });
     autoGrow(e.target);
   });
   root.addEventListener('click', e => {
@@ -1047,8 +1060,9 @@ function printDay(key) {
   const rows = day.lessons.map(L => {
     const r = rec(L.id);
     const common = COMMON_TEXT[L.id];
-    const content = r.text || common || '';
-    const detail = common && (!r.text || r.text === common) ? planText(common) : '';
+    const custom = r.text && r.text !== common && r.text !== defaultText(L);
+    const content = custom ? r.text : (common || '');
+    const detail = !custom && common ? planText(common) : '';
     return `<tr>
       <td><b>${L.p}교시</b><small>${PERIOD_TIME[L.p]}</small></td>
       <td><span class="ps-badge" style="--c:${colorOf(L.cls)}">${L.cls}</span></td>
