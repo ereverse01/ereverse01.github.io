@@ -151,6 +151,14 @@ body.tb-off #toolbar{display:none}
 #editor{outline:none;font-family:var(--font,inherit);font-size:var(--fs);line-height:1.7;word-break:break-word;min-height:120px;caret-color:var(--text)}
 #editor>*:first-child{margin-top:0}
 #editor p{margin:2px 0;padding:2px 0;min-height:1.7em}
+/* 글머리표 줄: 한 줄씩 독립된 문단 + 들여쓰기 단계(data-lv) */
+#editor p.bl{position:relative;margin:1px 0;padding-left:1.45em}
+#editor p.bl::before{content:"•";position:absolute;left:.35em;top:2px;color:var(--text)}
+#editor p.bl[data-lv="1"]{margin-left:1.5em}#editor p.bl[data-lv="1"]::before{content:"◦"}
+#editor p.bl[data-lv="2"]{margin-left:3em}#editor p.bl[data-lv="2"]::before{content:"▪";font-size:.8em;top:.25em}
+#editor p.bl[data-lv="3"]{margin-left:4.5em}
+#editor p.bl[data-lv="4"]{margin-left:6em}#editor p.bl[data-lv="4"]::before{content:"◦"}
+#editor p.bl[data-lv="5"]{margin-left:7.5em}#editor p.bl[data-lv="5"]::before{content:"▪";font-size:.8em;top:.25em}
 #editor h1{font-size:1.9em;margin:1.1em 0 .25em;line-height:1.3}
 #editor h2{font-size:1.5em;margin:1em 0 .2em;line-height:1.3}
 #editor h3{font-size:1.25em;margin:.9em 0 .15em;line-height:1.35}
@@ -339,7 +347,7 @@ body.tb-off #toolbar{display:none}
       <button data-cmd="ol" title="번호 목록">1.<span class="lbl">&nbsp;목록</span></button>
       <button data-cmd="todo" title="할 일">☑<span class="lbl"> 할 일</span></button>
       <button data-cmd="outdent" title="내어쓰기 (Shift+Tab)">⇤</button>
-      <button data-cmd="indent" title="들여쓰기 — 체크 항목 아래에 설명 줄 (Tab)">⇥</button>
+      <button data-cmd="indent" title="들여쓰기 — 글머리표 한 칸 안으로 · 체크 항목 아래에 설명 줄 (Tab)">⇥</button>
       <button data-cmd="quote" title="인용">❝</button>
       <button data-cmd="img" title="이미지">🖼</button>
       <span class="sep"></span>
@@ -973,7 +981,7 @@ function updateToolbarState() {
   $('#toolbar [data-cmd="h1"]').classList.toggle('on', tag === 'H1');
   $('#toolbar [data-cmd="h2"]').classList.toggle('on', tag === 'H2');
   $('#toolbar [data-cmd="h3"]').classList.toggle('on', tag === 'H3');
-  $('#toolbar [data-cmd="ul"]').classList.toggle('on', !!list && list.tagName === 'UL' && !list.classList.contains('todo'));
+  $('#toolbar [data-cmd="ul"]').classList.toggle('on', !!closestIn('p.bl'));
   $('#toolbar [data-cmd="ol"]').classList.toggle('on', !!list && list.tagName === 'OL');
   $('#toolbar [data-cmd="todo"]').classList.toggle('on', !!list && list.classList.contains('todo'));
   $('#toolbar [data-cmd="quote"]').classList.toggle('on', tag === 'BLOCKQUOTE');
@@ -989,6 +997,7 @@ function normalize() {
   if (!editor.firstChild) editor.innerHTML = '<p><br></p>';
   fixHugeSizes(editor);
   fixBareToggles();
+  flattenBullets(editor);
   ensureTrailingP();
 }
 // 제목(summary)이 사라진 토글은 브라우저가 "세부 정보"로 띄워 지울 수도 없음 → 안쪽 내용만 남기고 풂
@@ -1020,7 +1029,56 @@ function fmtBlock(tag, cls) {
   if (el) { el.className = cls || ''; if (!el.className) el.removeAttribute('class'); }
   markChanged();
 }
+/* ---------- 글머리표: 목록 구조 없이 한 줄씩 (p.bl + data-lv 들여쓰기) ---------- */
+const BL_MAX = 5;
+const blLv = p => Math.min(BL_MAX, Math.max(0, +p.dataset.lv || 0));
+function setLv(p, lv) { lv = Math.min(BL_MAX, Math.max(0, lv)); if (lv) p.dataset.lv = lv; else p.removeAttribute('data-lv'); }
+function unBullet(p) { p.classList.remove('bl'); if (!p.className) p.removeAttribute('class'); p.removeAttribute('data-lv'); }
+// 선택 영역에 걸친 맨 바깥 블록들
+function selBlocks() {
+  const s = getSelection(); if (!s.rangeCount) return [];
+  const r = s.getRangeAt(0), a = topBlock();
+  if (r.collapsed) return a ? [a] : [];
+  return [...editor.children].filter(b => r.intersectsNode(b));
+}
+function bulletCmd() {
+  const li = closestIn('li');
+  if (li) exec(li.parentElement.tagName === 'OL' ? 'insertOrderedList' : 'insertUnorderedList');
+  const h = closestIn('h1,h2,h3,blockquote,pre'); if (h) toP(h);
+  const bs = selBlocks().filter(b => b.tagName === 'P');
+  if (!bs.length) return;
+  const off = bs.every(b => b.classList.contains('bl'));
+  bs.forEach(b => off ? unBullet(b) : b.classList.add('bl'));
+  markChanged();
+}
+function indentBl(p, d) { setLv(p, blLv(p) + d); markChanged(); }
+// 예전 글머리 목록(ul 안의 ul)을 한 줄씩 글머리표 문단으로 바꿈. 할 일·번호 목록은 그대로
+function flattenBullets(root) {
+  const BLOCK = 'p,div,h1,h2,h3,table,details,blockquote,pre,hr,ol,ul.todo,ul.note';
+  for (const ul of [...root.querySelectorAll('ul')]) {
+    if (!ul.isConnected || ul.className || ul.closest('li') || ul.closest('td')) continue;
+    const ok = [...ul.querySelectorAll('ul')].every(x => !x.className) && !ul.querySelector(BLOCK);
+    if (!ok) continue;
+    const out = [];
+    const emit = (list, lv) => {
+      for (const li of list.children) {
+        if (li.tagName !== 'LI') continue;
+        const p = document.createElement('p'); p.className = 'bl'; setLv(p, lv);
+        const subs = [];
+        for (const n of [...li.childNodes]) { if (n.nodeType === 1 && n.tagName === 'UL') subs.push(n); else p.append(n); }
+        if (!p.textContent.replace(/\u200b/g, '').trim() && !p.querySelector('img')) p.innerHTML = '<br>';
+        out.push(p); subs.forEach(x => emit(x, lv + 1));
+      }
+    };
+    emit(ul, 0);
+    const s = getSelection(), had = s.rangeCount && ul.contains(s.anchorNode) ? s.anchorNode : null;
+    ul.replaceWith(...out);
+    if (had && !editor.contains(had) && out[0]) placeCaret(out[0], true);
+  }
+}
 function listCmd(kind) {
+  if (kind === 'ul') { bulletCmd(); return; }
+  const blp = closestIn('p.bl'); if (blp) unBullet(blp);
   const tag = kind === 'ol' ? 'OL' : 'UL';
   const todo = kind === 'todo';
   let li = closestIn('li'), lst = li && li.parentElement;
@@ -1235,7 +1293,7 @@ function pickImage() { $('#fileImg').click(); }
 
 /* ---------- 블록 메뉴 ( / ) ---------- */
 const BLOCKS = [
-  { label: '텍스트', desc: '일반 글', icon: 'Aa', kw: 'text p 본문 글', run: () => { const h = closestIn('h1,h2,h3,blockquote,pre'); if (h) toP(h); const li = closestIn('li'); if (li) exec(li.parentElement.tagName === 'OL' ? 'insertOrderedList' : 'insertUnorderedList'); } },
+  { label: '텍스트', desc: '일반 글', icon: 'Aa', kw: 'text p 본문 글', run: () => { const h = closestIn('h1,h2,h3,blockquote,pre'); if (h) toP(h); const bp = closestIn('p.bl'); if (bp) { unBullet(bp); markChanged(); } const li = closestIn('li'); if (li) exec(li.parentElement.tagName === 'OL' ? 'insertOrderedList' : 'insertUnorderedList'); } },
   { label: '제목 1', desc: '큰 제목', icon: 'H1', kw: 'h1 heading 제목 큰', run: () => fmtBlock('H1') },
   { label: '제목 2', desc: '중간 제목', icon: 'H2', kw: 'h2 heading 제목 중간', run: () => fmtBlock('H2') },
   { label: '제목 3', desc: '작은 제목', icon: 'H3', kw: 'h3 heading 제목 작은', run: () => fmtBlock('H3') },
@@ -1340,6 +1398,11 @@ function outdentLi(li) {
 }
 editor.addEventListener('beforeinput', e => {
   if (e.inputType !== 'insertParagraph') return;
+  // 빈 글머리표 줄에서 Enter → 한 칸 밖으로, 맨 바깥이면 보통 줄로
+  const bp = closestIn('p.bl');
+  if (bp && !closestIn('summary,td') && bp.textContent.replace(/\u200b/g, '') === '' && !bp.querySelector('img')) {
+    e.preventDefault(); if (blLv(bp)) indentBl(bp, -1); else { unBullet(bp); markChanged(); } return;
+  }
   const li = closestIn('li'); if (!li || closestIn('pre,td,summary')) return;
   const nested = li.parentElement.parentElement && li.parentElement.parentElement.tagName === 'LI';
   // 빈 설명 줄에서 Enter → 한 칸 밖으로 (다시 체크 항목)
@@ -1363,6 +1426,9 @@ editor.addEventListener('beforeinput', e => {
   const s = getSelection(); if (!s.rangeCount) return;
   if (s.isCollapsed) {
     if (e.inputType !== 'deleteContentBackward') return;
+    // 글머리표 줄 맨 앞에서 지우기 → 글머리표만 없앰 (글자·줄은 그대로)
+    const bp = closestIn('p.bl');
+    if (bp && caretAtStart(bp)) { e.preventDefault(); unBullet(bp); placeCaret(bp, false); markChanged(); return; }
     // 토글 제목 맨 앞에서 지우기 → 토글을 풀어 보통 문단으로 (안쪽 내용은 그대로 아래에)
     const sum = closestIn('summary');
     if (sum && caretAtStart(sum)) { e.preventDefault(); unwrapToggle(sum.parentElement); return; }
@@ -1429,7 +1495,7 @@ editor.addEventListener('input', e => {
   if (!e.isComposing && e.inputType === 'insertText') {
     const b = topBlock();
     // 마크다운 단축키: "# " "- " "[] " "> " 등
-    if (e.data && e.data.endsWith(' ') && b && b.tagName === 'P') {
+    if (e.data && e.data.endsWith(' ') && b && b.tagName === 'P' && !b.classList.contains('bl')) {
       const tb = textBefore(b).replace(/\u00a0/g, ' ');
       for (const [re, fn] of MD) {
         if (re.test(tb.slice(0, -1)) && tb.endsWith(' ')) {
@@ -1471,6 +1537,8 @@ editor.addEventListener('keydown', e => {
       if (i >= cells.length) { tableOp('row'); return; }
       if (i >= 0) placeCaret(cells[i], true); return;
     }
+    const bps = selBlocks().filter(b => b.classList && b.classList.contains('bl'));
+    if (bps.length && !closestIn('li')) { e.preventDefault(); bps.forEach(b => indentBl(b, e.shiftKey ? -1 : 1)); return; }
     if (closestIn('li')) {
       e.preventDefault(); const li = closestIn('li'); (e.shiftKey ? outdentLi : indentLi)(li); return;
     }
@@ -1594,12 +1662,14 @@ function sanitize(html) {
       if (t === 'ul' && c.classList.contains('note')) el.className = 'note';
       if (t === 'li' && c.hasAttribute('data-checked')) el.setAttribute('data-checked', '');
       if (t === 'blockquote' && c.classList.contains('callout')) el.className = 'callout';
+      if (t === 'p' && c.classList.contains('bl')) { el.className = 'bl'; const lv = Math.min(5, +c.getAttribute('data-lv') || 0); if (lv > 0) el.dataset.lv = lv; }
       if (t === 'details') el.open = c.hasAttribute('open');
       dst.append(el);
       if (!['img', 'br', 'hr'].includes(t)) walk(c, el);
     }
   };
   walk(doc.body, out);
+  flattenBullets(out);
   return out.innerHTML;
 }
 editor.addEventListener('paste', e => {
@@ -1668,7 +1738,8 @@ tb.addEventListener('click', e => {
   else if (c === 'h1' || c === 'h2' || c === 'h3') fmtBlock(c.toUpperCase());
   else if (c === 'ul' || c === 'ol' || c === 'todo') listCmd(c);
   else if (c === 'quote') fmtBlock('BLOCKQUOTE');
-  else if (c === 'indent' || c === 'outdent') { const li = closestIn('li'); if (li) (c === 'indent' ? indentLi : outdentLi)(li); else toast('목록이나 체크 항목 줄에서 쓸 수 있어요'); return; }
+  else if ((c === 'indent' || c === 'outdent') && closestIn('p.bl')) { selBlocks().filter(b => b.classList && b.classList.contains('bl')).forEach(b => indentBl(b, c === 'indent' ? 1 : -1)); return; }
+  else if (c === 'indent' || c === 'outdent') { const li = closestIn('li'); if (li) (c === 'indent' ? indentLi : outdentLi)(li); else toast('글머리표·목록·체크 항목 줄에서 쓸 수 있어요'); return; }
   else if (c === 'code') inlineCode();
   else if (c === 'link') makeLink();
   else if (c === 'img') pickImage();
