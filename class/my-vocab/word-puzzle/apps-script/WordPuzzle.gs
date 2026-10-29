@@ -8,6 +8,7 @@
  * - GET  ?action=set&id=...    : 문제 하나 (학생 게임이 읽어 감)
  * - GET  ?action=village       : 반별 마을 (반마다 기관 목록, 누구나)
  * - POST {action:'result'}     : 학생이 다 끝내면 이름·점수 한 줄 추가 + 반 마을에 기관 하나 (비밀번호 없음)
+ *                                문제 data에 world가 있으면 그 섬의 생물 하나 (dino 공룡 · sea 해양생물 · mon 몬스터)
  * - POST {action:'save'}       : 문제 저장 (교사 비밀번호)
  * - POST {action:'delete'}     : 문제 삭제 (교사 비밀번호)
  * - POST {action:'resetVillage'}: 마을 초기화 (교사 비밀번호, cls 비우면 전체 반)
@@ -42,6 +43,29 @@ const BUILDINGS = {
   airport: 4, port: 4, waterpark: 4, circus: 4, skyscraper: 4, igloo: 4, treehouse: 4, dino: 4, cablecar: 4,
   castle: 1, bulguksa: 1, rocket: 1, geobukseon: 1, liberty: 1, ufo: 1
 };
+// 섬마다 나오는 생물 (교사가 문제마다 '다 끝내면 생기는 것'을 고른다). app.js의 CREATURES와 키를 맞춘다.
+const DINOS = {
+  d_trex: 1, d_spino: 1, d_brachio: 4, d_diplo: 10, d_apato: 10, d_bugyeong: 4, d_trice: 10, d_styraco: 10, d_proto: 10, d_korea: 4,
+  d_stego: 10, d_kentro: 10, d_ankylo: 10, d_parasaur: 10, d_corytho: 10, d_lambeo: 10, d_maia: 10, d_iguano: 10, d_pachy: 10, d_raptor: 10,
+  d_dilo: 10, d_carno: 10, d_allo: 10, d_giga: 4, d_therizino: 4, d_galli: 10, d_compy: 10, d_ovi: 10, d_archae: 4, d_ptera: 4,
+  d_quetzal: 4, d_mosa: 4, d_plesio: 10
+};
+const SEAS = {
+  s_turtle: 10, s_dolphin: 10, s_orca: 4, s_humpback: 4, s_bluewhale: 1, s_beluga: 10, s_narwhal: 4, s_whaleshark: 1, s_shark: 10, s_hammer: 4,
+  s_manta: 10, s_octopus: 10, s_squid: 4, s_jelly: 10, s_seahorse: 10, s_starfish: 10, s_crab: 10, s_lobster: 10, s_hermit: 10, s_urchin: 10,
+  s_clown: 10, s_bluetang: 10, s_marlin: 4, s_puffer: 10, s_angler: 4, s_sunfish: 4, s_moray: 10, s_nautilus: 4, s_seal: 10, s_otter: 10,
+  s_penguin: 10
+};
+const MONS = {
+  m_flamefox: 10, m_lavamole: 10, m_emberchick: 10, m_droplet: 10, m_snail: 10, m_otterpup: 10, m_sproutbun: 10, m_mossturtle: 10, m_petalfly: 10, m_zaphog: 10,
+  m_boltsheep: 10, m_glowbug: 10, m_snowpeng: 10, m_frostfox: 4, m_icedeer: 4, m_pebble: 10, m_crystal: 4, m_cloudbird: 10, m_starbun: 4, m_dreamy: 10,
+  m_fairy: 4, m_ghost: 10, m_shadowcat: 10, m_gearbot: 10, m_mushroom: 10, m_cactus: 10, m_bubblefish: 10, m_thundertiger: 4, m_rainbowdragon: 1, m_sunlion: 1,
+  m_moonwhale: 1
+};
+const POOLS = { main: BUILDINGS, dino: DINOS, sea: SEAS, mon: MONS };
+function worldOfSet_(s) {
+  try { const w = JSON.parse(s.data).world; return POOLS[w] ? w : 'main'; } catch (err) { return 'main'; }
+}
 
 function tab_(name, header) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -96,15 +120,17 @@ function cls_(v) {
 function shortName_(name) { return String(name).replace(/^\s*\d{5}\s*/, '') || String(name); }
 
 // 이 반에서 가장 적게 나온 기관(처음엔 아직 없는 기관) 중에서 가중치대로 하나 뽑는다 — 반 친구끼리 겹치지 않게.
-function pickBuilding_(have) {
+// pool: 본섬 기관(BUILDINGS) 또는 섬 생물(DINOS·SEAS·MONS)
+function pickBuilding_(have, pool) {
+  pool = pool || BUILDINGS;
   const count = {};
-  Object.keys(BUILDINGS).forEach(function (k) { count[k] = 0; });
+  Object.keys(pool).forEach(function (k) { count[k] = 0; });
   have.forEach(function (k) { if (k in count) count[k]++; });
   const min = Math.min.apply(null, Object.keys(count).map(function (k) { return count[k]; }));
-  const keys = Object.keys(BUILDINGS).filter(function (k) { return count[k] === min; });
-  const total = keys.reduce(function (a, k) { return a + BUILDINGS[k]; }, 0);
+  const keys = Object.keys(pool).filter(function (k) { return count[k] === min; });
+  const total = keys.reduce(function (a, k) { return a + pool[k]; }, 0);
   let r = Math.random() * total;
-  for (let i = 0; i < keys.length; i++) { r -= BUILDINGS[keys[i]]; if (r < 0) return keys[i]; }
+  for (let i = 0; i < keys.length; i++) { r -= pool[keys[i]]; if (r < 0) return keys[i]; }
   return keys[0];
 }
 
@@ -156,7 +182,7 @@ function doPost(e) {
       const key = id ? id.sid : name;
       const prev = all.filter(function (r) { return r.setId === s.id && r.building && (r.sid || r.name) === key; })[0];
       let building = '';
-      if (id && !prev) building = pickBuilding_(all.filter(function (r) { return r.cls === id.cls && r.building; }).map(function (r) { return r.building; }));
+      if (id && !prev) building = pickBuilding_(all.filter(function (r) { return r.cls === id.cls && r.building; }).map(function (r) { return r.building; }), POOLS[worldOfSet_(s)]);
       tab_(RESULTS, RESULTS_HEADER).appendRow([new Date(), s.id, safe_(s.title), safe_(name),
         Math.max(0, Math.min(999, Number(req.miss) || 0)), Math.max(0, Math.min(3, Number(req.stars) || 0)),
         Math.max(0, Math.min(86400, Number(req.seconds) || 0)), Math.max(0, Math.min(50, Number(req.words) || 0)),

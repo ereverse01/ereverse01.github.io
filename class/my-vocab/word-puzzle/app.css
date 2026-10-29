@@ -309,3 +309,9 @@ body { margin: 0; }
 .skip-bar[hidden] { display: none; }
 .skip-bar span { flex: 1 1 220px; }
 .btn.skip-toggle.on { background: var(--pop); color: var(--on-pop); border-color: transparent; }
+
+/* 다 끝내면 생기는 것 (본섬 기관 · 공룡섬 · 바닷속 · 몬스터산) */
+.wsel { font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-height: 40px; max-width: 100%; }
+.wsel.small { font-size: 13px; padding: 4px 8px; min-height: 32px; }
+.world-row { align-items: center; margin-bottom: 8px; }
+.world-row .hint { flex-basis: 100%; margin: 0; }
