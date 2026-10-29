@@ -83,6 +83,11 @@ body.side-closed #side{margin-left:calc(-1 * var(--sideW))}
 #tree .row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .row.dragging{opacity:.45;background:var(--accent-bg)}
 body.tdrag #sideScroll{overflow-y:hidden}
+body.tdrag,body.tdrag *{cursor:grabbing!important}
+.row .grip{width:20px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--faint);font-size:15px;cursor:grab;touch-action:none;opacity:0;margin-left:2px}
+.row:hover .grip{opacity:1}
+@media (hover:none){.row .grip{opacity:.75;width:28px;height:30px;font-size:17px}}
+.drag-ghost{position:fixed;z-index:999;pointer-events:none;margin:0;background:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:.95}
 #sideResize{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5}
 #sideResize:hover,#sideResize.on{background:linear-gradient(to right,transparent 3px,var(--accent) 3px,var(--accent) 5px,transparent 5px)}
 body.resizing{cursor:col-resize;user-select:none}
@@ -588,10 +593,10 @@ function setStatus(s, detail) {
 /* ---------- 사이드바 ---------- */
 const CHEV = '<svg viewBox="0 0 12 12"><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function rowHTML(n, depth, inTree, hasKids, open) {
-  return `<div class="row${S.cur && S.cur.id === n.id ? ' active' : ''}" data-id="${n.id}" style="padding-left:${4 + depth * 14}px"${inTree && matchMedia('(pointer:fine)').matches ? ' draggable="true"' : ''}>
+  return `<div class="row${S.cur && S.cur.id === n.id ? ' active' : ''}" data-id="${n.id}" style="padding-left:${4 + depth * 14}px">
     <span class="tog${open ? ' open' : ''}${hasKids ? '' : ' none'}" data-act="tog">${CHEV}</span>
     <span class="ic">${esc(n.icon || '📄')}</span><span class="tt">${esc(n.title || '제목 없음')}</span>
-    <span class="acts"><button data-act="menu" title="더보기">⋯</button>${inTree ? '<button data-act="add" title="하위 페이지 추가">＋</button>' : ''}</span></div>`;
+    <span class="acts"><button data-act="menu" title="더보기">⋯</button>${inTree ? '<button data-act="add" title="하위 페이지 추가">＋</button>' : ''}</span>${inTree ? '<span class="grip" data-act="grip" title="끌어서 순서 바꾸기">⠿</span>' : ''}</div>`;
 }
 function treeHTML(pid, depth) {
   if (depth > 25) return '';
@@ -613,6 +618,7 @@ $('#sideScroll').addEventListener('click', e => {
   const row = e.target.closest('.row'); if (!row) return;
   const n = get(row.dataset.id); if (!n) return;
   const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'grip' || Date.now() - dragEnded < 400) return;
   if (act === 'tog') { cfg.expanded[n.id] = !cfg.expanded[n.id]; saveCfg(); renderSide(); return; }
   if (act === 'add') { createPage(n.id); return; }
   if (act === 'menu') { pageMenu(n, e.target.getBoundingClientRect()); return; }
@@ -624,24 +630,59 @@ $('#sideScroll').addEventListener('contextmenu', e => {
   if (tDrag) { startTouchDrag(); return; }
   pageMenu(get(row.dataset.id), { left: e.clientX, right: e.clientX, top: e.clientY, bottom: e.clientY });
 });
-// 끌어다 놓기 (PC)
-let dragId = null;
+// 끌어서 순서 바꾸기 — 마우스는 줄 아무 데나, 터치·펜은 ⠿ 손잡이를 누르자마자 끌면 됨
+let pDrag = null, dragEnded = 0;
 const tree = $('#tree');
 function clearDrop() { $$('.drop-in,.drop-before,.drop-after', tree).forEach(r => r.classList.remove('drop-in', 'drop-before', 'drop-after')); }
-tree.addEventListener('dragstart', e => { const r = e.target.closest('.row'); if (!r) return; dragId = r.dataset.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); });
-tree.addEventListener('dragend', () => { dragId = null; clearDrop(); });
 function dropZone(e, r) { const b = r.getBoundingClientRect(); const y = (e.clientY - b.top) / b.height; return y < .28 ? 'before' : y > .72 ? 'after' : 'in'; }
-tree.addEventListener('dragover', e => {
-  const r = e.target.closest('.row'); if (!r || !dragId) return;
-  e.preventDefault(); clearDrop();
-  if (r.dataset.id === dragId) return;
-  r.classList.add('drop-' + dropZone(e, r));
+function startPDrag(e) {
+  const d = pDrag, b = d.row.getBoundingClientRect(); d.on = true; d.dy = e.clientY - b.top;
+  d.ghost = d.row.cloneNode(true); d.ghost.classList.remove('active'); d.ghost.classList.add('drag-ghost');
+  Object.assign(d.ghost.style, { left: b.left + 'px', top: b.top + 'px', width: b.width + 'px' });
+  document.body.append(d.ghost);
+  d.row.classList.add('dragging'); document.body.classList.add('tdrag');
+  try { if (e.pointerType !== 'mouse' && navigator.vibrate) navigator.vibrate(12); } catch (_) {}
+}
+function endPDrag() {
+  const d = pDrag; pDrag = null; if (!d) return null;
+  cancelAnimationFrame(d.raf);
+  if (d.on) { d.ghost.remove(); d.row.classList.remove('dragging'); document.body.classList.remove('tdrag'); clearDrop(); dragEnded = Date.now(); }
+  return d;
+}
+tree.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const r = e.target.closest('.row'); if (!r) return;
+  const grip = e.target.closest('.grip');
+  if (!grip && (e.pointerType !== 'mouse' || e.target.closest('[data-act]'))) return;
+  endPDrag();
+  pDrag = { id: r.dataset.id, row: r, x: e.clientX, y: e.clientY, pid: e.pointerId, on: false, target: null, zone: null, raf: 0 };
+  if (grip) { e.preventDefault(); startPDrag(e); }
 });
-tree.addEventListener('drop', e => {
-  const r = e.target.closest('.row'); if (!r || !dragId) return;
-  e.preventDefault(); const zone = dropZone(e, r); clearDrop();
-  movePage(dragId, r.dataset.id, zone); dragId = null;
+document.addEventListener('pointermove', e => {
+  const d = pDrag; if (!d || e.pointerId !== d.pid) return;
+  if (!d.on) { if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 5) return; startPDrag(e); }
+  e.preventDefault();
+  d.y = e.clientY; d.ghost.style.top = (e.clientY - d.dy) + 'px';
+  clearDrop(); d.target = null;
+  const r = document.elementFromPoint(e.clientX, e.clientY)?.closest('#tree .row');
+  if (r && r.dataset.id !== d.id) { d.target = r.dataset.id; d.zone = dropZone(e, r); r.classList.add('drop-' + d.zone); }
+  // 목록 끝 가까이 가면 저절로 스크롤
+  const sc = $('#sideScroll'), b = sc.getBoundingClientRect();
+  cancelAnimationFrame(d.raf);
+  const step = () => {
+    if (pDrag !== d) return;
+    const v = d.y < b.top + 40 ? -8 : d.y > b.bottom - 40 ? 8 : 0;
+    if (v) { sc.scrollTop += v; d.raf = requestAnimationFrame(step); }
+  };
+  step();
+}, { passive: false });
+document.addEventListener('pointerup', e => {
+  if (!pDrag || e.pointerId !== pDrag.pid) return;
+  const d = endPDrag();
+  if (d.on && d.target) movePage(d.id, d.target, d.zone);
 });
+document.addEventListener('pointercancel', e => { if (pDrag && e.pointerId === pDrag.pid) endPDrag(); });
+tree.addEventListener('touchmove', e => { if (pDrag && pDrag.on) e.preventDefault(); }, { passive: false });
 // 꾹 눌러 끌기 (터치) — 누른 채 움직이면 순서 바꾸기, 그냥 떼면 메뉴
 let tDrag = null;
 function startTouchDrag() {
@@ -2230,7 +2271,7 @@ window.visualViewport?.addEventListener('resize', () => pop && placePop(pop));
 const WELCOME = `<p>노션처럼 쓰는 나만의 메모장이에요. PC와 휴대폰·태블릿에서 같은 메모가 자동으로 맞춰져요.</p>
 <h3>빠르게 쓰는 법</h3>
 <ul class="todo"><li>이 줄 앞의 네모를 눌러 체크해 보세요</li><li>빈 줄에서 <code>/</code> 를 누르면 블록 메뉴가 열려요 (제목, 할 일, 토글, 표, 이미지…)</li><li><code>#</code> 띄어쓰기 → 큰 제목 · <code>-</code> 띄어쓰기 → 목록 · <code>[]</code> 띄어쓰기 → 할 일</li></ul>
-<blockquote class="callout">왼쪽 페이지 목록의 ＋ 로 하위 페이지를 만들고, PC에서는 끌어다 놓아 순서와 위치를 바꿀 수 있어요.</blockquote>
+<blockquote class="callout">왼쪽 페이지 목록의 ＋ 로 하위 페이지를 만들고, 페이지 오른쪽 ⠿ 를 끌어(PC는 줄 아무 데나) 순서와 위치를 바꿀 수 있어요.</blockquote>
 <h3>단축키 (PC)</h3>
 <ul><li><b>Ctrl + K</b> 검색 · <b>Alt + N</b> 새 페이지 · <b>Ctrl + \\</b> 사이드바 접기</li><li><b>Ctrl + B / I / U</b> 굵게 / 기울임 / 밑줄</li></ul>
 <p>이 페이지는 지워도 괜찮아요.</p>`;
