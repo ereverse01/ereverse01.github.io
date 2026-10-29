@@ -1604,11 +1604,37 @@ function sortTodo(li) {
   const dy = before - li.getBoundingClientRect().top;
   if (dy && li.animate) li.animate([{ transform: `translateY(${dy}px)`, opacity: .4 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: 'ease-out' });
 }
+// 체크한 할 일은 체크 표시를 잠깐 보여 준 뒤 지움 (설명 줄도 함께). 알림의 "되돌리기"로 제자리에 다시
+const GOING = new WeakSet();
+function removeDone(li) {
+  if (GOING.has(li)) return;
+  GOING.add(li); li.setAttribute('data-checked', '');
+  setTimeout(() => {
+    const ul = li.parentElement; if (!ul || !editor.contains(li)) return;
+    const next = li.nextElementSibling, ulNext = ul.nextSibling, ulParent = ul.parentNode;
+    if (li.animate) li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: 'forwards' });
+    setTimeout(() => {
+      li.getAnimations?.().forEach(x => x.cancel());
+      if (!editor.contains(li)) return;
+      li.remove(); li.removeAttribute('data-checked'); GOING.delete(li);
+      let filler = null;
+      if (!ul.children.length) { filler = document.createElement('p'); filler.innerHTML = '<br>'; ul.replaceWith(filler); placeCaret(filler, false); }
+      ensureTrailingP(); markChanged();
+      toast('할 일을 지웠어요', '되돌리기', () => {
+        if (filler && filler.isConnected) filler.replaceWith(ul);
+        else if (!ul.isConnected) ulParent && ulParent.insertBefore(ul, ulNext && ulNext.parentNode === ulParent ? ulNext : null);
+        if (next && next.parentElement === ul) ul.insertBefore(li, next); else ul.append(li);
+        markChanged();
+      });
+    }, 180);
+  }, 350);
+}
 editor.addEventListener('click', e => {
   $$('img.sel', editor).forEach(i => i.classList.remove('sel'));
   const li = e.target.closest('ul.todo > li');
   if (li && e.target === li && e.clientX - li.getBoundingClientRect().left < 24) {
-    li.toggleAttribute('data-checked'); sortTodo(li); markChanged(); return;
+    if (li.hasAttribute('data-checked')) { li.removeAttribute('data-checked'); sortTodo(li); markChanged(); return; }
+    removeDone(li); return;
   }
   const sum = e.target.closest('summary');
   if (sum) {
