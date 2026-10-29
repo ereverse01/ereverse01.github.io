@@ -41,7 +41,24 @@
     dino: { name: "쥬라기 공룡섬", emo: "🦖", noun: "공룡", subj: "공룡이", site: "공룡 알 부화장", made: "탄생", got: "새 공룡이 알에서 깨어났어요", wait: "알이 깨어나는 중…", done: "만났어요", step: "빈칸 채우고 알 깨우기", one: "쥬라기 공룡섬에 공룡이 한 마리 깨어나요", arrive: "쥬라기 공룡섬에서 살게 됐어요!", empty: "빈칸을 맞히면 공룡 알에 에너지가 모여요.<br>어떤 공룡이 깨어날지는 끝나야 알 수 있어요!" },
     sea: { name: "바닷속 왕국", emo: "🐠", noun: "해양생물", subj: "해양생물이", site: "바닷속 알 부화장", made: "부화", got: "새 해양생물이 알에서 부화했어요", wait: "알이 부화하는 중…", done: "만났어요", step: "빈칸 채우고 알 깨우기", one: "바닷속 왕국에 해양생물이 한 마리 부화해요", arrive: "바닷속 왕국에서 살게 됐어요!", empty: "빈칸을 맞히면 바닷속 알에 에너지가 모여요.<br>어떤 해양생물이 부화할지는 끝나야 알 수 있어요!" },
     mon: { name: "몬스터산", emo: "⛰️", noun: "몬스터", subj: "몬스터가", site: "몬스터 알 부화장", made: "탄생", got: "새 몬스터가 알에서 깨어났어요", wait: "알이 깨어나는 중…", done: "만났어요", step: "빈칸 채우고 알 깨우기", one: "몬스터산에 몬스터가 한 마리 깨어나요", arrive: "몬스터산에서 살게 됐어요!", empty: "빈칸을 맞히면 몬스터 알에 에너지가 모여요.<br>어떤 몬스터가 깨어날지는 끝나야 알 수 있어요!" },
+    room: { name: "나의 방", emo: "🛏️", noun: "물건", subj: "물건이", site: "선물 상자", made: "도착", got: "선물 상자에서 새 물건이 나왔어요", wait: "선물 상자를 여는 중…", done: "받았어요", step: "빈칸 채우고 선물 열기", one: "나의 방에 가구나 물건이 하나 들어와요", arrive: "나의 방에 놓였어요!", empty: "빈칸을 맞히면 선물 상자에 에너지가 모여요.<br>어떤 물건이 들어 있을지는 끝나야 알 수 있어요!", opt: "🛏️ 나의 방에 가구·물건 하나", hint: "학생이 다 끝내면 반마다 나의 방이 다리로 이어지고, 선물 상자에서 가구나 물건이 하나씩 나와요.", s2: "선물 상자가 열리고 우리 반 나의 방에 놓일 물건이 나와요" },
+    car: { name: "탈것 시장", emo: "🚗", noun: "탈것", subj: "탈것이", site: "탈것 차고", made: "출고", got: "차고에서 새 탈것이 나왔어요", wait: "차고 문을 여는 중…", done: "받았어요", step: "빈칸 채우고 차고 열기", one: "탈것 시장에 탈것이 하나 들어와요", arrive: "탈것 시장에 들어왔어요!", empty: "빈칸을 맞히면 차고에 에너지가 모여요.<br>자동차일까, 중장비일까, 비행기일까? 끝나야 알 수 있어요!", opt: "🚗 탈것 시장에 탈것 하나", hint: "학생이 다 끝내면 반마다 탈것 시장이 다리로 이어지고, 차고에서 자동차·중장비·비행기 같은 탈것이 하나씩 나와요.", s2: "차고 문이 열리고 우리 반 탈것 시장에 들어갈 탈것이 나와요" },
+    tower: { name: "모두의 빌딩 마을", emo: "🏙️", noun: "층", subj: "층이", site: "우리 반 빌딩 공사장", made: "완공", got: "", wait: "우리 반 빌딩에 층을 올리는 중…", done: "올렸어요", step: "빈칸 채우고 층 올리기", one: "빌딩에 내가 쌓은 층이 올라가요. 실수가 적고 빠를수록 더 높이 올라가요", arrive: "", empty: "빈칸을 맞히면 에너지 블록이 쌓여요.<br>실수가 적고 빠를수록 우리 반 빌딩에 더 많은 층을 올려요!", opt: "🏙️ 반 협동 빌딩에 층 올리기", hint: "반 전체가 빌딩 하나를 함께 올려요. 실수가 적고 빨리 끝낸 학생일수록 더 많은 층을 올리고, 모든 반 빌딩이 한 마을에 서서 높이를 겨뤄요.", s2: "실수가 적고 빠를수록 우리 반 빌딩에 더 많은 층이 올라가요" },
   };
+  // 섬으로 이어지는 세계(본섬 옆). tower는 섬이 아니라 모든 반이 함께 쓰는 빌딩 마을
+  const ISLES = ["dino", "sea", "mon", "room", "car"];
+  const HATCH = ["dino", "sea", "mon"]; // 알에서 깨어나는 세계 (room·car는 선물 상자·차고)
+  const W_opt = (k) => WORLDS[k].opt || `${WORLDS[k].emo} ${WORLDS[k].name}에 ${WORLDS[k].noun}${k === "main" ? "" : " 한 마리"}`;
+  const W_hint = (k) => k === "main" ? "" : WORLDS[k].hint || `학생이 다 끝내면 반마다 ${WORLDS[k].name}이 다리로 이어지고, 알에서 ${WORLDS[k].subj} 한 마리씩 나와요.`;
+  // 협동 빌딩: 참여 1층 + 정확 0~4층 + 속도 0~3층 (WordPuzzle.gs의 floors_와 같은 계산)
+  function towerFloors(miss, seconds, words) {
+    const n = Math.max(1, Number(words) || 1), r = (Number(miss) || 0) / n, per = (Number(seconds) || 0) / n;
+    const acc = r === 0 ? 4 : r <= 0.15 ? 3 : r <= 0.3 ? 2 : r <= 0.5 ? 1 : 0;
+    const speed = per <= 20 ? 3 : per <= 30 ? 2 : per <= 45 ? 1 : 0;
+    return { acc, speed, total: 1 + acc + speed };
+  }
+  const isTower = (k) => /^tower:\d+$/.test(String(k || ""));
+  const towerN = (k) => (isTower(k) ? Number(String(k).slice(6)) : 0);
   const worldOf = (key) => BUILDINGS[key]?.[3] || "main";
   const W_ = (w) => WORLDS[w] || WORLDS.main;
   const params = new URLSearchParams(location.search);
@@ -161,7 +178,7 @@
       <div class="panel-head"><span class="step">5</span><h2>저장하고 학생 링크 만들기</h2></div>
       <div class="row world-row">
         <label class="lbl2" for="world">다 끝내면 생기는 것</label>
-        <select id="world" class="wsel">${Object.entries(WORLDS).map(([k, w]) => `<option value="${k}">${w.emo} ${w.name}에 ${w.noun}${k === "main" ? "" : " 한 마리"}</option>`).join("")}</select>
+        <select id="world" class="wsel">${Object.keys(WORLDS).map((k) => `<option value="${k}">${W_opt(k)}</option>`).join("")}</select>
         <span class="hint" id="world-hint"></span>
       </div>
       <div class="row">
@@ -190,7 +207,7 @@
   <section id="view-village" class="view stack" hidden>
     <article class="panel" id="vil-list">
       <div class="panel-head"><h2>반별 마을</h2><span class="pill" id="vil-count"></span><button class="btn small push" id="vil-back" hidden>← 활동으로 돌아가기</button><button class="btn small" id="reload-village">새로고침</button></div>
-      <p class="hint">학생이 단어 활동 한 세트를 끝낼 때마다 그 반 마을에 기관이 하나씩 무작위로 세워져요. 선생님이 고른 활동에서는 쥬라기 공룡섬·바닷속 왕국·몬스터산이 다리로 이어지고, 알에서 깨어난 친구가 한 마리씩 늘어나요. 마을을 누르면 크게 볼 수 있어요.</p>
+      <p class="hint">학생이 단어 활동 한 세트를 끝낼 때마다 그 반 마을에 기관이 하나씩 무작위로 세워져요. 선생님이 고른 활동에서는 쥬라기 공룡섬·바닷속 왕국·몬스터산·나의 방·탈것 시장이 다리로 이어지고, 협동 빌딩 활동은 모든 반 빌딩이 모두의 빌딩 마을에 함께 서요. 마을을 누르면 크게 볼 수 있어요.</p>
       <span class="status" id="village-status"></span>
       <div class="villages" id="villages"></div>
     </article>
@@ -199,6 +216,7 @@
       <div class="village-host" id="village-host"><canvas id="village-canvas"></canvas></div>
       <p class="hint">끌어서 돌리고, 두 손가락으로 벌리면 커져요.</p>
       <ul class="vd-list" id="vd-list"></ul>
+      <ol class="tw-rank" id="vd-rank" hidden></ol>
     </article>
     <article class="panel" id="vil-reset" hidden>
       <div class="panel-head"><h2>마을 초기화</h2></div>
@@ -288,8 +306,8 @@
   /* ---------- setup: passage & picker ---------- */
   const passageEl = $("#passage"), titleEl = $("#title");
   function fillSetupFields() { passageEl.value = draft.passage; titleEl.value = draft.title || ""; showWorld(); }
-  // 제목이 '추가자료 5·6·7'이면 공룡섬·바닷속·몬스터산을 먼저 골라 둔다 (직접 고르면 그대로)
-  const AUTO_WORLD = { 5: "dino", 6: "sea", 7: "mon" };
+  // 제목이 '추가자료 5~10'이면 공룡섬·바닷속·몬스터산·나의 방·탈것 시장·협동 빌딩을 먼저 골라 둔다 (직접 고르면 그대로)
+  const AUTO_WORLD = { 5: "dino", 6: "sea", 7: "mon", 8: "room", 9: "car", 10: "tower" };
   function autoWorld() {
     if (draft.worldSet) return;
     const m = (draft.title || "").match(/추가\s*자료\s*(\d+)/);
@@ -299,7 +317,7 @@
   function showWorld() {
     const w = WORLDS[draft.world] ? draft.world : "main";
     $("#world").value = w;
-    $("#world-hint").textContent = w === "main" ? "" : `학생이 다 끝내면 반마다 ${WORLDS[w].name}이 다리로 이어지고, 알에서 ${WORLDS[w].subj} 한 마리씩 나와요.`;
+    $("#world-hint").textContent = W_hint(w);
   }
   $("#world").addEventListener("change", (e) => { draft.world = e.target.value === "main" ? undefined : e.target.value; draft.worldSet = true; saveDraft(); showWorld(); });
   fillSetupFields();
@@ -591,7 +609,7 @@ ${draft.passage.trim().slice(0, 12000)}
       await API.post({ action: "save", password: pw, id: s.id, title: set.title, data: JSON.stringify(d) });
       s.world = w;
       if (draft.id === s.id) { draft.world = d.world; draft.worldSet = true; saveDraft(); showWorld(); }
-      setStatus("#roster-status", `'${esc(s.title)}'을(를) 끝내면 ${WORLDS[w].emo} ${WORLDS[w].name}에 ${WORLDS[w].subj} 생겨요.`, "good");
+      setStatus("#roster-status", w === "tower" ? `'${esc(s.title)}'을(를) 끝내면 ${WORLDS[w].emo} 우리 반 빌딩에 층이 올라가요.` : `'${esc(s.title)}'을(를) 끝내면 ${WORLDS[w].emo} ${WORLDS[w].name}에 ${WORLDS[w].subj} 생겨요.`, "good");
     } catch (e) { sel.value = s.world || "main"; setStatus("#roster-status", esc(e.message || "바꾸지 못했어요."), "err"); }
     sel.disabled = false;
   }
@@ -644,7 +662,7 @@ ${draft.passage.trim().slice(0, 12000)}
     try {
       const { results } = await API.post({ action: "results", password: pw, id: rosterId });
       const tb = $("#roster tbody");
-      tb.innerHTML = results.map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(fmtTime(r.time))}</td><td>${esc(fmtDur(r.seconds))}</td><td>${esc(r.miss)}</td><td class="stars-cell">${"★".repeat(Number(r.stars) || 0)}</td><td>${r.building && BUILDINGS[r.building] ? esc(BUILDINGS[r.building][1] + " " + BUILDINGS[r.building][0]) : ""}</td></tr>`).join("");
+      tb.innerHTML = results.map((r) => `<tr><td>${esc(r.name)}</td><td>${esc(fmtTime(r.time))}</td><td>${esc(fmtDur(r.seconds))}</td><td>${esc(r.miss)}</td><td class="stars-cell">${"★".repeat(Number(r.stars) || 0)}</td><td>${isTower(r.building) ? `🏙️ ${towerN(r.building)}층` : r.building && BUILDINGS[r.building] ? esc(BUILDINGS[r.building][1] + " " + BUILDINGS[r.building][0]) : ""}</td></tr>`).join("");
       $("#roster").hidden = !results.length; $("#roster-count").textContent = `${results.length}명`;
       setStatus("#roster-status", results.length ? "끝낸 순서대로 보여요. 같은 시트의 '결과' 탭에도 쌓여 있어요." : "아직 끝낸 학생이 없어요.", results.length ? "good" : "");
     } catch (e) { setStatus("#roster-status", esc(e.message || "불러오지 못했어요."), "err"); }
@@ -1030,7 +1048,7 @@ ${draft.passage.trim().slice(0, 12000)}
     const W = W_(G.world);
     $("#site-h").textContent = W.site;
     $("#three-empty").innerHTML = W.empty;
-    $("#s2-hint").textContent = `단어 카드를 누른 다음 빈칸을 누르세요. 맞힐 때마다 에너지가 모이고, 가득 차면 ${G.world === "main" ? "우리 반 마을에 세울 기관이 나와요" : `알에서 ${W.subj} 깨어나 우리 반 ${W.name}에 살게 돼요`}.`;
+    $("#s2-hint").textContent = `단어 카드를 누른 다음 빈칸을 누르세요. 맞힐 때마다 에너지가 모이고, 가득 차면 ${G.world === "main" ? "우리 반 마을에 세울 기관이 나와요" : W.s2 || `알에서 ${W.subj} 깨어나 우리 반 ${W.name}에 살게 돼요`}.`;
     updateBlankCount(); G.energy = 0; updateEnergy();
     initThree();
     window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
@@ -1133,8 +1151,8 @@ ${draft.passage.trim().slice(0, 12000)}
     const real = STUDENT && studentName && SET_ID !== "sample" && API.ready();
     if (real) { if (!G.submitted) submitResult({ stars, seconds, miss, n }); return; }
     // 미리보기·연습: 마을에는 넣지 않고 기관만 뽑아 보여 준다
-    G.built = pickBuildingLocal(G.world);
-    G.builtMsg = (STUDENT ? "연습용 문제라" : "미리보기라") + (G.world === "main" ? " 마을에는 세워지지 않아요." : ` ${W_(G.world).name}에는 가지 않아요.`);
+    G.built = G.world === "tower" ? "tower:" + towerFloors(miss, seconds, n).total : pickBuildingLocal(G.world);
+    G.builtMsg = (STUDENT ? "연습용 문제라" : "미리보기라") + (G.world === "main" ? " 마을에는 세워지지 않아요." : G.world === "tower" ? " 우리 반 빌딩에는 올라가지 않아요." : ` ${W_(G.world).name}에는 가지 않아요.`);
     saveGame(); showBuilt();
   }
   function showBuilt() {
@@ -1142,8 +1160,9 @@ ${draft.passage.trim().slice(0, 12000)}
     completeBuilding(G.built);
     const cls = G.builtCls;
     if (cls && !$("#to-village")) {
-      $("#done-acts").insertAdjacentHTML("afterbegin", `<button class="btn primary big" id="to-village">우리 반 마을 보기 →</button>`);
-      $("#to-village").addEventListener("click", () => openVillageFromGame(cls));
+      const tw = isTower(G.built);
+      $("#done-acts").insertAdjacentHTML("afterbegin", `<button class="btn primary big" id="to-village">${tw ? "🏙️ 모두의 빌딩 마을 보기 →" : "우리 반 마을 보기 →"}</button>`);
+      $("#to-village").addEventListener("click", () => openVillageFromGame(tw ? "tower" : cls));
     }
   }
   async function submitResult(r) {
@@ -1154,6 +1173,12 @@ ${draft.passage.trim().slice(0, 12000)}
     try {
       const j = await API.post({ action: "result", id: SET_ID, name: studentName, miss: r.miss, stars: r.stars, seconds: r.seconds, words: r.n });
       setSiteBusy(false);
+      if (isTower(j.building)) {
+        const cls = parseSid(studentName);
+        G.built = j.building; G.builtCls = cls ? cls.cls : null;
+        G.builtMsg = j.dup ? `이 활동으로는 이미 ${towerN(j.building)}층을 올렸어요. 처음 올린 층이 그대로 남아요.` : `${cls ? clsLabel(cls.cls) + " " : ""}빌딩에 ${towerN(j.building)}층이 올라갔어요!`;
+        saveGame(); showBuilt(); return;
+      }
       if (!j.building || !BUILDINGS[j.building]) { s.textContent = `${studentName} 이름으로 선생님께 제출했어요.`; return; }
       const b = BUILDINGS[j.building], cls = parseSid(studentName), W = W_(worldOf(j.building));
       G.built = j.building; G.builtCls = cls ? cls.cls : null;
@@ -1169,6 +1194,14 @@ ${draft.passage.trim().slice(0, 12000)}
     }
   }
   function completeBuilding(key) {
+    if (isTower(key)) {
+      const f = towerN(key), d = G.endAt && G.t0 ? towerFloors(G.miss, Math.round((G.endAt - G.t0) / 1000), G.items.length) : null;
+      $("#done-h").textContent = `🏙️ ${f}층 올렸어요!`;
+      const m = $("#three-msg");
+      m.innerHTML = `<span class="big">🏙️ +${f}층</span>${d && d.total === f ? `참여 1 · 정확 ${d.acc} · 속도 ${d.speed}` : "우리 반 빌딩에 올라가요"}`;
+      m.classList.remove("pop"); void m.offsetWidth; m.classList.add("pop");
+      showSiteBuilding(key); return;
+    }
     const b = BUILDINGS[key]; if (!b) return;
     const tag = RARITY[b[2]], W = W_(worldOf(key));
     $("#done-h").textContent = `${b[1]} ${b[0]} ${W.made}!`;
@@ -1236,6 +1269,7 @@ ${draft.passage.trim().slice(0, 12000)}
   }
   const CL = { wall: 0xF3E3C3, white: 0xF4F5F2, glass: 0x6FB8EA, door: 0x7A4B2E, red: 0xD9534F, gray: 0x9AA4AE, dark: 0x2E3A46, gold: 0xF2B632, green: 0x4CAF62, stone: 0xC9CED3, wood: 0x8A5A3B };
   function buildBuilding(key) {
+    if (isTower(key)) return buildTowerPiece(towerN(key));
     if (BUILDINGS[key]?.[3]) return buildCreature(key);
     const g = new THREE.Group();
     const add = (m) => (g.add(m), m);
@@ -2214,6 +2248,72 @@ ${draft.passage.trim().slice(0, 12000)}
       m_sunlion: ["해님사자", "☀️", 2, { t: "quad", c: 0xF2B632, c2: 0xF07A1A, ears: "round", extra: "mane", tail: "fluff", s: 1.15 }],
       m_moonwhale: ["달빛고래", "🌙", 2, { t: "skywhale", c: 0x3A4A8A, c2: 0xE8E0FF, s: 1.3 }],
     },
+    room: {
+      f_bed: ["침대", "🛏️", 0, { t: "bed", c: 0xA8754A, c2: 0x6FA8DC }],
+      f_bunk: ["2층 침대", "🛏️", 0, { t: "bed", bunk: 1, c: 0x8A6A4A, c2: 0xF2A65A }],
+      f_canopy: ["캐노피 침대", "👑", 2, { t: "bed", canopy: 1, c: 0xF4F0E8, c2: 0xF6A6C8 }],
+      f_desk: ["책상", "📝", 0, { t: "desk", c: 0xC9A06A }],
+      f_computer: ["컴퓨터 책상", "💻", 0, { t: "desk", pc: 1, c: 0x6A7480 }],
+      f_chair: ["나무 의자", "🪑", 0, { t: "chair", c: 0xB07A4A }],
+      f_rocking: ["흔들의자", "🪑", 0, { t: "chair", kind: "rocking", c: 0x9A6A3A, c2: 0xD9733A }],
+      f_gaming: ["게이밍 의자", "🎮", 1, { t: "chair", kind: "gaming", c: 0x26262E, c2: 0xE5484D }],
+      f_massage: ["안마 의자", "💆", 1, { t: "chair", kind: "massage", c: 0x5A4A3A, c2: 0xC9B8A0 }],
+      f_throne: ["황금 왕좌", "👑", 2, { t: "chair", kind: "throne", c: 0xF2B632, c2: 0xC0392B }],
+      f_sofa: ["소파", "🛋️", 0, { t: "sofa", c: 0x5B8DB8, c2: 0xF2D23A }],
+      f_beanbag: ["빈백", "🟠", 0, { t: "beanbag", c: 0xF29A3A }],
+      f_shelf: ["책장", "📚", 0, { t: "shelf", c: 0xA87A4A }],
+      f_wardrobe: ["옷장", "🚪", 0, { t: "wardrobe", c: 0xE8DCC8 }],
+      f_lamp: ["스탠드 조명", "💡", 0, { t: "lamp", c: 0xF2D23A }],
+      f_tv: ["텔레비전", "📺", 0, { t: "tv", c: 0x2E3A46 }],
+      f_console: ["게임기", "🎮", 0, { t: "tv", game: 1, c: 0x2E3A46 }],
+      f_piano: ["피아노", "🎹", 1, { t: "piano", c: 0x1E1E26 }],
+      f_guitar: ["기타", "🎸", 0, { t: "guitar", c: 0xD98A3A }],
+      f_drums: ["드럼 세트", "🥁", 1, { t: "drums", c: 0xD9534F }],
+      f_plant: ["화분", "🪴", 0, { t: "plant", c: 0xD9733A }],
+      f_clock: ["괘종시계", "🕰️", 0, { t: "clock", c: 0x7A4B2E }],
+      f_mirror: ["전신 거울", "🪞", 0, { t: "mirror", c: 0xE8C88A }],
+      f_bear: ["곰 인형", "🧸", 0, { t: "bear", c: 0xC98A5A }],
+      f_tank: ["어항", "🐟", 0, { t: "tank" }],
+      f_fridge: ["미니 냉장고", "🧊", 0, { t: "fridge", c: 0xF4F5F2 }],
+      f_fan: ["선풍기", "🌀", 0, { t: "fan", c: 0x6FB8EA }],
+      f_globe: ["지구본", "🌍", 0, { t: "globe" }],
+      f_telescope: ["망원경", "🔭", 1, { t: "telescope", c: 0x2448D8 }],
+      f_arcade: ["오락기", "🕹️", 1, { t: "arcade", c: 0x7A4FD1 }],
+      f_chest: ["보물 상자", "💰", 2, { t: "chest", c: 0x8A5A3B }],
+    },
+    car: {
+      v_sedan: ["승용차", "🚗", 0, { t: "car", c: 0x4A9AE8 }],
+      v_taxi: ["택시", "🚕", 0, { t: "car", c: 0xF2C23A, top: "taxi" }],
+      v_police: ["경찰차", "🚓", 0, { t: "car", c: 0xF4F5F2, top: "police" }],
+      v_suv: ["SUV", "🚙", 0, { t: "car", body: "suv", c: 0x3E7A4A }],
+      v_sport: ["스포츠카", "🏎️", 1, { t: "car", body: "sport", c: 0xE5484D }],
+      v_super: ["황금 슈퍼카", "🏎️", 2, { t: "car", body: "sport", c: 0xF2B632, wing: 1, s: 1.1 }],
+      v_monster: ["몬스터 트럭", "🛻", 2, { t: "car", body: "suv", c: 0x7A4FD1, big: 1 }],
+      v_ambulance: ["구급차", "🚑", 0, { t: "van", c: 0xF4F5F2, kind: "ambulance" }],
+      v_camper: ["캠핑카", "🚐", 0, { t: "van", c: 0xE8DCC8, c2: 0x3E9E57, kind: "camper" }],
+      v_bus: ["버스", "🚌", 0, { t: "bus", c: 0x3DAA6D }],
+      v_schoolbus: ["통학 버스", "🚌", 0, { t: "bus", c: 0xF2C23A, school: 1 }],
+      v_double: ["2층 버스", "🚌", 1, { t: "bus", c: 0xD9534F, double: 1 }],
+      v_truck: ["트럭", "🚚", 0, { t: "truck", c: 0x2448D8, bed: "box" }],
+      v_fire: ["소방차", "🚒", 0, { t: "truck", c: 0xD9302F, bed: "ladder" }],
+      v_dump: ["덤프트럭", "🚛", 0, { t: "truck", c: 0xF2A93A, bed: "dump" }],
+      v_mixer: ["레미콘", "🚛", 0, { t: "truck", c: 0xE5484D, bed: "mixer" }],
+      v_crane: ["크레인 트럭", "🏗️", 1, { t: "truck", c: 0xF2C23A, bed: "crane" }],
+      v_excavator: ["굴착기", "🚜", 0, { t: "excavator", c: 0xF2B632 }],
+      v_dozer: ["불도저", "🚜", 0, { t: "dozer", c: 0xF2A93A }],
+      v_forklift: ["지게차", "📦", 0, { t: "forklift", c: 0xF29A3A }],
+      v_tractor: ["트랙터", "🚜", 0, { t: "tractor", c: 0x3DAA6D }],
+      v_moto: ["오토바이", "🏍️", 0, { t: "moto", c: 0x2E3A46, c2: 0xE5484D }],
+      v_scooter: ["스쿠터", "🛵", 0, { t: "moto", scooter: 1, c: 0x6FC8E8, c2: 0xF4F5F2 }],
+      v_bike: ["자전거", "🚲", 0, { t: "bike", c: 0xE5484D }],
+      v_train: ["증기 기관차", "🚂", 0, { t: "train", c: 0x2E3A46, c2: 0xD9534F }],
+      v_bullet: ["고속열차", "🚄", 1, { t: "train", bullet: 1, c: 0xF4F5F2, c2: 0x2448D8 }],
+      v_plane: ["여객기", "✈️", 1, { t: "plane", c: 0xF4F5F2, c2: 0x2448D8 }],
+      v_heli: ["헬리콥터", "🚁", 1, { t: "heli", c: 0xE5484D }],
+      v_boat: ["모터보트", "🚤", 0, { t: "boat", c: 0xF4F5F2, c2: 0x2448D8 }],
+      v_sub: ["잠수함", "🟡", 1, { t: "sub", c: 0xF2C23A }],
+      v_shuttle: ["우주왕복선", "🚀", 2, { t: "shuttle" }],
+    },
   };
   for (const [w, tbl] of Object.entries(CREATURES)) for (const [k, v] of Object.entries(tbl)) BUILDINGS[k] = [v[0], v[1], v[2], w, v[3]];
 
@@ -2721,6 +2821,431 @@ ${draft.passage.trim().slice(0, 12000)}
       put(new THREE.TorusGeometry(0.06, 0.02, 6, 16, Math.PI * 1.3), 0xFFF0A0, 0, y + 0.2, -0.05, { emissive: 0xFFE07A, emissiveIntensity: 0.8 }).rotation.y = Math.PI / 2;
       g.userData.spin = [0, 0.3, 0];
     };
+
+    /* --- 나의 방: 가구·물건 --- */
+    const cyl = (rt, rb, h, c, x, y, z, o, seg = 14) => put(new THREE.CylinderGeometry(rt, rb, h, seg), c, x, y, z, o);
+    const GLS = { metalness: 0.3, roughness: 0.2 }, GLASS = 0x6FB8EA, SHINE = { metalness: 0.6, roughness: 0.3 };
+    const glowO = (c, k = 0.8) => ({ emissive: c, emissiveIntensity: k });
+    const legs4 = (w, d, h, c, y0 = 0, r = 0.025) => [-1, 1].forEach((a) => [-1, 1].forEach((b) => box(r * 2, h, r * 2, c, a * w, y0 + h / 2, b * d)));
+    D.bed = (sp) => {
+      const c = sp.c, c2 = sp.c2;
+      const deck = (y) => { box(0.92, 0.12, 1.22, c, 0, y, 0); box(0.86, 0.12, 1.14, WHITE, 0, y + 0.12, 0); box(0.88, 0.06, 0.78, c2, 0, y + 0.2, 0.19); ell(0.22, 0.05, 0.12, WHITE, 0, y + 0.23, -0.4); };
+      legs4(0.42, 0.57, 0.12, c);
+      deck(0.18);
+      box(0.92, 0.55, 0.06, c, 0, 0.42, -0.62); box(0.92, 0.3, 0.06, c, 0, 0.3, 0.62);
+      if (sp.bunk) {
+        [-1, 1].forEach((a) => [-1, 1].forEach((b) => box(0.06, 1.25, 0.06, c, a * 0.44, 0.62, b * 0.6)));
+        deck(0.85);
+        [-1, 1].forEach((a) => box(0.9, 0.12, 0.04, c, 0, 1.1, a * 0.6));
+        [-0.05, 0.25].forEach((x) => box(0.035, 0.9, 0.035, c, 0.47, 0.55, x === -0.05 ? 0.35 : 0.55));
+        for (let i = 0; i < 4; i++) box(0.035, 0.03, 0.22, c, 0.47, 0.25 + i * 0.2, 0.45);
+      }
+      if (sp.canopy) {
+        [-1, 1].forEach((a) => [-1, 1].forEach((b) => { box(0.05, 1.4, 0.05, 0xF2B632, a * 0.44, 0.7, b * 0.6, SHINE); ball(0.045, 0xF2B632, a * 0.44, 1.42, b * 0.6, SHINE); }));
+        box(0.94, 0.03, 1.24, c2, 0, 1.4, 0, { transparent: true, opacity: 0.75 });
+        [-1, 1].forEach((a) => [-1, 1].forEach((b) => { const cu = ell(0.09, 0.62, 0.05, c2, a * 0.42, 1.0, b * 0.58, { transparent: true, opacity: 0.6 }); cu.rotation.z = a * 0.08; }));
+        for (let i = 0; i < 5; i++) ell(0.05, 0.03, 0.05, 0xF2B632, -0.3 + i * 0.15, 0.44, 0.63, SHINE);
+      }
+    };
+    D.desk = (sp) => {
+      const c = sp.c;
+      box(1.0, 0.05, 0.56, c, 0, 0.56, 0); legs4(0.46, 0.24, 0.54, c);
+      box(0.3, 0.32, 0.5, c, 0.33, 0.37, 0); [0.45, 0.3].forEach((y) => box(0.07, 0.02, 0.02, 0x9AA4AE, 0.33, y, 0.26));
+      if (sp.pc) {
+        box(0.46, 0.3, 0.03, DARK, -0.08, 0.86, -0.14); box(0.42, 0.26, 0.01, 0x4FB3E8, -0.08, 0.86, -0.12, glowO(0x2F8FD8, 0.6));
+        box(0.04, 0.12, 0.04, DARK, -0.08, 0.64, -0.15); box(0.16, 0.015, 0.1, DARK, -0.08, 0.59, -0.15);
+        box(0.36, 0.02, 0.12, 0xC9CED3, -0.08, 0.595, 0.1); ell(0.035, 0.015, 0.05, 0xC9CED3, 0.2, 0.595, 0.1);
+        box(0.12, 0.34, 0.36, DARK, 0.38, 0.75, -0.05); box(0.01, 0.2, 0.01, 0x5BFF8A, 0.32, 0.75, 0.13, glowO(0x2EE86A));
+      } else {
+        [[0xE5484D, 0.05], [0x4A9AE8, 0.04], [0x3DAA6D, 0.05]].reduce((y, [col, h]) => { box(0.26, h, 0.18, col, -0.3, y + h / 2, -0.1); return y + h; }, 0.585);
+        box(0.22, 0.01, 0.16, WHITE, 0, 0.59, 0.08); limb([0.05, 0.6, 0.1], [0.14, 0.6, 0.04], 0.008, 0.008, 0xF2D23A);
+        cyl(0.05, 0.06, 0.02, DARK, 0.3, 0.59, -0.15); limb([0.3, 0.6, -0.15], [0.26, 0.82, -0.08], 0.01, 0.01, DARK); cyl(0.03, 0.08, 0.08, 0xF2D23A, 0.24, 0.82, -0.04, glowO(0xF2B632, 0.4));
+      }
+    };
+    D.chair = (sp) => {
+      const c = sp.c, c2 = sp.c2 || c, k = sp.kind;
+      if (k === "gaming") {
+        for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; limb([0, 0.08, 0], [Math.cos(a) * 0.28, 0.05, Math.sin(a) * 0.28], 0.02, 0.02, DARK); ball(0.035, DARK, Math.cos(a) * 0.28, 0.035, Math.sin(a) * 0.28); }
+        cyl(0.03, 0.03, 0.3, 0x9AA4AE, 0, 0.22, 0, SHINE);
+        box(0.52, 0.1, 0.5, c, 0, 0.42, 0); box(0.3, 0.02, 0.46, c2, 0, 0.475, 0);
+        const b = box(0.52, 0.8, 0.1, c, 0, 0.88, -0.23); b.rotation.x = -0.12; const s = box(0.2, 0.7, 0.02, c2, 0, 0.88, -0.17); s.rotation.x = -0.12;
+        box(0.3, 0.14, 0.12, c, 0, 1.35, -0.29); [-1, 1].forEach((a) => { box(0.06, 0.04, 0.3, c2, a * 0.3, 0.62, 0); box(0.03, 0.15, 0.03, DARK, a * 0.3, 0.53, 0); });
+        return;
+      }
+      if (k === "massage") {
+        box(0.62, 0.32, 0.6, c, 0, 0.16, 0); box(0.5, 0.1, 0.5, c2, 0, 0.37, 0.02);
+        const b = box(0.62, 0.85, 0.24, c, 0, 0.72, -0.3); b.rotation.x = -0.28; const bc = box(0.46, 0.7, 0.04, c2, 0, 0.74, -0.17); bc.rotation.x = -0.28;
+        [-1, 1].forEach((a) => { box(0.12, 0.3, 0.62, c, a * 0.37, 0.5, 0); box(0.02, 0.03, 0.08, 0x5BFF8A, a * 0.37, 0.66, 0.2, glowO(0x2EE86A)); });
+        const f = box(0.5, 0.36, 0.14, c, 0, 0.18, 0.4); f.rotation.x = 0.3; ell(0.24, 0.12, 0.24, c, 0, 1.18, -0.42);
+        return;
+      }
+      if (k === "throne") {
+        box(0.72, 0.36, 0.66, c, 0, 0.18, 0, SHINE); box(0.6, 0.1, 0.56, c2, 0, 0.41, 0.02);
+        box(0.66, 1.05, 0.1, c, 0, 0.95, -0.28, SHINE); box(0.48, 0.78, 0.03, c2, 0, 0.9, -0.22);
+        for (let i = 0; i < 5; i++) { put(new THREE.ConeGeometry(0.06, 0.2, 6), c, -0.26 + i * 0.13, 1.56, -0.28, SHINE); ball(0.03, [0xE5484D, 0x4A9AE8, 0x3DAA6D][i % 3], -0.26 + i * 0.13, 1.68, -0.28, glowO([0xE5484D, 0x4A9AE8, 0x3DAA6D][i % 3], 0.5)); }
+        ball(0.07, 0xE5484D, 0, 1.3, -0.22, glowO(0xE5484D, 0.6));
+        [-1, 1].forEach((a) => { box(0.1, 0.24, 0.6, c, a * 0.36, 0.55, 0, SHINE); ball(0.06, c, a * 0.36, 0.7, 0.3, SHINE); });
+        box(0.9, 0.06, 0.6, c2, 0, 0.03, 0.55);
+        return;
+      }
+      const rock = k === "rocking";
+      box(0.46, 0.05, 0.46, c, 0, 0.45, 0);
+      if (rock) { [-1, 1].forEach((a) => { box(0.04, 0.38, 0.04, c, a * 0.2, 0.26, 0.18); box(0.04, 0.38, 0.04, c, a * 0.2, 0.26, -0.18); const r = ell(0.03, 0.05, 0.42, c, a * 0.2, 0.06, 0); r.scale.y = 0.06; }); box(0.4, 0.06, 0.4, c2, 0, 0.5, 0); }
+      else legs4(0.2, 0.2, 0.43, c);
+      [-1, 1].forEach((a) => box(0.04, 0.55, 0.04, c, a * 0.2, 0.72, -0.21));
+      for (let i = 0; i < 3; i++) box(0.4, 0.06, 0.03, c, 0, 0.62 + i * 0.14, -0.21);
+      if (rock) [-1, 1].forEach((a) => box(0.05, 0.04, 0.42, c, a * 0.22, 0.7, 0));
+    };
+    D.sofa = (sp) => {
+      const c = sp.c;
+      box(1.12, 0.24, 0.56, c, 0, 0.2, 0); [-1, 1].forEach((a) => box(0.52, 0.1, 0.48, c, a * 0.27, 0.37, 0.03));
+      box(1.12, 0.42, 0.16, c, 0, 0.5, -0.22); [-1, 1].forEach((a) => box(0.15, 0.4, 0.56, c, a * 0.56, 0.3, 0));
+      legs4(0.5, 0.22, 0.08, 0x5A3A22);
+      const p = ell(0.14, 0.13, 0.05, sp.c2, -0.3, 0.52, -0.1); p.rotation.z = 0.3; ell(0.13, 0.12, 0.05, 0xF6A6C8, 0.32, 0.5, -0.1).rotation.z = -0.2;
+    };
+    D.beanbag = (sp) => { ell(0.4, 0.24, 0.38, sp.c, 0, 0.24, 0.04); ell(0.34, 0.3, 0.14, sp.c, 0, 0.42, -0.24); ell(0.26, 0.04, 0.24, 0xF6B86A, 0, 0.45, 0.06); };
+    D.shelf = (sp) => {
+      const c = sp.c, BK = [0xE5484D, 0x4A9AE8, 0x3DAA6D, 0xF2D23A, 0x7A4FD1, 0xF29A3A, 0xF4F5F2];
+      [-1, 1].forEach((a) => box(0.04, 1.14, 0.32, c, a * 0.46, 0.57, 0));
+      [0.02, 0.38, 0.74, 1.12].forEach((y) => box(0.96, 0.04, 0.32, c, 0, y, 0));
+      box(0.96, 1.14, 0.02, 0x7A5232, 0, 0.57, -0.15);
+      [0.04, 0.4, 0.76].forEach((y, i) => { let x = -0.42; for (let j = 0; x < 0.36; j++) { const w = 0.05 + ((i * 5 + j * 3) % 3) * 0.015, h = 0.22 + ((i + j * 7) % 4) * 0.025; box(w, h, 0.22, BK[(i * 3 + j) % BK.length], x + w / 2, y + 0.02 + h / 2, 0.02); x += w + 0.008; } });
+    };
+    D.wardrobe = (sp) => {
+      const c = sp.c;
+      box(0.92, 1.3, 0.52, c, 0, 0.72, 0); box(0.98, 0.06, 0.56, 0xC9B898, 0, 1.4, 0); legs4(0.4, 0.2, 0.07, 0x7A5232);
+      box(0.012, 1.2, 0.01, 0x9A8A70, 0, 0.72, 0.262); [-1, 1].forEach((a) => { ball(0.025, 0xF2B632, a * 0.06, 0.8, 0.27, SHINE); box(0.36, 0.5, 0.01, 0xF4EEDF, a * 0.22, 0.95, 0.262); box(0.36, 0.5, 0.01, 0xF4EEDF, a * 0.22, 0.4, 0.262); });
+    };
+    D.lamp = (sp) => {
+      cyl(0.16, 0.18, 0.04, DARK, 0, 0.02, 0); cyl(0.015, 0.015, 1.15, DARK, 0, 0.6, 0);
+      cyl(0.13, 0.24, 0.28, sp.c, 0, 1.22, 0, glowO(0xF2B632, 0.5)); ball(0.06, 0xFFF6C8, 0, 1.12, 0, glowO(0xFFF0A0, 1.2));
+    };
+    D.tv = (sp) => {
+      box(1.0, 0.3, 0.4, 0xA87A4A, 0, 0.15, 0); box(0.3, 0.02, 0.01, 0x7A5232, -0.25, 0.15, 0.2); box(0.3, 0.02, 0.01, 0x7A5232, 0.25, 0.15, 0.2);
+      box(0.08, 0.1, 0.06, sp.c, 0, 0.35, -0.05); box(0.92, 0.56, 0.05, sp.c, 0, 0.68, -0.06);
+      box(0.86, 0.5, 0.01, sp.game ? 0x7A4FD1 : 0x4FB3E8, 0, 0.68, -0.03, glowO(sp.game ? 0x6A3AD8 : 0x2F8FD8, 0.6));
+      if (sp.game) {
+        [[-0.2, 0.6, 0xF2D23A], [0.1, 0.75, 0x5BFF8A], [0.25, 0.6, 0xE5484D]].forEach(([x, y, col]) => box(0.08, 0.08, 0.01, col, x, y, -0.02, glowO(col, 0.6)));
+        box(0.22, 0.05, 0.16, WHITE, -0.3, 0.33, 0.05); [-1, 1].forEach((a) => { ell(0.07, 0.025, 0.045, a < 0 ? 0xE5484D : 0x4A9AE8, 0.2 + a * 0.1, 0.32, 0.1); });
+      }
+    };
+    D.piano = (sp) => {
+      const c = sp.c, o = { roughness: 0.15, metalness: 0.2 };
+      box(1.04, 0.9, 0.36, c, 0, 0.5, -0.08, o); box(1.04, 0.06, 0.26, c, 0, 0.56, 0.22, o); box(0.96, 0.025, 0.17, WHITE, 0, 0.6, 0.25);
+      for (let i = 0; i < 15; i++) if (i % 7 !== 2 && i % 7 !== 6) box(0.025, 0.02, 0.1, DARK, -0.45 + i * 0.064 + 0.032, 0.62, 0.2);
+      [-1, 1].forEach((a) => box(0.06, 0.53, 0.06, c, a * 0.48, 0.27, 0.3, o));
+      const m = box(0.34, 0.22, 0.01, WHITE, 0, 0.82, 0.12); m.rotation.x = -0.25;
+      box(0.62, 0.06, 0.26, c, 0, 0.42, 0.62, o); legs4(0.27, 0.1, 0.39, c, 0, 0.02);
+    };
+    D.guitar = (sp) => {
+      const g2 = group(0, 0, 0); g2.rotation.x = -0.15;
+      inside(g2, () => {
+        ell(0.24, 0.26, 0.07, sp.c, 0, 0.38, 0); ell(0.18, 0.19, 0.07, sp.c, 0, 0.66, 0); put(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 18), DARK, 0, 0.6, 0.07).rotation.x = Math.PI / 2;
+        box(0.07, 0.6, 0.04, 0x5A3A22, 0, 1.08, 0); box(0.1, 0.15, 0.04, DARK, 0, 1.44, 0); box(0.12, 0.03, 0.02, DARK, 0, 0.3, 0.07);
+        for (let i = 0; i < 4; i++) box(0.005, 0.95, 0.005, 0xE8E8E8, -0.018 + i * 0.012, 0.85, 0.075);
+      });
+      limb([0, 0.25, -0.08], [0, 0, -0.3], 0.015, 0.015, DARK); [-1, 1].forEach((a) => limb([0, 0.15, 0.02], [a * 0.2, 0, 0.12], 0.015, 0.015, DARK));
+    };
+    D.drums = (sp) => {
+      const c = sp.c;
+      const bd = cyl(0.27, 0.27, 0.24, c, 0, 0.29, 0, undefined, 20); bd.rotation.x = Math.PI / 2; const f = cyl(0.25, 0.25, 0.01, WHITE, 0, 0.29, 0.125, undefined, 20); f.rotation.x = Math.PI / 2;
+      [-1, 1].forEach((a) => { const t = cyl(0.11, 0.11, 0.1, c, a * 0.13, 0.66, 0.02); t.rotation.x = 0.3; cyl(0.1, 0.1, 0.01, WHITE, a * 0.13, 0.715, 0.04).rotation.x = 0.3; });
+      cyl(0.13, 0.13, 0.08, 0xC9CED3, 0.42, 0.5, 0.15, SHINE); cyl(0.12, 0.12, 0.01, WHITE, 0.42, 0.545, 0.15); limb([0.42, 0.46, 0.15], [0.42, 0, 0.15], 0.012, 0.012, 0x9AA4AE);
+      [-0.42, 0.45].forEach((x, i) => { limb([x, 0, -0.15], [x, 0.85 + i * 0.1, -0.15], 0.012, 0.012, 0x9AA4AE); const cy = cyl(0.17, 0.17, 0.008, 0xF2B632, x, 0.86 + i * 0.1, -0.15, SHINE, 20); cy.rotation.x = 0.15; });
+      cyl(0.13, 0.13, 0.06, DARK, 0, 0.42, -0.45); limb([0, 0.4, -0.45], [0, 0, -0.45], 0.02, 0.03, 0x9AA4AE);
+      [-1, 1].forEach((a) => limb([a * 0.05, 0.75, 0.25], [a * 0.15, 0.6, 0.45], 0.01, 0.006, 0xE8C88A));
+    };
+    D.plant = (sp) => {
+      cyl(0.19, 0.14, 0.32, sp.c, 0, 0.16, 0); cyl(0.17, 0.17, 0.02, 0x5A3A22, 0, 0.31, 0);
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2, r = 0.18 + (i % 2) * 0.08, y = 0.55 + (i % 3) * 0.16;
+        limb([0, 0.3, 0], [Math.cos(a) * r * 0.8, y, Math.sin(a) * r * 0.8], 0.012, 0.01, 0x3E8A45);
+        const lf = ell(0.13, 0.025, 0.2, i % 2 ? 0x3E9E57 : 0x4CAF62, Math.cos(a) * r, y + 0.02, Math.sin(a) * r); lf.rotation.y = -a + Math.PI / 2; lf.rotation.x = 0.4;
+      }
+    };
+    D.clock = (sp) => {
+      const c = sp.c;
+      box(0.44, 0.12, 0.3, c, 0, 0.06, 0); box(0.36, 1.05, 0.24, c, 0, 0.62, 0); box(0.46, 0.42, 0.28, c, 0, 1.34, 0); put(new THREE.ConeGeometry(0.28, 0.16, 4), c, 0, 1.63, 0).rotation.y = Math.PI / 4;
+      const f = cyl(0.16, 0.16, 0.02, WHITE, 0, 1.34, 0.145, undefined, 24); f.rotation.x = Math.PI / 2;
+      box(0.012, 0.11, 0.01, DARK, 0, 1.38, 0.16); const h = box(0.012, 0.08, 0.01, DARK, 0.03, 1.33, 0.16); h.rotation.z = -1.2;
+      box(0.24, 0.7, 0.01, 0xBFE3F2, 0, 0.66, 0.125, { transparent: true, opacity: 0.5 }); limb([0, 0.95, 0.11], [0, 0.55, 0.11], 0.006, 0.006, 0xF2B632); ball(0.06, 0xF2B632, 0, 0.5, 0.11, SHINE);
+    };
+    D.mirror = (sp) => {
+      const g2 = group(0, 0.78, 0); g2.scale.set(1, 1.9, 1); g2.rotation.x = -0.12;
+      inside(g2, () => { put(new THREE.TorusGeometry(0.27, 0.035, 10, 32), sp.c, 0, 0, 0, SHINE); const m = cyl(0.27, 0.27, 0.01, 0xD8ECF6, 0, 0, 0, { metalness: 0.95, roughness: 0.05 }, 32); m.rotation.x = Math.PI / 2; });
+      [-1, 1].forEach((a) => limb([a * 0.2, 0.3, -0.05], [a * 0.28, 0, 0.15], 0.02, 0.02, sp.c, SHINE)); limb([0, 0.5, -0.1], [0, 0, -0.35], 0.02, 0.02, sp.c, SHINE);
+    };
+    D.bear = (sp) => {
+      const c = sp.c, L = 0xEBC9A0;
+      ell(0.25, 0.27, 0.21, c, 0, 0.3, 0); ell(0.16, 0.17, 0.06, L, 0, 0.3, 0.16);
+      ball(0.21, c, 0, 0.66, 0.02); [-1, 1].forEach((k) => { ball(0.075, c, k * 0.15, 0.83, 0); ball(0.04, L, k * 0.15, 0.83, 0.04); });
+      ell(0.1, 0.075, 0.07, L, 0, 0.6, 0.19); ball(0.032, DARK, 0, 0.635, 0.26); eyes(0.075, 0.71, 0.17, 0.028, 0.9, true);
+      [-1, 1].forEach((k) => { limb([k * 0.2, 0.42, 0.02], [k * 0.3, 0.25, 0.12], 0.07, 0.06, c); ell(0.09, 0.08, 0.15, c, k * 0.14, 0.1, 0.16); ell(0.06, 0.06, 0.02, L, k * 0.14, 0.1, 0.31); });
+      put(new THREE.TorusGeometry(0.12, 0.025, 8, 16), 0xE5484D, 0, 0.48, 0.05).rotation.x = Math.PI / 2 - 0.2;
+    };
+    D.tank = () => {
+      box(0.92, 0.42, 0.42, 0x4A5560, 0, 0.21, 0); box(0.88, 0.04, 0.38, 0x2E3A46, 0, 0.94, 0);
+      box(0.88, 0.5, 0.38, 0xBFE3F2, 0, 0.67, 0, { transparent: true, opacity: 0.28, depthWrite: false });
+      box(0.86, 0.42, 0.36, 0x3FA6E0, 0, 0.64, 0, { transparent: true, opacity: 0.3, depthWrite: false });
+      box(0.86, 0.04, 0.36, 0xD9C9A0, 0, 0.44, 0);
+      for (let i = 0; i < 4; i++) limb([-0.35 + i * 0.22, 0.45, -0.1 + (i % 2) * 0.12], [-0.33 + i * 0.22, 0.7 + (i % 2) * 0.1, -0.1], 0.015, 0.006, 0x3E9E57);
+      [[-0.2, 0.68, 0.05, 0xF29A3A], [0.15, 0.6, -0.05, 0xF2D23A], [0.3, 0.75, 0.08, 0xE5484D]].forEach(([x, y, z, col]) => { ell(0.06, 0.04, 0.025, col, x, y, z); fin([[0, 0], [0.05, 0.035], [0.05, -0.035]], col, "xy", x + 0.05, y, z); });
+    };
+    D.fridge = (sp) => {
+      box(0.52, 0.82, 0.48, sp.c, 0, 0.42, 0, { roughness: 0.3 }); box(0.5, 0.01, 0.01, 0xC9CED3, 0, 0.58, 0.245);
+      box(0.03, 0.18, 0.03, 0x9AA4AE, 0.2, 0.72, 0.255, SHINE); box(0.03, 0.18, 0.03, 0x9AA4AE, 0.2, 0.4, 0.255, SHINE);
+      [[-0.12, 0.7, 0xE5484D], [0, 0.4, 0x4A9AE8], [-0.1, 0.3, 0xF2D23A]].forEach(([x, y, col]) => box(0.06, 0.06, 0.01, col, x, y, 0.245));
+      [[-0.1, 0xE5484D], [0.08, 0x3DAA6D]].forEach(([x, col]) => cyl(0.04, 0.04, 0.12, col, x, 0.89, 0));
+    };
+    D.fan = (sp) => {
+      cyl(0.18, 0.2, 0.05, WHITE, 0, 0.025, 0); cyl(0.022, 0.022, 0.72, WHITE, 0, 0.4, 0); ell(0.08, 0.08, 0.12, WHITE, 0, 0.8, -0.04);
+      const cage = put(new THREE.TorusGeometry(0.27, 0.012, 6, 32), 0xC9CED3, 0, 0.8, 0.07); cage.rotation.y = 0;
+      for (let i = 0; i < 8; i++) { const sp2 = box(0.006, 0.54, 0.006, 0xC9CED3, 0, 0.8, 0.07); sp2.rotation.z = (i / 8) * Math.PI; }
+      const bl = group(0, 0.8, 0.06); bl.userData.spin = [0, 0, 6];
+      inside(bl, () => { ball(0.04, sp.c, 0, 0, 0.01); for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; const b = ell(0.1, 0.05, 0.01, sp.c, Math.cos(a) * 0.12, Math.sin(a) * 0.12, 0, { transparent: true, opacity: 0.85 }); b.rotation.z = a; } });
+    };
+    D.globe = () => {
+      cyl(0.16, 0.2, 0.06, 0x7A4B2E, 0, 0.03, 0); limb([0, 0.06, 0], [0, 0.3, 0], 0.025, 0.02, 0x7A4B2E);
+      const g2 = group(0, 0.62, 0); g2.rotation.z = 0.4;
+      inside(g2, () => {
+        put(new THREE.TorusGeometry(0.33, 0.015, 6, 32, Math.PI), 0xF2B632, 0, 0, 0, SHINE).rotation.z = -Math.PI / 2;
+        const gl = group(0, 0, 0); gl.userData.spin = [0, 0.6, 0];
+        inside(gl, () => { ball(0.3, 0x4A9AE8, 0, 0, 0); [[0.6, 0.3, 0.12], [2.2, -0.2, 0.15], [3.8, 0.5, 0.1], [5.1, -0.4, 0.13], [1.4, -0.7, 0.08]].forEach(([a, y, r]) => { const k = ell(r, r * 0.8, 0.04, 0x3DAA6D, Math.cos(a) * 0.29 * Math.cos(y), Math.sin(y) * 0.29, Math.sin(a) * 0.29 * Math.cos(y)); k.lookAt(0, 0, 0); }); });
+      });
+    };
+    D.telescope = (sp) => {
+      [0, 2.1, 4.2].forEach((a) => limb([0, 0.62, 0], [Math.cos(a) * 0.32, 0, Math.sin(a) * 0.32], 0.018, 0.015, 0x5A3A22));
+      ball(0.05, DARK, 0, 0.64, 0); limb([0, 0.58, -0.32], [0, 1.0, 0.36], 0.07, 0.1, sp.c, SHINE);
+      cyl(0.105, 0.105, 0.04, 0xC9CED3, 0, 1.0, 0.36, SHINE).quaternion.setFromUnitVectors(V(0, 1, 0), V(0, 0.42, 0.68).normalize());
+      limb([0, 0.57, -0.33], [0, 0.5, -0.42], 0.025, 0.025, DARK); limb([0.06, 0.82, 0.1], [0.06, 0.92, 0.25], 0.02, 0.02, DARK);
+    };
+    D.arcade = (sp) => {
+      const c = sp.c;
+      box(0.58, 1.25, 0.52, c, 0, 0.62, 0); box(0.6, 0.18, 0.54, 0xF2D23A, 0, 1.33, 0.02, glowO(0xF2B632, 0.5));
+      const sc = box(0.44, 0.34, 0.02, 0x2EE8C0, 0, 0.98, 0.25, glowO(0x1AC8A0, 0.6)); sc.rotation.x = -0.2;
+      const p = box(0.58, 0.05, 0.26, DARK, 0, 0.7, 0.34); p.rotation.x = 0.25;
+      limb([-0.12, 0.72, 0.36], [-0.12, 0.8, 0.37], 0.012, 0.012, DARK); ball(0.035, 0xE5484D, -0.12, 0.82, 0.37);
+      [0.05, 0.13, 0.21].forEach((x, i) => ball(0.025, [0x4A9AE8, 0xF2D23A, 0x3DAA6D][i], x, 0.74, 0.37, glowO([0x4A9AE8, 0xF2D23A, 0x3DAA6D][i], 0.5)));
+      [-1, 1].forEach((a) => box(0.02, 1.2, 0.5, 0xF4F5F2, a * 0.3, 0.62, 0));
+    };
+    D.chest = (sp) => {
+      const c = sp.c, G2 = 0xF2B632;
+      box(0.82, 0.4, 0.52, c, 0, 0.2, 0);
+      const lid = group(0, 0.4, -0.26); lid.rotation.x = -0.9;
+      inside(lid, () => { const h = put(new THREE.CylinderGeometry(0.26, 0.26, 0.82, 18, 1, false, 0, Math.PI), c, 0, 0, 0.26); h.rotation.z = Math.PI / 2; h.rotation.x = Math.PI / 2; [-0.3, 0.3].forEach((x) => { const b = put(new THREE.CylinderGeometry(0.27, 0.27, 0.06, 18, 1, false, 0, Math.PI), G2, x, 0, 0.26, SHINE); b.rotation.z = Math.PI / 2; b.rotation.x = Math.PI / 2; }); });
+      [-0.3, 0.3].forEach((x) => box(0.06, 0.41, 0.53, G2, x, 0.2, 0, SHINE)); box(0.1, 0.12, 0.03, G2, 0, 0.3, 0.27, SHINE);
+      for (let i = 0; i < 16; i++) { const a = i * 2.4, r = 0.05 + (i % 5) * 0.06; const co = cyl(0.045, 0.045, 0.015, G2, Math.cos(a) * r * 1.4, 0.4 + (4 - (i % 5)) * 0.025, Math.sin(a) * r * 0.7, glowO(0xF2B632, 0.35), 12); co.rotation.x = (i % 3) * 0.4; }
+      [[0.15, 0.48, 0.05, 0xE5484D], [-0.18, 0.46, -0.05, 0x4A9AE8], [0, 0.52, 0, 0x3DAA6D]].forEach(([x, y, z, col]) => put(new THREE.OctahedronGeometry(0.05, 0), col, x, y, z, glowO(col, 0.6)));
+      for (let i = 0; i < 6; i++) { const co = cyl(0.045, 0.045, 0.015, G2, -0.3 + i * 0.12, 0.01, 0.4 + (i % 2) * 0.08, SHINE, 12); co.rotation.z = (i % 3) * 0.2; }
+    };
+
+    /* --- 탈것 시장: 자동차·중장비·열차·비행기·배 (앞 = +z) --- */
+    const wheel = (x, y, z, r, w = 0.07, c = 0x2A2A30) => { cyl(r, r, w, c, x, y, z, undefined, 18).rotation.z = Math.PI / 2; cyl(r * 0.5, r * 0.5, w + 0.006, 0xC9CED3, x, y, z, SHINE, 12).rotation.z = Math.PI / 2; };
+    const lights = (W, y, zf, zb) => { [-1, 1].forEach((k) => { ball(0.035, 0xFFF6C8, k * W * 0.34, y, zf, glowO(0xFFF0A0, 1)); box(0.07, 0.035, 0.01, 0xE5484D, k * W * 0.34, y, zb, glowO(0xE5484D, 0.6)); }); };
+    const beacon = (y, z, a = 0xE5484D, b = 0x2F6FE8) => { box(0.3, 0.05, 0.1, DARK, 0, y, z); box(0.12, 0.05, 0.08, a, -0.08, y + 0.045, z, glowO(a, 0.9)); box(0.12, 0.05, 0.08, b, 0.08, y + 0.045, z, glowO(b, 0.9)); };
+    const tracks = (x, len = 0.9, c = DARK) => { box(0.2, 0.16, len - 0.16, c, x, 0.1, 0); [-1, 1].forEach((k) => { cyl(0.08, 0.08, 0.2, c, x, 0.1, k * (len / 2 - 0.08)).rotation.z = Math.PI / 2; }); for (let i = 0; i < 3; i++) wheel(x, 0.1, -0.25 + i * 0.25, 0.055, 0.21, 0x6A7480); };
+    D.car = (sp) => {
+      const c = sp.c, b = sp.body, big = sp.big;
+      const [L, W, H, cl, ch] = b === "suv" ? [1.0, 0.52, 0.28, 0.66, 0.24] : b === "sport" ? [1.06, 0.52, 0.16, 0.42, 0.15] : [1.0, 0.5, 0.22, 0.52, 0.2];
+      const r = big ? 0.22 : b === "sport" ? 0.1 : 0.12, yb = big ? 0.34 : r * 0.7;
+      box(W, H, L, c, 0, yb + H / 2, 0, { roughness: 0.35, metalness: 0.2 });
+      const cz = b === "sport" ? -0.08 : -0.06;
+      box(W * 0.86, ch, cl, GLASS, 0, yb + H + ch / 2, cz, GLS); box(W * 0.9, 0.03, cl * 0.92, c, 0, yb + H + ch, cz - 0.01, { roughness: 0.35, metalness: 0.2 });
+      [-1, 1].forEach((k) => box(0.02, ch * 0.9, 0.05, c, k * W * 0.43, yb + H + ch / 2, cz));
+      lights(W, yb + H * 0.6, L / 2 + 0.005, -L / 2 - 0.005);
+      box(W * 0.6, 0.05, 0.02, 0x9AA4AE, 0, yb + 0.06, L / 2 + 0.01, SHINE);
+      [-1, 1].forEach((a) => [-1, 1].forEach((k) => wheel(a * (W / 2 + (big ? 0.06 : 0)), r, k * L * 0.32, r, big ? 0.16 : 0.07)));
+      if (big) [-1, 1].forEach((a) => [-1, 1].forEach((k) => limb([a * 0.18, yb, k * L * 0.32], [a * 0.28, r, k * L * 0.32], 0.025, 0.025, 0xF2D23A)));
+      if (sp.top === "taxi") { box(0.2, 0.08, 0.1, 0xF4F5F2, 0, yb + H + ch + 0.055, cz, glowO(0xFFF0A0, 0.4)); box(W + 0.01, 0.04, L * 0.5, DARK, 0, yb + H * 0.5, 0); }
+      if (sp.top === "police") { beacon(yb + H + ch + 0.04, cz); box(W + 0.01, H * 0.6, L * 0.45, DARK, 0, yb + H * 0.45, 0); }
+      if (sp.wing) { box(W * 0.95, 0.025, 0.12, DARK, 0, yb + H + 0.13, -L / 2 + 0.06); [-1, 1].forEach((k) => box(0.025, 0.12, 0.04, DARK, k * 0.16, yb + H + 0.06, -L / 2 + 0.06)); box(W + 0.01, 0.03, L * 0.9, DARK, 0, yb + H + 0.005, 0); }
+    };
+    D.van = (sp) => {
+      const c = sp.c, L = 1.06, W = 0.54, yb = 0.09;
+      box(W, 0.55, L, c, 0, yb + 0.275, 0, { roughness: 0.4 });
+      const ws = box(W * 0.88, 0.2, 0.02, GLASS, 0, yb + 0.42, L / 2 + 0.005, GLS);
+      [-1, 1].forEach((k) => box(0.01, 0.16, 0.22, GLASS, k * (W / 2 + 0.004), yb + 0.42, L / 2 - 0.16, GLS));
+      lights(W, yb + 0.15, L / 2 + 0.005, -L / 2 - 0.005);
+      [-1, 1].forEach((a) => [-1, 1].forEach((k) => wheel(a * W / 2, 0.12, k * L * 0.33, 0.12)));
+      if (sp.kind === "ambulance") {
+        beacon(yb + 0.58, L / 2 - 0.15); [-1, 1].forEach((k) => { box(0.01, 0.06, L * 0.95, 0xE5484D, k * (W / 2 + 0.004), yb + 0.18, 0); box(0.01, 0.16, 0.05, 0xE5484D, k * (W / 2 + 0.006), yb + 0.36, -0.15); box(0.01, 0.05, 0.16, 0xE5484D, k * (W / 2 + 0.006), yb + 0.36, -0.15); });
+      } else {
+        [-1, 1].forEach((k) => { box(0.01, 0.09, L * 0.95, sp.c2, k * (W / 2 + 0.004), yb + 0.2, 0); box(0.01, 0.13, 0.3, GLASS, k * (W / 2 + 0.004), yb + 0.42, -0.15, GLS); });
+        box(W * 0.8, 0.12, 0.5, c, 0, yb + 0.61, -0.1); box(0.3, 0.02, 0.3, 0x2448D8, 0, yb + 0.68, -0.18, SHINE);
+        box(0.01, 0.3, 0.16, sp.c2, W / 2 + 0.006, yb + 0.3, 0.12);
+      }
+    };
+    D.bus = (sp) => {
+      const c = sp.c, L = 1.34, W = 0.54, H = sp.double ? 0.9 : 0.58, yb = 0.08;
+      box(W, H, L, c, 0, yb + H / 2, 0, { roughness: 0.4 });
+      const rows = sp.double ? [yb + 0.36, yb + 0.73] : [yb + 0.38];
+      rows.forEach((y) => [-1, 1].forEach((k) => { for (let i = 0; i < 5; i++) box(0.01, 0.15, 0.2, GLASS, k * (W / 2 + 0.004), y, -0.5 + i * 0.23, GLS); }));
+      box(W * 0.88, 0.22, 0.02, GLASS, 0, yb + 0.38, L / 2 + 0.005, GLS); if (sp.double) box(W * 0.88, 0.16, 0.02, GLASS, 0, yb + 0.73, L / 2 + 0.005, GLS);
+      box(0.01, 0.34, 0.16, 0x2E3A46, W / 2 + 0.005, yb + 0.22, 0.48);
+      if (sp.school) [-1, 1].forEach((k) => box(0.01, 0.03, L * 0.98, DARK, k * (W / 2 + 0.005), yb + 0.22, 0));
+      box(0.3, 0.06, 0.01, DARK, 0, yb + H - 0.06, L / 2 + 0.006); box(0.22, 0.03, 0.01, 0xF29A3A, 0, yb + H - 0.06, L / 2 + 0.012, glowO(0xF29A3A, 0.8));
+      lights(W, yb + 0.12, L / 2 + 0.005, -L / 2 - 0.005);
+      [-1, 1].forEach((a) => [-0.4, 0.4].forEach((z) => wheel(a * W / 2, 0.12, z, 0.12)));
+    };
+    D.truck = (sp) => {
+      const c = sp.c, W = 0.54, bed = sp.bed;
+      box(0.42, 0.08, 1.3, DARK, 0, 0.17, 0);
+      box(W, 0.42, 0.36, c, 0, 0.42, 0.45, { roughness: 0.4 }); box(W * 0.86, 0.17, 0.02, GLASS, 0, 0.53, 0.635, GLS);
+      [-1, 1].forEach((k) => box(0.01, 0.15, 0.2, GLASS, k * (W / 2 + 0.004), 0.53, 0.47, GLS));
+      lights(W, 0.3, 0.635, -0.66);
+      [-1, 1].forEach((a) => [0.42, -0.25, -0.48].forEach((z) => wheel(a * 0.25, 0.13, z, 0.13, 0.09)));
+      if (bed === "box") { box(W + 0.02, 0.56, 0.86, 0xF4F5F2, 0, 0.5, -0.2); [-1, 1].forEach((k) => box(0.01, 0.12, 0.8, c, k * (W / 2 + 0.015), 0.5, -0.2)); }
+      if (bed === "ladder") {
+        box(W, 0.34, 0.86, c, 0, 0.38, -0.2); for (let i = 0; i < 3; i++) [-1, 1].forEach((k) => box(0.01, 0.1, 0.18, 0xC9CED3, k * (W / 2 + 0.004), 0.4, -0.5 + i * 0.25, SHINE));
+        beacon(0.67, 0.45);
+        [-1, 1].forEach((k) => limb([k * 0.1, 0.58, -0.6], [k * 0.1, 0.86, 0.42], 0.018, 0.018, 0xC9CED3, SHINE));
+        for (let i = 0; i < 8; i++) { const t = i / 7; box(0.2, 0.02, 0.02, 0xC9CED3, 0, 0.58 + t * 0.28 + 0.01, -0.6 + t * 1.02, SHINE); }
+        cyl(0.05, 0.05, 0.12, 0xF2D23A, 0.2, 0.6, -0.55).rotation.z = Math.PI / 2;
+      }
+      if (bed === "dump") {
+        const d = group(0, 0.24, -0.62); d.rotation.x = 0.35;
+        inside(d, () => { box(W, 0.04, 0.84, c, 0, 0, 0.42); [-1, 1].forEach((k) => box(0.04, 0.3, 0.84, c, k * (W / 2 - 0.02), 0.15, 0.42)); box(W, 0.36, 0.04, c, 0, 0.18, 0.84); ell(0.22, 0.12, 0.34, 0x8A6A4A, 0, 0.22, 0.42); });
+        limb([0, 0.22, -0.1], [0, 0.4, -0.2], 0.03, 0.03, 0x9AA4AE, SHINE);
+      }
+      if (bed === "mixer") {
+        const d = group(0, 0.56, -0.2); d.rotation.x = 0.22; d.userData.spin = [0, 0, 1.5];
+        inside(d, () => { put(new THREE.CylinderGeometry(0.2, 0.27, 0.8, 18), 0xF4F5F2, 0, 0, 0).rotation.x = Math.PI / 2; for (let i = 0; i < 4; i++) { const s = put(new THREE.TorusGeometry(0.25 - i * 0.015, 0.02, 6, 18), c, 0, 0, -0.28 + i * 0.18); s.rotation.y = 0.3; } });
+        box(0.3, 0.3, 0.06, 0x9AA4AE, 0, 0.4, 0.22);
+      }
+      if (bed === "crane") {
+        box(W, 0.12, 0.86, 0x6A7480, 0, 0.27, -0.2); [-1, 1].forEach((k) => { limb([k * 0.25, 0.25, 0.15], [k * 0.4, 0.02, 0.15], 0.02, 0.03, 0x9AA4AE); limb([k * 0.25, 0.25, -0.55], [k * 0.4, 0.02, -0.55], 0.02, 0.03, 0x9AA4AE); });
+        const t = group(0, 0.33, -0.4); t.userData.spin = [0, 0.25, 0];
+        inside(t, () => {
+          box(0.36, 0.22, 0.36, c, 0, 0.11, 0); box(0.16, 0.18, 0.16, GLASS, 0.12, 0.3, 0.1, GLS);
+          limb([0, 0.18, 0], [0, 1.25, 0.55], 0.05, 0.035, c); for (let i = 1; i < 8; i++) { const k = i / 8; box(0.075, 0.01, 0.01, DARK, 0, 0.18 + k * 1.07, k * 0.55); }
+          limb([0, 1.25, 0.55], [0, 0.55, 0.55], 0.004, 0.004, DARK); box(0.06, 0.08, 0.03, DARK, 0, 0.52, 0.55); box(0.14, 0.14, 0.14, 0x9AA4AE, 0, -0.04, -0.22);
+        });
+      }
+    };
+    D.excavator = (sp) => {
+      const c = sp.c; [-1, 1].forEach((k) => tracks(k * 0.27));
+      const t = group(0, 0.2, 0); inside(t, () => {
+        cyl(0.12, 0.12, 0.06, DARK, 0, 0.03, 0); box(0.58, 0.28, 0.62, c, 0, 0.2, -0.05); box(0.56, 0.14, 0.18, DARK, 0, 0.24, -0.38);
+        box(0.24, 0.32, 0.26, c, 0.15, 0.5, 0.12); box(0.2, 0.22, 0.01, GLASS, 0.15, 0.52, 0.255, GLS); box(0.01, 0.2, 0.2, GLASS, 0.275, 0.52, 0.12, GLS);
+        limb([-0.12, 0.32, 0.2], [-0.12, 0.85, 0.55], 0.06, 0.05, c); limb([-0.12, 0.85, 0.55], [-0.12, 0.25, 0.78], 0.045, 0.04, c);
+        limb([-0.12, 0.4, 0.28], [-0.12, 0.78, 0.5], 0.02, 0.02, 0xC9CED3, SHINE);
+        const bk = group(-0.12, 0.22, 0.8); bk.rotation.x = 0.6; inside(bk, () => { box(0.24, 0.16, 0.04, DARK, 0, 0, 0.06); box(0.24, 0.04, 0.16, DARK, 0, -0.08, 0); for (let i = 0; i < 4; i++) put(new THREE.ConeGeometry(0.02, 0.06, 4), 0x9AA4AE, -0.09 + i * 0.06, -0.1, 0.1).rotation.x = Math.PI / 2; });
+      });
+    };
+    D.dozer = (sp) => {
+      const c = sp.c; [-1, 1].forEach((k) => tracks(k * 0.26, 0.85));
+      box(0.46, 0.3, 0.62, c, 0, 0.35, -0.04); box(0.32, 0.34, 0.3, c, 0, 0.66, -0.15); box(0.28, 0.22, 0.01, GLASS, 0, 0.68, 0.005, GLS); [-1, 1].forEach((k) => box(0.01, 0.22, 0.24, GLASS, k * 0.165, 0.68, -0.15, GLS));
+      limb([0.12, 0.5, 0.15], [0.12, 0.72, 0.18], 0.025, 0.02, DARK);
+      [-1, 1].forEach((k) => limb([k * 0.24, 0.3, 0.2], [k * 0.3, 0.2, 0.52], 0.03, 0.03, DARK));
+      const bl = box(0.86, 0.32, 0.05, c, 0, 0.2, 0.56); bl.rotation.x = -0.15; box(0.86, 0.04, 0.08, 0x9AA4AE, 0, 0.05, 0.58, SHINE);
+      [-1, 0, 1].forEach((k) => put(new THREE.ConeGeometry(0.03, 0.12, 4), 0x9AA4AE, k * 0.15, 0.1, -0.42).rotation.x = Math.PI);
+    };
+    D.forklift = (sp) => {
+      const c = sp.c;
+      box(0.46, 0.3, 0.62, c, 0, 0.27, -0.06); box(0.44, 0.22, 0.2, DARK, 0, 0.25, -0.38);
+      [-1, 1].forEach((a) => [-1, 1].forEach((k) => box(0.03, 0.55, 0.03, DARK, a * 0.2, 0.68, -0.05 + k * 0.2))); box(0.46, 0.03, 0.48, DARK, 0, 0.96, -0.05);
+      box(0.2, 0.06, 0.2, DARK, 0, 0.45, -0.1); limb([0, 0.48, 0.08], [0, 0.6, 0.16], 0.012, 0.012, DARK);
+      [-1, 1].forEach((k) => box(0.04, 1.05, 0.04, 0x6A7480, k * 0.15, 0.55, 0.3, SHINE)); box(0.34, 0.04, 0.04, 0x6A7480, 0, 1.05, 0.3, SHINE);
+      [-1, 1].forEach((k) => box(0.06, 0.02, 0.42, 0x6A7480, k * 0.1, 0.32, 0.52, SHINE)); box(0.36, 0.08, 0.36, 0xC9A06A, 0, 0.37, 0.53); box(0.32, 0.26, 0.32, 0xC9A06A, 0, 0.54, 0.53); box(0.33, 0.04, 0.01, 0x9A7448, 0, 0.6, 0.69);
+      [-1, 1].forEach((a) => { wheel(a * 0.24, 0.12, 0.15, 0.12, 0.09); wheel(a * 0.22, 0.09, -0.3, 0.09, 0.08); });
+    };
+    D.tractor = (sp) => {
+      const c = sp.c;
+      box(0.3, 0.26, 0.6, c, 0, 0.4, 0.15); box(0.28, 0.08, 0.02, DARK, 0, 0.36, 0.455); box(0.36, 0.1, 0.4, c, 0, 0.36, -0.25);
+      [-1, 1].forEach((a) => [-1, 1].forEach((k) => box(0.03, 0.45, 0.03, DARK, a * 0.18, 0.66, -0.25 + k * 0.17))); box(0.44, 0.04, 0.44, c, 0, 0.9, -0.25);
+      box(0.18, 0.06, 0.16, DARK, 0, 0.47, -0.28); limb([0, 0.48, -0.12], [0, 0.6, -0.04], 0.012, 0.012, DARK); limb([0.1, 0.52, 0.3], [0.1, 0.82, 0.3], 0.025, 0.025, DARK);
+      [-1, 1].forEach((a) => { wheel(a * 0.3, 0.28, -0.25, 0.28, 0.14); wheel(a * 0.22, 0.14, 0.35, 0.14, 0.09); box(0.16, 0.03, 0.36, c, a * 0.3, 0.58, -0.25); });
+    };
+    D.moto = (sp) => {
+      const c = sp.c, c2 = sp.c2;
+      [0.38, -0.36].forEach((z) => wheel(0, 0.15, z, 0.15, 0.06));
+      if (sp.scooter) {
+        box(0.2, 0.05, 0.42, c, 0, 0.2, -0.02); ell(0.15, 0.13, 0.3, c, 0, 0.33, -0.25); box(0.22, 0.06, 0.26, c2, 0, 0.47, -0.22);
+        const sh = box(0.24, 0.42, 0.06, c, 0, 0.42, 0.28); sh.rotation.x = -0.25; limb([0, 0.2, 0.38], [0, 0.66, 0.3], 0.02, 0.02, 0x9AA4AE); limb([-0.2, 0.68, 0.3], [0.2, 0.68, 0.3], 0.015, 0.015, DARK); ball(0.04, 0xFFF6C8, 0, 0.58, 0.33, glowO(0xFFF0A0, 1));
+        return;
+      }
+      ell(0.12, 0.1, 0.18, c2, 0, 0.45, 0.1); box(0.14, 0.05, 0.3, DARK, 0, 0.44, -0.16); box(0.16, 0.14, 0.2, 0x6A7480, 0, 0.28, 0.0, SHINE);
+      limb([0, 0.15, 0.38], [0, 0.58, 0.26], 0.02, 0.02, 0xC9CED3, SHINE); limb([0, 0.15, -0.36], [0, 0.3, 0.0], 0.02, 0.02, 0xC9CED3, SHINE); limb([-0.22, 0.6, 0.24], [0.22, 0.6, 0.24], 0.013, 0.013, DARK);
+      ball(0.045, 0xFFF6C8, 0, 0.5, 0.32, glowO(0xFFF0A0, 1)); limb([0.08, 0.2, -0.05], [0.08, 0.25, -0.4], 0.025, 0.02, 0xC9CED3, SHINE);
+      box(0.16, 0.03, 0.18, c2, 0, 0.32, 0.38);
+    };
+    D.bike = (sp) => {
+      const c = sp.c;
+      [0.32, -0.32].forEach((z) => { const t = put(new THREE.TorusGeometry(0.19, 0.016, 8, 24), DARK, 0, 0.2, z); t.rotation.y = Math.PI / 2; for (let i = 0; i < 6; i++) { const s = box(0.004, 0.36, 0.004, 0xC9CED3, 0, 0.2, z); s.rotation.x = (i / 6) * Math.PI; } });
+      limb([0, 0.2, -0.32], [0, 0.48, -0.08], 0.014, 0.014, c); limb([0, 0.2, -0.32], [0, 0.22, 0.0], 0.014, 0.014, c); limb([0, 0.22, 0.0], [0, 0.48, -0.08], 0.014, 0.014, c);
+      limb([0, 0.22, 0.0], [0, 0.5, 0.24], 0.014, 0.014, c); limb([0, 0.48, -0.08], [0, 0.5, 0.24], 0.014, 0.014, c); limb([0, 0.2, 0.32], [0, 0.6, 0.24], 0.012, 0.012, c);
+      ell(0.06, 0.02, 0.1, DARK, 0, 0.53, -0.1); limb([-0.18, 0.62, 0.22], [0.18, 0.62, 0.22], 0.01, 0.01, DARK); box(0.12, 0.08, 0.1, 0xC9A06A, 0, 0.55, 0.34);
+      put(new THREE.TorusGeometry(0.04, 0.01, 6, 12), 0x9AA4AE, 0.02, 0.22, 0.0).rotation.y = Math.PI / 2;
+    };
+    D.train = (sp) => {
+      const c = sp.c, c2 = sp.c2;
+      [-1, 1].forEach((k) => box(0.03, 0.03, 1.5, 0x9AA4AE, k * 0.17, 0.015, 0, SHINE)); for (let i = 0; i < 8; i++) box(0.5, 0.02, 0.07, 0x7A5232, 0, 0.005, -0.66 + i * 0.19);
+      if (sp.bullet) {
+        box(0.46, 0.4, 0.9, c, 0, 0.36, -0.22, { roughness: 0.3 }); ell(0.23, 0.2, 0.5, c, 0, 0.36, 0.24, { roughness: 0.3 });
+        ell(0.15, 0.07, 0.18, GLASS, 0, 0.47, 0.42, GLS);
+        [-1, 1].forEach((k) => { box(0.01, 0.05, 0.9, c2, k * 0.234, 0.28, -0.22); for (let i = 0; i < 5; i++) box(0.01, 0.1, 0.11, GLASS, k * 0.234, 0.43, -0.6 + i * 0.16, GLS); });
+        [-1, 1].forEach((a) => [-0.55, 0.1].forEach((z) => wheel(a * 0.17, 0.08, z, 0.07, 0.05)));
+        return;
+      }
+      box(0.46, 0.12, 1.2, c, 0, 0.2, 0); const bo = cyl(0.21, 0.21, 0.72, c, 0, 0.47, 0.22); bo.rotation.x = Math.PI / 2;
+      cyl(0.2, 0.2, 0.02, c2, 0, 0.47, 0.59).rotation.x = Math.PI / 2; ball(0.05, 0xFFF6C8, 0, 0.6, 0.6, glowO(0xFFF0A0, 1));
+      cyl(0.07, 0.05, 0.22, DARK, 0, 0.76, 0.42); cyl(0.09, 0.09, 0.04, DARK, 0, 0.88, 0.42); ball(0.06, 0xF2B632, 0, 0.7, 0.15, SHINE);
+      for (let i = 0; i < 3; i++) ell(0.08 + i * 0.03, 0.06 + i * 0.02, 0.08 + i * 0.03, 0xE8E8E8, 0, 1.0 + i * 0.14, 0.42 - i * 0.12, { transparent: true, opacity: 0.7 });
+      box(0.5, 0.5, 0.38, c2, 0, 0.55, -0.38); box(0.56, 0.05, 0.44, c, 0, 0.82, -0.38); [-1, 1].forEach((k) => box(0.01, 0.15, 0.16, GLASS, k * 0.255, 0.62, -0.36, GLS));
+      const cc = put(new THREE.ConeGeometry(0.22, 0.2, 4), DARK, 0, 0.13, 0.66); cc.rotation.x = Math.PI / 2 + 0.3; cc.rotation.y = Math.PI / 4;
+      [-1, 1].forEach((a) => { [0.32, 0.05, -0.22].forEach((z) => wheel(a * 0.2, 0.12, z, 0.12, 0.05, c2)); limb([a * 0.25, 0.12, 0.32], [a * 0.25, 0.12, -0.22], 0.012, 0.012, 0xC9CED3, SHINE); });
+    };
+    D.plane = (sp) => {
+      const c = sp.c, c2 = sp.c2, y = 0.42;
+      const f = cyl(0.13, 0.13, 1.1, c, 0, y, 0.02, { roughness: 0.3 }); f.rotation.x = Math.PI / 2;
+      ell(0.13, 0.13, 0.2, c, 0, y, 0.57, { roughness: 0.3 }); ell(0.1, 0.05, 0.08, DARK, 0, y + 0.06, 0.62);
+      limb([0, y, -0.53], [0, y + 0.08, -0.82], 0.13, 0.03, c);
+      [-1, 1].forEach((k) => {
+        const w = fin([[0, 0.12], [0.72, -0.18], [0.72, -0.27], [0, -0.12]], c, "xz", k * 0.1, y - 0.04, 0.02); w.scale.x = k;
+        const e = cyl(0.055, 0.05, 0.22, c2, k * 0.38, y - 0.09, 0.08, SHINE); e.rotation.x = Math.PI / 2;
+        const h = fin([[0, 0.05], [0.25, -0.08], [0.25, -0.13], [0, -0.06]], c, "xz", k * 0.02, y + 0.05, -0.72); h.scale.x = k;
+        for (let i = 0; i < 7; i++) box(0.01, 0.035, 0.04, DARK, k * 0.128, y + 0.04, 0.38 - i * 0.12);
+      });
+      fin([[-0.62, 0], [-0.88, 0.32], [-0.78, 0.33], [-0.5, 0.02]], c2, "yz", 0, y + 0.08, -0.1);
+      box(0.262, 0.04, 1.0, c2, 0, y - 0.02, 0.02);
+      [[0, 0.45], [-0.13, -0.05], [0.13, -0.05]].forEach(([x, z]) => { limb([x, y - 0.1, z], [x, 0.06, z], 0.012, 0.012, 0x9AA4AE); wheel(x, 0.05, z, 0.05, 0.04); });
+    };
+    D.heli = (sp) => {
+      const c = sp.c;
+      ell(0.24, 0.24, 0.36, c, 0, 0.48, 0.02); ell(0.19, 0.17, 0.17, GLASS, 0, 0.52, 0.22, GLS);
+      limb([0, 0.52, -0.25], [0, 0.6, -0.86], 0.075, 0.03, c); fin([[0, 0], [-0.12, 0.2], [-0.04, 0.2], [0.06, 0]], c, "yz", 0, 0.58, -0.82);
+      [-1, 1].forEach((k) => { box(0.03, 0.03, 0.62, DARK, k * 0.2, 0.04, 0.02); limb([k * 0.12, 0.3, 0.12], [k * 0.2, 0.05, 0.14], 0.012, 0.012, DARK); limb([k * 0.12, 0.3, -0.12], [k * 0.2, 0.05, -0.12], 0.012, 0.012, DARK); });
+      cyl(0.03, 0.03, 0.12, DARK, 0, 0.76, 0); const r = group(0, 0.83, 0); r.userData.spin = [0, 9, 0];
+      inside(r, () => { box(1.3, 0.015, 0.07, DARK, 0, 0, 0); box(0.07, 0.015, 1.3, DARK, 0, 0, 0); ball(0.04, 0x9AA4AE, 0, 0.01, 0); });
+      const tr = group(0.04, 0.62, -0.84); tr.userData.spin = [9, 0, 0]; inside(tr, () => { box(0.01, 0.26, 0.04, DARK, 0, 0, 0); box(0.01, 0.04, 0.26, DARK, 0, 0, 0); });
+    };
+    D.boat = (sp) => {
+      const c = sp.c, c2 = sp.c2;
+      const hull = new THREE.Shape(); [[-0.26, 0.48], [0.26, 0.48], [0.26, -0.18], [0, -0.58], [-0.26, -0.18]].forEach(([a, b], i) => (i ? hull.lineTo(a, b) : hull.moveTo(a, b)));
+      const hm = put(new THREE.ExtrudeGeometry(hull, { depth: 0.24, bevelEnabled: false }), c, 0, 0.12, 0); hm.rotation.x = -Math.PI / 2;
+      const st = put(new THREE.ExtrudeGeometry(hull, { depth: 0.05, bevelEnabled: false }), c2, 0, 0.18, 0); st.rotation.x = -Math.PI / 2; st.scale.set(1.02, 1.01, 1);
+      box(0.4, 0.02, 0.5, 0xC9A06A, 0, 0.365, -0.15); const ws = box(0.4, 0.16, 0.02, GLASS, 0, 0.44, 0.1, GLS); ws.rotation.x = -0.4;
+      box(0.18, 0.12, 0.16, 0xF4F5F2, 0.08, 0.43, -0.12); cyl(0.04, 0.04, 0.02, DARK, -0.06, 0.48, 0.0).rotation.x = -0.6;
+      box(0.12, 0.22, 0.1, DARK, 0, 0.3, -0.55); limb([0, 0.25, -0.58], [0, 0.08, -0.6], 0.02, 0.02, DARK);
+      [-1, 1].forEach((k) => { box(0.03, 0.04, 1.0, 0x6A7480, k * 0.2, 0.08, -0.05); wheel(k * 0.3, 0.07, -0.15, 0.07, 0.05); }); box(0.04, 0.04, 0.3, 0x6A7480, 0, 0.08, 0.55);
+    };
+    D.sub = (sp) => {
+      const c = sp.c;
+      [-0.3, 0.3].forEach((z) => { box(0.3, 0.12, 0.08, 0x7A5232, 0, 0.06, z); });
+      ell(0.22, 0.22, 0.62, c, 0, 0.36, 0); box(0.14, 0.22, 0.3, c, 0, 0.62, -0.02); limb([0.03, 0.72, 0.05], [0.03, 0.92, 0.05], 0.015, 0.015, DARK); limb([0.03, 0.92, 0.05], [0.03, 0.92, 0.12], 0.015, 0.015, DARK);
+      [-1, 1].forEach((k) => { for (let i = 0; i < 3; i++) { const p = cyl(0.045, 0.045, 0.02, GLASS, k * 0.205, 0.4, 0.25 - i * 0.2, GLS, 14); p.rotation.z = Math.PI / 2; put(new THREE.TorusGeometry(0.045, 0.01, 6, 14), 0xC9CED3, k * 0.21, 0.4, 0.25 - i * 0.2, SHINE).rotation.y = Math.PI / 2; } const fn = fin([[0, 0], [0.16, -0.04], [0.16, -0.1], [0, -0.1]], c, "xz", k * 0.06, 0.36, -0.5); fn.scale.x = k; });
+      fin([[-0.5, 0], [-0.66, 0.16], [-0.6, 0.16], [-0.44, 0]], c, "yz", 0, 0.42, 0);
+      const pr = group(0, 0.36, -0.64); pr.userData.spin = [0, 0, 6]; inside(pr, () => { for (let i = 0; i < 3; i++) { const b = ell(0.1, 0.03, 0.01, 0x9AA4AE, Math.cos(i * 2.1) * 0.07, Math.sin(i * 2.1) * 0.07, 0, SHINE); b.rotation.z = i * 2.1; } });
+    };
+    D.shuttle = () => {
+      box(1.0, 0.1, 0.8, 0x6A7480, 0, 0.05, 0); box(0.08, 1.7, 0.08, 0xD9534F, -0.42, 0.95, -0.25); for (let i = 0; i < 5; i++) box(0.3, 0.03, 0.03, 0xD9534F, -0.3, 0.4 + i * 0.3, -0.25);
+      cyl(0.17, 0.17, 1.2, 0xE07A2E, 0, 0.75, -0.08); put(new THREE.ConeGeometry(0.17, 0.3, 18), 0xE07A2E, 0, 1.5, -0.08);
+      [-1, 1].forEach((k) => { cyl(0.065, 0.065, 1.1, WHITE, k * 0.24, 0.7, -0.08); put(new THREE.ConeGeometry(0.065, 0.16, 14), WHITE, k * 0.24, 1.33, -0.08); cyl(0.06, 0.08, 0.08, DARK, k * 0.24, 0.12, -0.08); });
+      cyl(0.11, 0.12, 0.8, WHITE, 0, 0.72, 0.15); put(new THREE.ConeGeometry(0.11, 0.22, 16), WHITE, 0, 1.23, 0.15); put(new THREE.ConeGeometry(0.111, 0.1, 16), DARK, 0, 1.3, 0.15);
+      box(0.12, 0.1, 0.06, DARK, 0, 1.08, 0.22); [-1, 1].forEach((k) => { const w = fin([[0, 0], [0.26, 0], [0.04, 0.42]], WHITE, "xy", k * 0.1, 0.32, 0.2); w.scale.x = k; });
+      fin([[0, 0], [-0.16, 0.0], [-0.12, 0.24]], WHITE, "yz", 0, 0.7, 0.2);
+      for (let i = 0; i < 3; i++) ell(0.1 + i * 0.04, 0.06, 0.1 + i * 0.04, 0xF2D23A, (i - 1) * 0.15, 0.12, 0.3, glowO(0xF29A3A, 0.9));
+    };
     (D[sp.t] || D.biped)(sp);
     if (sp.s) g.scale.setScalar(sp.s);
     return g;
@@ -2764,11 +3289,35 @@ ${draft.passage.trim().slice(0, 12000)}
     const root = new THREE.Group(); scene.add(root);
     const ground = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.8, 0.2, 48), new THREE.MeshStandardMaterial({ color: groundColor(), roughness: 0.9 }));
     ground.position.y = -0.1; root.add(ground);
-    const dirt = new THREE.Mesh(G?.world && G.world !== "main" ? new THREE.CylinderGeometry(0.85, 0.85, 0.03, 32) : new THREE.BoxGeometry(1.5, 0.03, 1.5), M(0xC9B48A)); dirt.position.y = 0.015; root.add(dirt);
+    const dirt = new THREE.Mesh(HATCH.includes(G?.world) ? new THREE.CylinderGeometry(0.85, 0.85, 0.03, 32) : new THREE.BoxGeometry(1.5, 0.03, 1.5), M(0xC9B48A)); dirt.position.y = 0.015; root.add(dirt);
     const site = new THREE.Group(); root.add(site);
     const world = G?.world || "main";
-    let egg = null;
-    if (world !== "main") {
+    let egg = null, lids = null;
+    if (world === "room" || world === "car") {
+      // 선물 상자(나의 방) · 차고(탈것 시장): 에너지가 모일수록 빛나며 들썩이고, 끝나면 뚜껑·셔터가 날아간다
+      const glow = (c, e) => new THREE.MeshStandardMaterial({ color: c, emissive: e, emissiveIntensity: 0, roughness: 0.5 });
+      if (world === "room") {
+        dirt.material = M(0xC99A64);
+        const rug = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.02, 32), M(0x7FB3D5)); rug.position.y = 0.04; site.add(rug);
+        egg = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.62, 0.8), glow(0xF28CA6, 0xF25C8A)); egg.position.y = 0.36; site.add(egg);
+        const rib = M(0xF3B12B);
+        for (const [w, d] of [[0.14, 0.82], [0.82, 0.14]]) { const r = new THREE.Mesh(new THREE.BoxGeometry(w, 0.63, d), rib); egg.add(r); }
+        const lid = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.14, 0.9), glow(0xF6A6C0, 0xF25C8A)); lid.position.y = 0.74; site.add(lid);
+        for (const [w, d] of [[0.15, 0.92], [0.92, 0.15]]) { const r = new THREE.Mesh(new THREE.BoxGeometry(w, 0.15, d), rib); lid.add(r); }
+        [-1, 1].forEach((k) => { const bow = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.035, 8, 16), rib); bow.position.set(k * 0.1, 0.14, 0); bow.rotation.y = k * 0.5; lid.add(bow); });
+        lids = [[lid, 1], [egg, -1]];
+      } else {
+        dirt.material = M(0x5A6068);
+        const frame = M(0x8C98A4);
+        for (const x of [-0.5, 0.5]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.9, 0.8), frame); p.position.set(x, 0.45, 0); site.add(p); }
+        const roof = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.12, 0.9), M(0xD9534F)); roof.position.y = 0.96; site.add(roof);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.06), M(0x6A7480)); back.position.set(0, 0.45, -0.37); site.add(back);
+        egg = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.86, 0.05), glow(0xC9D3DC, 0x4FB3E8)); egg.position.set(0, 0.45, 0.38); site.add(egg);
+        for (let i = 0; i < 8; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.015, 0.02), M(0x8C98A4)); s.position.set(0, -0.38 + i * 0.105, 0.03); egg.add(s); }
+        lids = [[egg, 1]];
+      }
+      const sign = textSprite("?", { size: 0.5, bg: "rgba(243,177,43,.95)", fg: "#1B1400", weight: 800 }); sign.position.set(0, SITE_H + 0.1, 0); site.add(sign);
+    } else if (HATCH.includes(world)) {
       // 알 부화장: 에너지가 모일수록 빛 구슬이 알 둘레를 돌고, 알이 빛나며 흔들린다
       dirt.material = M({ dino: 0xB89A5A, sea: 0xEADFB8, mon: 0x9C9486 }[world]);
       const [shell, spot] = { dino: [0xF2E6C8, 0x9A6A3A], sea: [0xCDEFFF, 0x4FB3E8], mon: [0xFFFFFF, 0xB070F0] }[world];
@@ -2790,7 +3339,7 @@ ${draft.passage.trim().slice(0, 12000)}
     const sign = textSprite("?", { size: 0.5, bg: "rgba(243,177,43,.95)", fg: "#1B1400", weight: 800 }); sign.position.set(0, SITE_H + 0.45, 0); site.add(sign);
     }
     camera.position.set(0, 2.3, 4.6); camera.lookAt(0, 0.7, 0);
-    T3 = { renderer, scene, camera, root, ground, site, egg, shell: null, blocks: [], building: null, spins: [], rot: 0.5, dragging: null, raf: 0, last: performance.now(), host, busy: false };
+    T3 = { renderer, scene, camera, root, ground, site, egg, lids, shell: null, blocks: [], building: null, spins: [], rot: 0.5, dragging: null, raf: 0, last: performance.now(), host, busy: false };
     const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };
     T3.ro = new ResizeObserver(resize); T3.ro.observe(host); resize();
     host.onpointerdown = (e) => { T3.dragging = { x: e.clientX, rot: T3.rot, id: e.pointerId }; try { host.setPointerCapture(e.pointerId); } catch {} };
@@ -2810,13 +3359,15 @@ ${draft.passage.trim().slice(0, 12000)}
       if (T3.egg) {
         const fill = Math.min(1, T3.blocks.length / Math.max(1, G?.items.length || 1));
         T3.egg.material.emissiveIntensity = 0.55 * fill;
-        T3.egg.rotation.z = reduced() ? 0 : Math.sin(t * (T3.busy ? 22 : 9)) * (T3.busy ? 0.12 : 0.05 * fill);
+        T3.egg.rotation.z = reduced() || T3.lids ? 0 : Math.sin(t * (T3.busy ? 22 : 9)) * (T3.busy ? 0.12 : 0.05 * fill);
+        if (T3.lids) T3.lids.forEach(([p]) => (p.material.emissiveIntensity = 0.55 * fill));
+        if (T3.lids && T3.lids.length > 1) T3.lids[0][0].position.y = 0.74 + (reduced() ? 0 : Math.abs(Math.sin(t * (T3.busy ? 18 : 5))) * (T3.busy ? 0.08 : 0.04 * fill));
         T3.blocks.forEach((b) => { const a = t * 1.4 + (b.i / Math.max(1, T3.blocks.length)) * Math.PI * 2; b.mesh.position.set(Math.cos(a) * 0.82, 0.25 + (b.i / Math.max(1, G?.items.length || 1)) * 1.1, Math.sin(a) * 0.82); });
       }
       if (T3.shell) {
         const age = t - T3.shell.t0;
-        for (const [m, dir] of T3.shell.parts) { m.position.y += dt * (dir > 0 ? 1.8 : -0.2); m.position.x += dt * dir * 0.6; m.rotation.z += dt * dir * 2.5; m.material.opacity = Math.max(0, 1 - age / 1.1); }
-        if (age > 1.2) { T3.shell.parts.forEach(([m]) => { T3.root.remove(m); m.geometry.dispose(); m.material.dispose(); }); T3.shell = null; }
+        for (const [m, dir] of T3.shell.parts) { m.position.y += dt * (dir > 0 ? 1.8 : -0.2); m.position.x += dt * dir * 0.6; m.rotation.z += dt * dir * 2.5; m.traverse((o) => o.material && (o.material.opacity = Math.max(0, 1 - age / 1.1))); }
+        if (age > 1.2) { T3.shell.parts.forEach(([m]) => { T3.root.remove(m); m.traverse((o) => { o.geometry?.dispose(); o.material?.dispose(); }); }); T3.shell = null; }
       }
       for (const b of T3.blocks) {
         const age = t - b.t0;
@@ -2849,7 +3400,15 @@ ${draft.passage.trim().slice(0, 12000)}
   function showSiteBuilding(key) {
     if (!T3) return;
     if (T3.building) { T3.root.remove(T3.building.obj); disposeScene(T3.building.obj); }
-    if (T3.egg && T3.egg.visible) {
+    if (T3.lids && T3.egg.visible) {
+      // 선물 상자 뚜껑·차고 셔터가 날아간다 (조각을 복제해 root에 띄운다)
+      const parts = T3.lids.map(([src, dir]) => {
+        const m = src.clone(true); m.traverse((o) => { if (o.material) { o.material = o.material.clone(); o.material.transparent = true; } }); src.visible = false;
+        src.getWorldPosition(m.position); T3.root.worldToLocal(m.position); m.rotation.set(0, 0, 0); T3.root.add(m); return [m, dir];
+      });
+      T3.egg.visible = false; T3.blocks.forEach((b) => (b.mesh.visible = false));
+      T3.shell = { parts, t0: performance.now() / 1000 };
+    } else if (T3.egg && T3.egg.visible) {
       // 알이 위아래로 깨지며 날아간다
       T3.egg.visible = false;
       T3.blocks.forEach((b) => (b.mesh.visible = false));
@@ -2868,12 +3427,95 @@ ${draft.passage.trim().slice(0, 12000)}
   function disposeThree() {
     if (!T3) return;
     cancelAnimationFrame(T3.raf); T3.ro?.disconnect(); T3.mql?.removeEventListener?.("change", T3.onTheme);
-    disposeScene(T3.scene); T3.ground.material.dispose(); T3.blocks.forEach((b) => b.mesh.material.dispose()); T3.egg?.material.dispose(); T3.shell?.parts.forEach(([m]) => m.material.dispose());
+    disposeScene(T3.scene); T3.ground.material.dispose(); T3.blocks.forEach((b) => b.mesh.material.dispose()); T3.egg?.material.dispose(); T3.shell?.parts.forEach(([m]) => m.traverse((o) => o.material?.dispose()));
     T3.renderer.dispose();
     const h = T3.host; h.onpointerdown = h.onpointermove = h.onpointerup = h.onpointercancel = null;
     T3 = null;
   }
   const easeOutBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+
+  /* ---------- 협동 빌딩 (추가자료 10): 학생마다 층을 올리고, 모든 반 빌딩이 한 마을에 선다 ---------- */
+  const TW_COLORS = [0x5B8DEF, 0xF29A3A, 0x3DAA6D, 0xE5484D, 0x9B6BDE, 0x2EC4B6, 0xF2C23A, 0xF27AB8, 0x6C7A89, 0x8BC34A, 0xFF7F50, 0x4FB3E8];
+  const twHex = (i) => "#" + TW_COLORS[i % TW_COLORS.length].toString(16).padStart(6, "0");
+  let WIN_IMG = null;
+  // 한 층짜리 창문 무늬(흰 바탕 → 재질 색이 그대로, 창은 어둡게). 층 수만큼 세로로 되풀이한다
+  function winTex(floors, across = 3) {
+    if (!WIN_IMG) {
+      const c = document.createElement("canvas"); c.width = 64; c.height = 32; const x = c.getContext("2d");
+      x.fillStyle = "#fff"; x.fillRect(0, 0, 64, 32); x.fillStyle = "#6E8496";
+      for (let i = 0; i < 4; i++) x.fillRect(3 + i * 16, 7, 10, 18);
+      x.fillStyle = "#d9d9d9"; x.fillRect(0, 30, 64, 2);
+      WIN_IMG = c;
+    }
+    const t = new THREE.CanvasTexture(WIN_IMG); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(across / 4 * 1.33, floors); t.encoding = THREE.sRGBEncoding; return t;
+  }
+  function towerSeg(w, h, floors, color) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), new THREE.MeshStandardMaterial({ color, map: winTex(floors), roughness: 0.55, metalness: 0.05 }));
+    return m;
+  }
+  // 현장에 올라가는 내 층: 바닥 + n층 + 지붕
+  function buildTowerPiece(n) {
+    const g = new THREE.Group(), fh = 0.2;
+    const lob = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.16, 0.9), M(0xC9CED3)); lob.position.y = 0.08; g.add(lob);
+    const s = towerSeg(0.72, n * fh, n, TW_COLORS[0]); s.material.color.set(0xF3B12B); s.position.y = 0.16 + (n * fh) / 2; g.add(s);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.05, 0.78), M(0x2E3A46)); top.position.y = 0.16 + n * fh + 0.025; g.add(top);
+    const lb = textSprite(`+${n}층`, { size: 0.28, bg: "rgba(243,177,43,.95)", fg: "#1B1400", weight: 800 }); lb.position.y = 0.16 + n * fh + 0.3; g.add(lb);
+    return g;
+  }
+  let TOWER = null; // 반 → [{ name, building: "tower:n", time }]
+  // 반마다 학생별 층 합계(먼저 올린 학생이 아래층) + 순위
+  function towerStats() {
+    const rows = Object.entries(TOWER || {}).map(([cls, list]) => {
+      const by = new Map();
+      [...list].sort((x, y) => String(x.time).localeCompare(String(y.time))).forEach((b) => { const k = b.name || "?"; by.set(k, (by.get(k) || 0) + towerN(b.building)); });
+      const people = [...by].map(([name, floors], i) => ({ name, floors, color: i }));
+      return { cls, people, total: people.reduce((s, p) => s + p.floors, 0) };
+    }).filter((r) => r.total > 0);
+    const rank = [...rows].sort((x, y) => y.total - x.total);
+    rank.forEach((r, i) => (r.rank = i > 0 && rank[i - 1].total === r.total ? rank[i - 1].rank : i + 1));
+    return rank;
+  }
+  const medal = (r) => ["🥇", "🥈", "🥉"][r - 1] || "";
+  function buildTowerTown(labels = false) {
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x7d8c9c, 0.95));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(4, 10, 6); scene.add(sun);
+    const root = new THREE.Group(); scene.add(root);
+    const stats = towerStats();
+    // 자리는 학년·반 순서로 고정(순위가 바뀌어도 빌딩이 움직이지 않게), 높이로 순위가 보인다
+    const order = [...stats].sort((x, y) => { const [ga, ca] = x.cls.split("-").map(Number), [gb, cb] = y.cls.split("-").map(Number); return ga - gb || ca - cb; });
+    const n = Math.max(1, order.length), cols = Math.ceil(Math.sqrt(n * 1.5)), rows = Math.ceil(n / cols), S = 1.7;
+    const w = (cols - 1) * S, d = (rows - 1) * S, half = Math.max(w, d) / 2 + 1.1;
+    // 가장 높은 빌딩이 마을 폭의 0.9배쯤 되게 층 높이를 맞춘다 (한 화면에 다 들어오게)
+    const maxT = Math.max(1, ...stats.map((r) => r.total)), fh = Math.min(0.14, Math.max(2.5, half * 1.8) / maxT);
+    const at = (geo, c, x, y, z, o) => { const m = new THREE.Mesh(geo, typeof c === "number" ? M(c, o) : c); m.position.set(x, y, z); root.add(m); return m; };
+    at(new THREE.BoxGeometry(w + 2.2, 0.24, d + 2.2), 0x8C7A5B, 0, -0.12, 0);
+    at(new THREE.BoxGeometry(w + 2.0, 0.02, d + 2.0), 0x6A7078, 0, 0.01, 0);
+    order.forEach((r, i) => {
+      const x = (i % cols) * S - w / 2, z = Math.floor(i / cols) * S - d / 2;
+      at(new THREE.BoxGeometry(1.25, 0.04, 1.25), 0xD9D2C2, x, 0.04, z);
+      at(new THREE.BoxGeometry(0.96, 0.24, 0.96), 0xE8E2D4, x, 0.18, z); at(new THREE.BoxGeometry(0.22, 0.16, 0.01), 0x6FB8EA, x, 0.14, z + 0.485, { metalness: 0.3 });
+      let y = 0.3;
+      r.people.forEach((p) => { const h = p.floors * fh; const s = towerSeg(0.84, h - 0.004, p.floors, TW_COLORS[p.color % TW_COLORS.length]); s.position.set(x, y + h / 2, z); root.add(s); y += h; });
+      at(new THREE.BoxGeometry(0.9, 0.06, 0.9), 0x2E3A46, x, y + 0.03, z);
+      at(new THREE.CylinderGeometry(0.012, 0.02, 0.4, 6), CL.gray, x, y + 0.26, z);
+      if (r.rank === 1) {
+        at(new THREE.CylinderGeometry(0.3, 0.34, 0.12, 8), 0xF2B632, x, y + 0.12, z, { metalness: 0.6, roughness: 0.3 });
+        for (let k = 0; k < 5; k++) { const ang = (k / 5) * Math.PI * 2; at(new THREE.ConeGeometry(0.06, 0.18, 6), 0xF2B632, x + Math.cos(ang) * 0.26, y + 0.26, z + Math.sin(ang) * 0.26, { metalness: 0.6, roughness: 0.3 }); }
+      }
+      const lb = textSprite(`${medal(r.rank) ? medal(r.rank) + " " : ""}${clsLabel(r.cls)} ${r.total}층`, { size: labels ? 0.3 : 0.4, bg: r.rank === 1 ? "rgba(214,150,20,.95)" : "rgba(36,72,216,.95)", weight: 700 });
+      lb.position.set(x, y + (r.rank === 1 ? 0.75 : 0.6), z); root.add(lb);
+    });
+    // 길가 나무
+    for (let i = 0; i <= cols; i++) for (let j = 0; j <= rows; j++) {
+      if ((i + j) % 2) continue;
+      const x = i * S - w / 2 - S / 2, z = j * S - d / 2 - S / 2;
+      at(new THREE.CylinderGeometry(0.03, 0.04, 0.16, 6), CL.wood, x, 0.1, z); at(new THREE.ConeGeometry(0.14, 0.32, 7), 0x3E9E57, x, 0.33, z);
+    }
+    const H = 0.3 + maxT * fh;
+    root.position.y = -H * 0.5;
+    return { scene, root, half: Math.max(half, H * 1.05), spins: [] };
+  }
 
   /* ======================================================
      VILLAGE — 반마다 마을 하나, 기관 = 학생이 끝낸 활동 1세트
@@ -2883,8 +3525,8 @@ ${draft.passage.trim().slice(0, 12000)}
   const levelOf = (n) => LEVELS.filter(([m]) => n >= m).pop()[1];
   // "기관 40개 · 🦖 12 · 🐠 3" — 본섬 기관 수로 마을 등급을 정한다
   function countText(list) {
-    const c = { main: 0, dino: 0, sea: 0, mon: 0 }; list.forEach((b) => c[worldOf(b.building)]++);
-    return [`${levelOf(c.main)} · 기관 ${c.main}개`, ...["dino", "sea", "mon"].filter((w) => c[w]).map((w) => `${WORLDS[w].emo} ${WORLDS[w].noun} ${c[w]}`)].join(" · ");
+    const c = { main: 0 }; ISLES.forEach((w) => (c[w] = 0)); list.forEach((b) => { const w = worldOf(b.building); if (w in c) c[w]++; });
+    return [`${levelOf(c.main)} · 기관 ${c.main}개`, ...ISLES.filter((w) => c[w]).map((w) => `${WORLDS[w].emo} ${WORLDS[w].noun} ${c[w]}`)].join(" · ");
   }
   // 가운데 광장(0,0)에서 바깥으로 한 칸씩 나선형으로 자리를 채운다
   function lotCells(count) {
@@ -2925,10 +3567,15 @@ ${draft.passage.trim().slice(0, 12000)}
     };
     const weed = (x, y, z, s) => { for (let k = 0; k < 3; k++) { const b = at(new THREE.CylinderGeometry(0.008, 0.02, 0.45 * s, 4), 0x3E9E57, x + k * 0.04, y + 0.22 * s, z); b.rotation.z = (k - 1) * 0.25; } };
     const stone = (x, y, z, s, c = 0x9C9486) => { const r = at(new THREE.DodecahedronGeometry(0.09 * s, 0), c, x, y + 0.04 * s, z); r.scale.y = 0.6; };
+    const cushion = (x, y, z, s) => { const m = at(new THREE.SphereGeometry(0.12 * s, 12, 8), [0xF6A6C8, 0x7FB3D5, 0xF2D23A, 0xB8E0A0][Math.floor(rnd() * 4)], x, y + 0.04 * s, z); m.scale.y = 0.35; };
+    const blocks = (x, y, z, s) => { for (let k = 0; k < 3; k++) at(new THREE.BoxGeometry(0.09 * s, 0.09 * s, 0.09 * s), [0xE5484D, 0x4A9AE8, 0xF2D23A, 0x3DAA6D][Math.floor(rnd() * 4)], x + (k === 2 ? 0.045 : k * 0.1) * s, y + (k === 2 ? 0.135 : 0.045) * s, z).rotation.y = rnd(); };
+    const books = (x, y, z, s) => { for (let k = 0; k < 3; k++) at(new THREE.BoxGeometry(0.2 * s, 0.04 * s, 0.14 * s), [0xE5484D, 0x4A9AE8, 0x3DAA6D, 0x7A4FD1][Math.floor(rnd() * 4)], x, y + (0.02 + k * 0.04) * s, z).rotation.y = (rnd() - 0.5) * 0.6; };
+    const cone = (x, y, z, s) => { at(new THREE.BoxGeometry(0.14 * s, 0.02, 0.14 * s), 0xF28C28, x, y + 0.01, z); at(new THREE.ConeGeometry(0.05 * s, 0.2 * s, 10), 0xF28C28, x, y + 0.1 * s, z); at(new THREE.CylinderGeometry(0.028 * s, 0.036 * s, 0.035 * s, 10), 0xF4F5F2, x, y + 0.1 * s, z); };
+    const tires = (x, y, z, s) => { const k = 1 + Math.floor(rnd() * 3); for (let t = 0; t < k; t++) { const m = at(new THREE.TorusGeometry(0.08 * s, 0.035 * s, 8, 16), 0x2A2A30, x, y + (0.035 + t * 0.07) * s, z); m.rotation.x = Math.PI / 2; } };
     const flower = (x, y, z) => { at(new THREE.CylinderGeometry(0.006, 0.006, 0.08, 4), 0x3E9E57, x, y + 0.04, z); at(new THREE.SphereGeometry(0.025, 6, 5), [0xF6A6C8, 0xF2D23A, 0xFFFFFF][Math.floor(rnd() * 3)], x, y + 0.09, z); };
 
     // 땅
-    const BASE = { main: [0x8C7A5B, 0x9AA1A8, 0x6CBF6A, 0xE2D9C6], dino: [0x5E4A32, 0x4E7A3A, 0x6BAF4F, 0x8A6E4A], sea: [0x2B6E9A, 0xC9B27A, 0xD4BE86, 0xE6D6A8], mon: [0x8C8678, 0x8C8678, 0x8CCB6A, 0xF4F8FA] }[world];
+    const BASE = { main: [0x8C7A5B, 0x9AA1A8, 0x6CBF6A, 0xE2D9C6], dino: [0x5E4A32, 0x4E7A3A, 0x6BAF4F, 0x8A6E4A], sea: [0x2B6E9A, 0xC9B27A, 0xD4BE86, 0xE6D6A8], mon: [0x8C8678, 0x8C8678, 0x8CCB6A, 0xF4F8FA], room: [0x8A6A4A, 0xB98A58, 0xD9AE78, 0x7FB3D5], car: [0x3E434A, 0x50565E, 0x646A72, 0xF2C23A] }[world];
     if (world !== "mon") {
       at(new THREE.BoxGeometry(half * 2, 0.24, half * 2), BASE[0], 0, floor - 0.12, 0);
       at(new THREE.BoxGeometry(half * 2 - 0.2, 0.02, half * 2 - 0.2), BASE[1], 0, floor + 0.01, 0);
@@ -2940,6 +3587,7 @@ ${draft.passage.trim().slice(0, 12000)}
         at(new THREE.BoxGeometry(LOT, y + 0.02, LOT), BASE[0], x, (y + 0.02) / 2 - 0.0, z);
         at(new THREE.BoxGeometry(LOT - 0.06, 0.05, LOT - 0.06), center ? BASE[3] : BASE[2], x, y + 0.03, z);
       } else at(new THREE.BoxGeometry(LOT - 0.34, 0.04, LOT - 0.34), center ? BASE[3] : BASE[2], x, y + 0.04, z);
+      if (world === "car" && !center) [-1, 1].forEach((s) => at(new THREE.BoxGeometry(0.035, 0.012, LOT - 0.42), 0xF4F5F2, x + s * (LOT / 2 - 0.2), y + 0.066, z));
       if (center || usedKey.has(i + "," + j)) continue;
       // 빈 땅 장식
       const k = 1 + Math.floor(rnd() * 3);
@@ -2949,6 +3597,8 @@ ${draft.passage.trim().slice(0, 12000)}
         if (world === "dino") (rnd() < 0.5 ? palm : fern)(tx, ty, tz, s);
         if (world === "sea") (rnd() < 0.55 ? coral : rnd() < 0.6 ? weed : stone)(tx, ty, tz, s, 0xB9A98A);
         if (world === "mon") (rnd() < 0.4 ? pine : rnd() < 0.5 ? stone : flower)(tx, ty, tz, s * 0.8);
+        if (world === "room") (rnd() < 0.4 ? cushion : rnd() < 0.5 ? blocks : books)(tx, ty, tz, s);
+        if (world === "car") (rnd() < 0.55 ? cone : tires)(tx, ty, tz, s);
       }
     }
     // 가운데 광장: 본섬은 분수+반 깃발, 다른 섬은 상징물+섬 이름
@@ -2973,9 +3623,19 @@ ${draft.passage.trim().slice(0, 12000)}
       at(new THREE.ConeGeometry(0.26, 0.36, 8), 0xF4F8FA, 0, cy + 0.78, 0);
       at(new THREE.CylinderGeometry(0.012, 0.012, 0.4, 6), CL.gray, 0, cy + 1.1, 0);
     }
-    const signY = { main: labels ? 1.35 : 1.5, dino: 1.55, sea: labels ? 0.45 : 0.6, mon: cy + 1.45 }[world];
+    if (world === "room") {
+      at(new THREE.CylinderGeometry(0.55, 0.55, 0.02, 28), 0x7FB3D5, 0, 0.07, 0); at(new THREE.CylinderGeometry(0.4, 0.4, 0.022, 28), 0xF4F0E8, 0, 0.075, 0);
+      at(new THREE.BoxGeometry(0.42, 0.26, 0.3), 0xF28CA6, 0, 0.21, 0); at(new THREE.BoxGeometry(0.46, 0.06, 0.34), 0xF6A6C0, 0, 0.36, 0); at(new THREE.BoxGeometry(0.08, 0.27, 0.31), 0xF3B12B, 0, 0.21, 0);
+      const bear = at(new THREE.SphereGeometry(0.09, 12, 10), 0xC98A5A, 0.05, 0.45, 0); [-1, 1].forEach((k) => at(new THREE.SphereGeometry(0.035, 8, 6), 0xC98A5A, 0.05 + k * 0.065, 0.53, 0));
+    }
+    if (world === "car") {
+      at(new THREE.BoxGeometry(0.5, 0.36, 0.4), 0xF4F5F2, 0, 0.24, 0); at(new THREE.BoxGeometry(0.56, 0.05, 0.46), 0xE5484D, 0, 0.44, 0); at(new THREE.BoxGeometry(0.3, 0.16, 0.01), 0x6FB8EA, 0, 0.28, 0.205, { metalness: 0.3 });
+      at(new THREE.CylinderGeometry(0.015, 0.015, 1.1, 6), CL.gray, 0.3, 0.6, 0.25);
+      [0xE5484D, 0xF2D23A, 0x2F6FE8, 0x3DAA6D].forEach((col, k) => { const f = at(new THREE.ConeGeometry(0.06, 0.16, 3), col, 0.3 - 0.1 - k * 0.12, 1.08 - k * 0.1, 0.25); f.rotation.z = Math.PI / 2; });
+    }
+    const signY = { main: labels ? 1.35 : 1.5, dino: 1.55, sea: labels ? 0.45 : 0.6, mon: cy + 1.45, room: labels ? 1.0 : 1.15, car: 1.45 }[world];
     const W = W_(world);
-    const flag = textSprite(world === "main" ? clsLabel(cls) : `${W.emo} ${W.name}`, { size: labels ? 0.3 : 0.36, bg: world === "main" ? "rgba(36,72,216,.95)" : { dino: "rgba(94,74,50,.95)", sea: "rgba(23,110,170,.95)", mon: "rgba(90,70,150,.95)" }[world], weight: 700 });
+    const flag = textSprite(world === "main" ? clsLabel(cls) : `${W.emo} ${W.name}`, { size: labels ? 0.3 : 0.36, bg: world === "main" ? "rgba(36,72,216,.95)" : { dino: "rgba(94,74,50,.95)", sea: "rgba(23,110,170,.95)", mon: "rgba(90,70,150,.95)", room: "rgba(196,90,130,.95)", car: "rgba(62,67,74,.95)" }[world], weight: 700 });
     flag.position.set(0, signY, 0); grp.add(flag);
     // 기관·생물
     list.forEach((b, idx) => {
@@ -2986,6 +3646,14 @@ ${draft.passage.trim().slice(0, 12000)}
       const sh = shadowDisc(0.62); sh.position.set(x, y + 0.005, z); grp.add(sh);
       if (labels) { const lb = textSprite(b.name || "", { size: 0.2 }); const bb = new THREE.Box3().setFromObject(o); lb.position.set(x, bb.max.y + 0.2, z); grp.add(lb); }
     });
+    // 나의 방: 낮은 벽 두 면(창문·액자) — 방 안을 들여다보는 느낌
+    if (world === "room") {
+      const WH = 0.62, wall = 0xF4E6D0;
+      at(new THREE.BoxGeometry(half * 2, WH, 0.08), wall, 0, WH / 2, -half + 0.04); at(new THREE.BoxGeometry(0.08, WH, half * 2), wall, -half + 0.04, WH / 2, 0);
+      at(new THREE.BoxGeometry(half * 2, 0.06, 0.1), 0x8A6A4A, 0, 0.03, -half + 0.05); at(new THREE.BoxGeometry(0.1, 0.06, half * 2), 0x8A6A4A, -half + 0.05, 0.03, 0);
+      at(new THREE.BoxGeometry(0.7, 0.34, 0.02), 0x9FD8F2, 0.4, 0.36, -half + 0.09, { metalness: 0.3, roughness: 0.2 }); at(new THREE.BoxGeometry(0.78, 0.04, 0.05), 0xFFFFFF, 0.4, 0.17, -half + 0.1);
+      at(new THREE.BoxGeometry(0.02, 0.3, 0.42), 0xF2B632, -half + 0.09, 0.36, 0.3); at(new THREE.BoxGeometry(0.022, 0.24, 0.36), 0x7FB3D5, -half + 0.1, 0.36, 0.3);
+    }
     // 바닷속: 위를 덮는 물
     if (world === "sea") {
       at(new THREE.BoxGeometry(half * 2, -floor - 0.04, half * 2), 0x1F7FC8, 0, floor / 2 - 0.02, 0, { transparent: true, opacity: 0.3, depthWrite: false, roughness: 0.1, side: THREE.BackSide });
@@ -3001,29 +3669,43 @@ ${draft.passage.trim().slice(0, 12000)}
     scene.add(new THREE.HemisphereLight(0xffffff, 0x7d8c9c, 0.95));
     const sun = new THREE.DirectionalLight(0xffffff, 0.85); sun.position.set(4, 8, 6); scene.add(sun);
     const root = new THREE.Group(); scene.add(root);
-    const byWorld = { main: [], dino: [], sea: [], mon: [] };
-    list.forEach((b) => byWorld[worldOf(b.building)].push(b));
+    const byWorld = { main: [] }; ISLES.forEach((w) => (byWorld[w] = []));
+    list.forEach((b) => byWorld[worldOf(b.building)]?.push(b));
     const main = buildIsland("main", cls, byWorld.main, labels);
     const spins = [...main.spins];
-    const others = ["dino", "sea", "mon"].filter((w) => byWorld[w].length);
+    const others = ISLES.filter((w) => byWorld[w].length);
     if (!others.length) { root.add(main.grp); return { scene, root, half: main.half, spins }; } // 섬이 없으면 예전 모습 그대로
-    // 섬 군도: 본섬 오른쪽 = 공룡섬, 뒤 = 바닷속 왕국, 왼쪽 = 몬스터산. 다리로 잇고 바다를 깐다
+    // 섬 군도: 본섬 오른쪽 = 공룡섬, 뒤 = 바닷속 왕국, 왼쪽 = 몬스터산, 앞 = 나의 방, 오른쪽 앞 = 탈것 시장. 다리로 잇고 바다를 깐다
     const content = new THREE.Group(); root.add(content); content.add(main.grp);
-    const DIR = { dino: [1, 0], sea: [0, -1], mon: [-1, 0] }, GAP = 1.2;
+    const DIR = { dino: [1, 0], sea: [0, -1], mon: [-1, 0], room: [0, 1], car: [1, 1] }, GAP = 1.2;
     let [x0, x1, z0, z1] = [-main.half, main.half, -main.half, main.half];
-    const holes = [];
-    for (const w of others) {
-      const isl = buildIsland(w, cls, byWorld[w], labels), [dx, dz] = DIR[w], d = main.half + GAP + isl.half;
-      isl.grp.position.set(dx * d, 0, dz * d); content.add(isl.grp); spins.push(...isl.spins);
-      x0 = Math.min(x0, dx * d - isl.half); x1 = Math.max(x1, dx * d + isl.half); z0 = Math.min(z0, dz * d - isl.half); z1 = Math.max(z1, dz * d + isl.half);
-      if (w === "sea") holes.push([dx * d, dz * d, isl.half + 0.1]);
-      // 나무 다리 + 난간
-      const mid = main.half + GAP / 2, len = GAP + 0.3, along = dx !== 0;
-      const plank = new THREE.Mesh(new THREE.BoxGeometry(along ? len : 0.5, 0.05, along ? 0.5 : len), M(0xA87A4A)); plank.position.set(dx * mid, 0.02, dz * mid); content.add(plank);
-      for (const s of [-1, 1]) {
-        const rail = new THREE.Mesh(new THREE.BoxGeometry(along ? len : 0.03, 0.03, along ? 0.03 : len), M(0x7A5232)); rail.position.set(dx * mid + (along ? 0 : s * 0.24), 0.2, dz * mid + (along ? s * 0.24 : 0)); content.add(rail);
-        for (const t of [-0.45, 0, 0.45]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.18, 0.035), M(0x7A5232)); post.position.set(dx * mid + (along ? t * len : s * 0.24), 0.11, dz * mid + (along ? s * 0.24 : t * len)); content.add(post); }
+    const holes = [], halves = {};
+    // 나무 다리 + 난간: (ax,az) → (bx,bz)
+    const bridge = (ax, az, bx, bz) => {
+      const g = new THREE.Group(), len = Math.hypot(bx - ax, bz - az) + 0.3;
+      g.position.set((ax + bx) / 2, 0, (az + bz) / 2); g.rotation.y = -Math.atan2(bz - az, bx - ax); content.add(g);
+      const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); };
+      add(len, 0.05, 0.5, 0xA87A4A, 0, 0.02, 0);
+      for (const s of [-1, 1]) { add(len, 0.03, 0.03, 0x7A5232, 0, 0.2, s * 0.24); for (const t of [-0.45, 0, 0.45]) add(0.035, 0.18, 0.035, 0x7A5232, t * len, 0.11, s * 0.24); }
+    };
+    for (const w of [...others.filter((w) => w !== "car"), ...others.filter((w) => w === "car")]) {
+      const isl = buildIsland(w, cls, byWorld[w], labels), [dx, dz] = DIR[w];
+      halves[w] = isl.half;
+      if (dx && dz) {
+        // 대각선 섬: 이웃 섬(공룡섬·나의 방)과 겹치지 않게 조금 더 멀리
+        const a = Math.max(main.half, halves.dino || 0, halves.room || 0) + GAP + isl.half;
+        isl.grp.position.set(dx * a, 0, dz * a);
+        x0 = Math.min(x0, dx * a - isl.half); x1 = Math.max(x1, dx * a + isl.half); z0 = Math.min(z0, dz * a - isl.half); z1 = Math.max(z1, dz * a + isl.half);
+        const p = main.half - 0.25, q = a - isl.half + 0.25;
+        bridge(dx * p, dz * p, dx * q, dz * q);
+      } else {
+        const d = main.half + GAP + isl.half;
+        isl.grp.position.set(dx * d, 0, dz * d);
+        x0 = Math.min(x0, dx * d - isl.half); x1 = Math.max(x1, dx * d + isl.half); z0 = Math.min(z0, dz * d - isl.half); z1 = Math.max(z1, dz * d + isl.half);
+        if (w === "sea") holes.push([dx * d, dz * d, isl.half + 0.1]);
+        bridge(dx * main.half, dz * main.half, dx * (d - isl.half), dz * (d - isl.half));
       }
+      content.add(isl.grp); spins.push(...isl.spins);
     }
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     content.position.set(-cx, 0, -cz);
@@ -3043,8 +3725,8 @@ ${draft.passage.trim().slice(0, 12000)}
   let VIL = null; // 반별 데이터
   // 시트가 "2-3"을 날짜로 바꿔 보낸 경우("Tue Feb 03 2026 …", "2026-02-02T15:00…")도 "2-3"으로 되돌린다.
   function normCls(k) {
-    if (/^d+-d+$/.test(k)) return k;
-    const m = String(k).match(/^w{3} (w{3}) (d{1,2}) d{4}/);
+    if (/^\d+-\d+$/.test(k)) return k;
+    const m = String(k).match(/^\w{3} (\w{3}) (\d{1,2}) \d{4}/);
     if (m) { const mo = "JanFebMarAprMayJunJulAugSepOctNovDec".indexOf(m[1]) / 3 + 1; if (mo > 0) return `${mo}-${Number(m[2])}`; }
     const d = new Date(k); return isNaN(d) ? k : `${d.getMonth() + 1}-${d.getDate()}`;
   }
@@ -3057,7 +3739,13 @@ ${draft.passage.trim().slice(0, 12000)}
     try {
       const j = await API.get({ action: "village" });
       if (!j.classes) throw new Error("선생님이 시트 코드를 새 버전으로 바꿔야 마을이 보여요.");
-      VIL = normClasses(j.classes);
+      VIL = normClasses(j.classes); TOWER = {};
+      for (const k of Object.keys(VIL)) {
+        const t = VIL[k].filter((b) => isTower(b.building));
+        if (t.length) TOWER[k] = t;
+        VIL[k] = VIL[k].filter((b) => !isTower(b.building));
+        if (!VIL[k].length) delete VIL[k];
+      }
       renderVillages(); renderResetPanel();
       setStatus("#village-status", "");
       if (openCls) openVillage(openCls);
@@ -3070,15 +3758,17 @@ ${draft.passage.trim().slice(0, 12000)}
     const box = $("#villages");
     const keys = sortedClasses();
     $("#vil-count").textContent = `${keys.length}개 반`;
-    if (!keys.length) { box.innerHTML = `<p class="notice">아직 세워진 기관이 없어요. 학생이 단어 활동을 끝내면 반마다 마을이 생겨요.</p>`; return; }
+    const ts = towerStats();
+    if (!keys.length && !ts.length) { box.innerHTML = `<p class="notice">아직 세워진 기관이 없어요. 학생이 단어 활동을 끝내면 반마다 마을이 생겨요.</p>`; return; }
+    const tcard = ts.length ? `<button class="vcard tcard" data-cls="tower"><span class="vimg"><img alt="모두의 빌딩 마을" data-cls="tower"></span><span class="vinfo"><b>🏙️ 모두의 빌딩 마을</b><span>${ts.length}개 반 · 1위 ${esc(ts.filter((r) => r.rank === 1).map((r) => clsLabel(r.cls)).join(", "))} ${ts[0].total}층</span></span></button>` : "";
     let lastG = null;
-    box.innerHTML = keys.map((k) => {
+    box.innerHTML = tcard + keys.map((k) => {
       const list = VIL[k], g = k.split("-")[0];
       const rare = list.filter((b) => BUILDINGS[b.building]?.[2] > 1 || (BUILDINGS[b.building]?.[2] > 0 && worldOf(b.building) === "main")).map((b) => BUILDINGS[b.building][1]).join("");
       const head = g !== lastG ? `<h3 class="grade-h">${g}학년</h3>` : ""; lastG = g;
       return `${head}<button class="vcard" data-cls="${esc(k)}"><span class="vimg"><img alt="${esc(clsLabel(k))} 마을" data-cls="${esc(k)}"></span><span class="vinfo"><b>${esc(clsLabel(k))}</b><span>${esc(countText(list))}</span>${rare ? `<span class="vrare" title="희귀 기관">${rare}</span>` : ""}</span></button>`;
     }).join("");
-    snapshotVillages(keys);
+    snapshotVillages(ts.length ? ["tower", ...keys] : keys);
   }
   function renderResetPanel() {
     // 교사 화면(탭이 보이는 경우)에서만
@@ -3109,7 +3799,7 @@ ${draft.passage.trim().slice(0, 12000)}
     const W = 560, H = 380; r.setPixelRatio(1); r.setSize(W, H, false); r.outputEncoding = THREE.sRGBEncoding;
     const cam = new THREE.PerspectiveCamera(36, W / H, 0.1, 200);
     for (const k of keys) {
-      const v = buildVillage(k, VIL[k]);
+      const v = k === "tower" ? buildTowerTown() : buildVillage(k, VIL[k]);
       v.root.rotation.y = -0.5; frameCamera(cam, v.half, W / H);
       r.render(v.scene, cam);
       const img = $(`img[data-cls="${CSS.escape(k)}"]`); if (img) img.src = r.domElement.toDataURL("image/png");
@@ -3117,9 +3807,30 @@ ${draft.passage.trim().slice(0, 12000)}
     }
     r.dispose(); r.forceContextLoss?.();
   }
+  function openTower() {
+    const ts = towerStats();
+    if (!ts.length) { setStatus("#village-status", "아직 올라간 빌딩이 없어요. 협동 빌딩 활동을 끝내면 반마다 빌딩이 올라가요."); return; }
+    ui.cls = "tower"; saveUI();
+    $("#vil-list").hidden = true; $("#vil-reset").hidden = true; $("#vil-detail").hidden = false;
+    $("#vd-title").textContent = "🏙️ 모두의 빌딩 마을";
+    $("#vd-level").textContent = `${ts.length}개 반 · 모두 ${ts.reduce((s, r) => s + r.total, 0)}층`;
+    $("#vd-list").hidden = true; $("#vd-list").innerHTML = "";
+    const top = ts[0].total;
+    $("#vd-rank").hidden = false;
+    $("#vd-rank").innerHTML = ts.map((r) => {
+      const ppl = [...r.people].sort((x, y) => y.floors - x.floors);
+      return `<li class="tw-row${r.rank === 1 ? " first" : ""}"><div class="tw-head"><span class="tw-pos">${medal(r.rank) || r.rank + "위"}</span><b>${esc(clsLabel(r.cls))}</b><span class="tw-sub">${r.people.length}명이 함께</span><b class="tw-total">${r.total}층</b></div>
+        <div class="tw-bar" title="색 한 칸 = 학생 한 명이 올린 층">${r.people.map((p) => `<i style="width:${(p.floors / top) * 100}%;background:${twHex(p.color)}" title="${esc(p.name)} ${p.floors}층"></i>`).join("")}</div>
+        <details><summary>누가 몇 층 올렸나</summary><ul class="tw-people">${ppl.map((p) => `<li><span class="dot" style="background:${twHex(p.color)}"></span>${esc(p.name)} <b>${p.floors}층</b></li>`).join("")}</ul></details></li>`;
+    }).join("");
+    initVillageView("tower", null, true);
+    window.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" });
+  }
   function openVillage(cls) {
+    if (cls === "tower") return openTower();
+    $("#vd-list").hidden = false; $("#vd-rank").hidden = true;
     const list = VIL?.[cls];
-    if (!list) { setStatus("#village-status", `${esc(clsLabel(cls))}에는 아직 기관이 없어요.`); return; }
+    if (!list) { setStatus("#village-status", TOWER?.[cls] ? `${esc(clsLabel(cls))}은(는) 아직 빌딩만 있어요. 위의 모두의 빌딩 마을을 눌러 보세요.` : `${esc(clsLabel(cls))}에는 아직 기관이 없어요.`); return; }
     ui.cls = cls; saveUI();
     $("#vil-list").hidden = true; $("#vil-reset").hidden = true; $("#vil-detail").hidden = false;
     $("#vd-title").textContent = `${clsLabel(cls)} 마을`;
@@ -3135,14 +3846,14 @@ ${draft.passage.trim().slice(0, 12000)}
     if (ui.cls) { ui.cls = null; saveUI(); }
     $("#vil-detail").hidden = true; $("#vil-list").hidden = false; if (VIL) renderResetPanel();
   }
-  function initVillageView(cls, list) {
+  function initVillageView(cls, list, tower = false) {
     disposeVillageView();
     const host = $("#village-host");
     if (!window.THREE) return;
     let renderer;
     try { renderer = new THREE.WebGLRenderer({ canvas: $("#village-canvas"), antialias: true, alpha: true }); } catch { return; }
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); renderer.outputEncoding = THREE.sRGBEncoding;
-    const v = buildVillage(cls, list, { labels: true });
+    const v = tower ? buildTowerTown(true) : buildVillage(cls, list, { labels: true });
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
     VD = { renderer, camera, ...v, rot: -0.5, zoom: 1, pts: new Map(), raf: 0, last: performance.now(), host, idle: 0 };
     const resize = () => { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); };

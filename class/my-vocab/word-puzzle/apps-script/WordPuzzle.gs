@@ -8,7 +8,8 @@
  * - GET  ?action=set&id=...    : 문제 하나 (학생 게임이 읽어 감)
  * - GET  ?action=village       : 반별 마을 (반마다 기관 목록, 누구나)
  * - POST {action:'result'}     : 학생이 다 끝내면 이름·점수 한 줄 추가 + 반 마을에 기관 하나 (비밀번호 없음)
- *                                문제 data에 world가 있으면 그 섬의 생물 하나 (dino 공룡 · sea 해양생물 · mon 몬스터)
+ *                                문제 data에 world가 있으면 그 섬의 생물 하나 (dino 공룡 · sea 해양생물 · mon 몬스터 · room 가구 · car 탈것)
+ *                                world가 tower면 반 협동 빌딩에 'tower:층수' (실수 적고 빠를수록 많이)
  * - POST {action:'save'}       : 문제 저장 (교사 비밀번호)
  * - POST {action:'delete'}     : 문제 삭제 (교사 비밀번호)
  * - POST {action:'resetVillage'}: 마을 초기화 (교사 비밀번호, cls 비우면 전체 반)
@@ -62,9 +63,28 @@ const MONS = {
   m_fairy: 4, m_ghost: 10, m_shadowcat: 10, m_gearbot: 10, m_mushroom: 10, m_cactus: 10, m_bubblefish: 10, m_thundertiger: 4, m_rainbowdragon: 1, m_sunlion: 1,
   m_moonwhale: 1
 };
-const POOLS = { main: BUILDINGS, dino: DINOS, sea: SEAS, mon: MONS };
+const ROOMS = {
+  f_bed: 10, f_bunk: 10, f_canopy: 1, f_desk: 10, f_computer: 10, f_chair: 10, f_rocking: 10, f_gaming: 4, f_massage: 4, f_throne: 1,
+  f_sofa: 10, f_beanbag: 10, f_shelf: 10, f_wardrobe: 10, f_lamp: 10, f_tv: 10, f_console: 10, f_piano: 4, f_guitar: 10, f_drums: 4,
+  f_plant: 10, f_clock: 10, f_mirror: 10, f_bear: 10, f_tank: 10, f_fridge: 10, f_fan: 10, f_globe: 10, f_telescope: 4, f_arcade: 4,
+  f_chest: 1
+};
+const CARS = {
+  v_sedan: 10, v_taxi: 10, v_police: 10, v_suv: 10, v_sport: 4, v_super: 1, v_monster: 1, v_ambulance: 10, v_camper: 10, v_bus: 10,
+  v_schoolbus: 10, v_double: 4, v_truck: 10, v_fire: 10, v_dump: 10, v_mixer: 10, v_crane: 4, v_excavator: 10, v_dozer: 10, v_forklift: 10,
+  v_tractor: 10, v_moto: 10, v_scooter: 10, v_bike: 10, v_train: 10, v_bullet: 4, v_plane: 4, v_heli: 4, v_boat: 10, v_sub: 4,
+  v_shuttle: 1
+};
+const POOLS = { main: BUILDINGS, dino: DINOS, sea: SEAS, mon: MONS, room: ROOMS, car: CARS };
+// 협동 빌딩(tower): 참여 1층 + 정확 0~4층 + 속도 0~3층. app.js의 towerFloors와 같은 계산
+function floors_(miss, seconds, words) {
+  const n = Math.max(1, Number(words) || 1), r = (Number(miss) || 0) / n, per = (Number(seconds) || 0) / n;
+  const acc = r === 0 ? 4 : r <= 0.15 ? 3 : r <= 0.3 ? 2 : r <= 0.5 ? 1 : 0;
+  const speed = per <= 20 ? 3 : per <= 30 ? 2 : per <= 45 ? 1 : 0;
+  return 1 + acc + speed;
+}
 function worldOfSet_(s) {
-  try { const w = JSON.parse(s.data).world; return POOLS[w] ? w : 'main'; } catch (err) { return 'main'; }
+  try { const w = JSON.parse(s.data).world; return POOLS[w] || w === 'tower' ? w : 'main'; } catch (err) { return 'main'; }
 }
 
 function tab_(name, header) {
@@ -182,7 +202,9 @@ function doPost(e) {
       const key = id ? id.sid : name;
       const prev = all.filter(function (r) { return r.setId === s.id && r.building && (r.sid || r.name) === key; })[0];
       let building = '';
-      if (id && !prev) building = pickBuilding_(all.filter(function (r) { return r.cls === id.cls && r.building; }).map(function (r) { return r.building; }), POOLS[worldOfSet_(s)]);
+      const world = worldOfSet_(s);
+      if (id && !prev && world === 'tower') building = 'tower:' + floors_(req.miss, req.seconds, req.words);
+      else if (id && !prev) building = pickBuilding_(all.filter(function (r) { return r.cls === id.cls && r.building; }).map(function (r) { return r.building; }), POOLS[world]);
       tab_(RESULTS, RESULTS_HEADER).appendRow([new Date(), s.id, safe_(s.title), safe_(name),
         Math.max(0, Math.min(999, Number(req.miss) || 0)), Math.max(0, Math.min(3, Number(req.stars) || 0)),
         Math.max(0, Math.min(86400, Number(req.seconds) || 0)), Math.max(0, Math.min(50, Number(req.words) || 0)),

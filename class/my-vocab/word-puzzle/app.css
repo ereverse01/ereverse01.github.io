@@ -315,3 +315,20 @@ body { margin: 0; }
 .wsel.small { font-size: 13px; padding: 4px 8px; min-height: 32px; }
 .world-row { align-items: center; margin-bottom: 8px; }
 .world-row .hint { flex-basis: 100%; margin: 0; }
+
+/* 모두의 빌딩 마을: 반별 순위 + 학생별 층 */
+.tcard { border: 2px solid var(--pop); }
+.tw-rank { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.tw-row { padding: 10px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.tw-row.first { border: 2px solid var(--pop); }
+.tw-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tw-pos { font-size: 20px; min-width: 2.2em; font-weight: 700; }
+.tw-sub { color: var(--muted); font-size: 14px; }
+.tw-total { margin-left: auto; font-size: 18px; }
+.tw-bar { display: flex; height: 14px; margin: 8px 0 4px; border-radius: 7px; overflow: hidden; background: var(--line); }
+.tw-bar i { display: block; height: 100%; border-right: 1px solid rgba(255,255,255,.6); }
+.tw-row details summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+.tw-people { list-style: none; padding: 6px 0 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tw-people li { font-size: 14px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.tw-people .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.tw-rank[hidden], .vd-list[hidden] { display: none; }
