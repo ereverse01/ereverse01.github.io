@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>앱을 찾는 중…</title>
+<script>
+// 예전 앱 주소(/앱이름/...)를 분류 폴더 주소(/분류/앱이름/...)로 넘겨줍니다.
+// 새 앱을 추가하거나 옮기면 아래 표만 고치면 됩니다.
+var MOVED = {
+  "my-vocab": "class", "preposition-room": "class", "finding-what-defines-us": "class",
+  "infographic-presentation": "class", "reading-mentoring": "class", "worksheet-maker": "class",
+  "montage-maker": "class", "reinforcement-cards": "class",
+  "class-progress": "work", "personal-timetable": "work", "teacher-slot": "work", "exam-maker": "work",
+  "my-memo": "family", "family-budget": "family", "family-fuel": "family",
+  "ieum-prayer": "church", "mokjang-attendance": "church"
+};
+var parts = location.pathname.split("/");   // ["", "my-vocab", ...]
+var cat = MOVED[parts[1]];
+if (cat) {
+  var rest = parts.slice(1).join("/");
+  if (parts.length === 2) rest += "/";       // /my-vocab → /class/my-vocab/
+  location.replace("/" + cat + "/" + rest + location.search + location.hash);
+}
+</script>
+<style>
+body{font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;text-align:center;padding:48px 16px;color:#222;background:#fff}
+a{color:#2457c5}
+</style>
+</head>
+<body>
+<p>찾는 페이지가 없어요.</p>
+<p><a href="/">앱 목록으로 가기</a></p>
+</body>
+</html>

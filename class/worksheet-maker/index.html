@@ -3600,7 +3600,7 @@ ${words || '(없음)'}`);
   }
 
   // 링크 만들기. 앱 주소가 아닌 곳(내 컴퓨터 파일 등)에서 열었으면 GitHub 주소로.
-  const APP_URL = 'https://ereyang.github.io/worksheet-maker/';
+  const APP_URL = 'https://ereverse01.github.io/class/worksheet-maker/';
   async function shareSheet(data) {
     const base = /^https?:/.test(location.protocol) ? location.origin + location.pathname : APP_URL;
     const url = base + '#w=' + (await encode(data));

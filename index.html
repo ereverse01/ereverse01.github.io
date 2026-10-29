@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>앱 모음</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--ink:#1f2328;--muted:#6b6f76;--line:#e3e3de;--accent:#2457c5}
+@media (prefers-color-scheme:dark){:root{--bg:#16181c;--card:#1f2228;--ink:#e8e9eb;--muted:#9aa0a8;--line:#30343b;--accent:#8fb0ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.5}
+main{max-width:720px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:1.4rem;margin:0 0 20px}
+h2{font-size:.85rem;font-weight:600;color:var(--muted);margin:28px 0 8px;letter-spacing:.02em}
+ul{list-style:none;margin:0;padding:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+li+li{border-top:1px solid var(--line)}
+a{display:flex;justify-content:space-between;gap:12px;padding:13px 16px;color:var(--ink);text-decoration:none}
+a:active,a:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+a span{color:var(--muted);font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</head>
+<body>
+<main>
+<h1>앱 모음</h1>
+
+<h2>수업용 · class</h2>
+<ul>
+<li><a href="class/my-vocab/">내 맘대로 단어장<span>my-vocab</span></a></li>
+<li><a href="class/my-vocab/word-puzzle/">낱말 조각 공방<span>my-vocab/word-puzzle</span></a></li>
+<li><a href="class/preposition-room/">Preposition Room<span>preposition-room</span></a></li>
+<li><a href="class/finding-what-defines-us/">Finding What Defines Us<span>finding-what-defines-us</span></a></li>
+<li><a href="class/infographic-presentation/">Infographic Presentation<span>infographic-presentation</span></a></li>
+<li><a href="class/reading-mentoring/">독서 멘토링 기록장<span>reading-mentoring</span></a></li>
+<li><a href="class/worksheet-maker/">지문 학습지 만들기<span>worksheet-maker</span></a></li>
+<li><a href="class/montage-maker/">몽타주 만들기<span>montage-maker</span></a></li>
+<li><a href="class/reinforcement-cards/">보상카드<span>reinforcement-cards</span></a></li>
+</ul>
+
+<h2>업무용 · work</h2>
+<ul>
+<li><a href="work/class-progress/">수업 진도표<span>class-progress</span></a></li>
+<li><a href="work/personal-timetable/">개인시간표<span>personal-timetable</span></a></li>
+<li><a href="work/teacher-slot/">학력평가 시간표 교체<span>teacher-slot</span></a></li>
+<li><a href="work/exam-maker/">시험문제 편집<span>exam-maker</span></a></li>
+</ul>
+
+<h2>개인·가족 · family</h2>
+<ul>
+<li><a href="family/my-memo/">내 메모장<span>my-memo</span></a></li>
+<li><a href="family/family-budget/">우리집 가계부<span>family-budget</span></a></li>
+<li><a href="family/family-fuel/">우리집 주유카드<span>family-fuel</span></a></li>
+</ul>
+
+<h2>교회 · church</h2>
+<ul>
+<li><a href="church/ieum-prayer/">이음교구 기도제목<span>ieum-prayer</span></a></li>
+<li><a href="church/mokjang-attendance/">목원 출석부<span>mokjang-attendance</span></a></li>
+</ul>
+</main>
+</body>
+</html>
