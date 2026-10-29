@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3f4fb8">
+<title>우리집 가계부</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --bg: #f3f2ee;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --sub: #6b7280;
+    --line: #e6e3dc;
+    --main: #3f4fb8;
+    --main-soft: #e4e7fb;
+    --ok: #15803d;
+    --ok-soft: #dcfce7;
+    --todo: #b45309;
+    --todo-soft: #fef3c7;
+    --warn: #c2410c;
+    --shadow: 0 1px 2px rgba(31,36,48,.06), 0 6px 20px rgba(31,36,48,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    font-size: 16px; line-height: 1.45;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  input, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 600px; margin: 0 auto; padding: 0 16px; }
+
+  header { padding: 22px 0 6px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
+  h1 .logo { width: 32px; height: 32px; border-radius: 10px; background: var(--main); color: #fff; display: grid; place-items: center; font-size: 16px; font-weight: 800; }
+  .sync { font-size: 13px; color: var(--sub); text-align: right; }
+  .sync.err { color: var(--warn); }
+
+  .card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; margin-top: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 12px; color: var(--sub); font-weight: 600; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card h2 small { font-weight: 500; font-size: 13px; }
+
+  /* 연도 + 월 선택 */
+  .yearbar { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 10px; }
+  .yearbar b { font-size: 18px; min-width: 76px; text-align: center; }
+  .yearbar button { width: 36px; height: 36px; border-radius: 50%; background: var(--card); box-shadow: var(--shadow); font-size: 15px; }
+  .months { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 12px; }
+  .months button {
+    background: var(--card); border-radius: 12px; padding: 8px 0 6px; box-shadow: var(--shadow);
+    display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 15px; font-weight: 600;
+  }
+  .months button.on { background: var(--main); color: #fff; }
+  .months .dots { display: flex; gap: 3px; height: 7px; }
+  .months .dots i { width: 7px; height: 7px; border-radius: 50%; background: #d6d3cc; }
+  .months .dots i.t { background: #22c55e; }
+  .months .dots i.x { background: #3b82f6; }
+  .months button.on .dots i { background: rgba(255,255,255,.35); }
+  .months button.on .dots i.t { background: #86efac; }
+  .months button.on .dots i.x { background: #bfdbfe; }
+  .legend { font-size: 12px; color: var(--sub); margin-top: 8px; display: flex; gap: 12px; justify-content: center; }
+  .legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+
+  /* 입력 */
+  .field { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 10px; margin-top: 10px; }
+  .field:first-of-type { margin-top: 0; }
+  .field label { font-weight: 600; font-size: 15px; }
+  .money { position: relative; }
+  .money input {
+    width: 100%; font-size: 20px; font-weight: 700; text-align: right;
+    padding: 10px 34px 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: #fbfaf8;
+  }
+  .money input:focus { outline: none; border-color: var(--main); background: #fff; }
+  .money::after { content: "원"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--sub); font-size: 15px; pointer-events: none; }
+  .sum { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); font-size: 15px; color: var(--sub); }
+  .sum b { color: var(--ink); font-size: 18px; }
+
+  /* 십일조 */
+  .tithe { background: linear-gradient(135deg, #3f4fb8, #2f3a8f); color: #fff; }
+  .tithe h2 { color: #c7cdf7; }
+  .tithe .amt { font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
+  .tithe .amt small { font-size: 18px; font-weight: 600; margin-left: 2px; }
+  .tithe .how { font-size: 13px; color: #c7cdf7; margin-top: 4px; }
+
+  .toggle {
+    width: 100%; margin-top: 14px; padding: 13px; border-radius: 14px; font-size: 17px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--todo-soft); color: var(--todo); border: 2px solid #fcd34d;
+  }
+  .toggle.done { background: var(--ok-soft); color: var(--ok); border-color: #86efac; }
+  .tithe .toggle { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.4); }
+  .tithe .toggle.done { background: #fff; color: var(--ok); border-color: #fff; }
+  .toggle .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid currentColor; display: grid; place-items: center; font-size: 15px; line-height: 1; }
+
+  .hint { font-size: 13px; color: var(--sub); margin-top: 8px; }
+  textarea {
+    width: 100%; min-height: 96px; resize: vertical; padding: 10px 12px; font-size: 16px;
+    border: 1.5px solid var(--line); border-radius: 12px; background: #fbfaf8;
+  }
+  textarea:focus { outline: none; border-color: var(--main); background: #fff; }
+
+  /* 한 해 요약 */
+  .tbl-wrap { overflow-x: auto; margin: 0 -6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; white-space: nowrap; }
+  th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+  th { font-size: 12.5px; color: var(--sub); font-weight: 600; }
+  th:first-child, td:first-child { text-align: left; }
+  td.c, th.c { text-align: center; }
+  tbody tr { cursor: pointer; }
+  tbody tr.on { background: var(--main-soft); }
+  tbody tr.empty td { color: #b5b1a8; }
+  tfoot td { font-weight: 700; border-bottom: 0; }
+  .ok { color: var(--ok); font-weight: 700; }
+  .no { color: #c9c5bc; }
+  .cma-line { margin-top: 12px; font-size: 14px; color: var(--sub); display: flex; justify-content: space-between; }
+  .cma-line b { color: var(--ink); }
+
+  /* 암호 */
+  .lock { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; z-index: 10; padding: 16px; }
+  .lock .card { width: 100%; max-width: 340px; text-align: center; }
+  .lock input { width: 100%; font-size: 24px; text-align: center; letter-spacing: .2em; padding: 10px; border: 1.5px solid var(--line); border-radius: 12px; margin-top: 10px; }
+  .lock button { width: 100%; margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--main); color: #fff; font-weight: 700; font-size: 17px; }
+  .form-err { color: var(--warn); font-size: 14px; min-height: 20px; margin-top: 8px; }
+  .hidden { display: none !important; }
+  .demo { margin-top: 12px; background: var(--todo-soft); color: var(--todo); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+
+  @media (max-width: 380px) {
+    .field { grid-template-columns: 78px 1fr; }
+    .money input { font-size: 18px; }
+    .months button { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="logo">₩</span>우리집 가계부</h1>
+    <div class="sync" id="sync"></div>
+  </header>
+  <div class="demo hidden" id="demoNote">아직 구글 시트와 연결 전이에요. 지금 쓰는 내용은 이 기기에만 저장돼요.</div>
+
+  <div class="yearbar">
+    <button id="prevY" aria-label="이전 해">◀</button>
+    <b id="yearLabel"></b>
+    <button id="nextY" aria-label="다음 해">▶</button>
+  </div>
+  <div class="months" id="months"></div>
+  <div class="legend"><span><i style="background:#22c55e"></i>십일조 냄</span><span><i style="background:#3b82f6"></i>이체 함</span></div>
+
+  <!-- 월급 -->
+  <div class="card">
+    <h2><span id="monthTitle"></span><small>월급</small></h2>
+    <div class="field"><label for="won">원월급</label><div class="money"><input id="won" data-k="won" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+    <div class="field"><label for="re">레월급</label><div class="money"><input id="re" data-k="re" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+    <div class="sum"><span>월급 합계</span><b id="salSum">0원</b></div>
+  </div>
+
+  <!-- 십일조 -->
+  <div class="card tithe">
+    <h2>이번 달 십일조</h2>
+    <div class="amt" id="titheAmt">0<small>원</small></div>
+    <div class="how">원월급 + 레월급의 10분의 1</div>
+    <button class="toggle" id="titheBtn"></button>
+  </div>
+
+  <!-- 이체 -->
+  <div class="card">
+    <h2>용돈 · 헌금 · 농협이자 이체</h2>
+    <button class="toggle" id="xferBtn"></button>
+  </div>
+
+  <!-- 저축 (CMA 이체) -->
+  <div class="card">
+    <h2>이번 달 저축액<small>CMA 이체 금액</small></h2>
+    <div class="money"><input id="cma" data-k="cma" inputmode="numeric" autocomplete="off" placeholder="이번 달 CMA로 보낸 금액"></div>
+    <div class="hint" id="cmaHint"></div>
+  </div>
+
+  <!-- 카드값 -->
+  <div class="card">
+    <h2>카드값</h2>
+    <div class="field"><label for="wonCard">원카드값</label><div class="money"><input id="wonCard" data-k="wonCard" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+    <div class="field"><label for="reCard">레카드값</label><div class="money"><input id="reCard" data-k="reCard" inputmode="numeric" autocomplete="off" placeholder="0"></div></div>
+    <div class="sum"><span>카드값 합계</span><b id="cardSum">0원</b></div>
+  </div>
+
+  <!-- 특별지출 -->
+  <div class="card">
+    <h2>특별지출</h2>
+    <textarea id="special" placeholder="예) 엄빠용돈 100만&#10;내시경 32만"></textarea>
+  </div>
+
+  <!-- 한 해 요약 -->
+  <div class="card">
+    <h2><span id="yearTitle"></span><small>줄을 누르면 그 달로 가요</small></h2>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>월</th><th>월급 합계</th><th>십일조</th><th class="c">냄</th><th class="c">이체</th><th>카드값</th><th>저축</th></tr></thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+    <div class="cma-line"><span id="saveLabel">올해 저축 합계</span><b id="cmaLatest">-</b></div>
+  </div>
+</div>
+
+<div class="lock hidden" id="lock">
+  <div class="card">
+    <h2 style="justify-content:center;font-size:17px;color:var(--ink)">가계부 암호</h2>
+    <input id="pwInput" type="password" inputmode="numeric" autocomplete="off" maxlength="12">
+    <div class="form-err" id="pwErr"></div>
+    <button id="pwBtn">열기</button>
+  </div>
+</div>
+
+<script>
+  // ▼ Apps Script 배포 후 받은 웹 앱 URL을 따옴표 안에 붙여넣으세요 (비어 있으면 이 기기에만 저장)
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbwX9o5p-OqrhTPs-DtlSquDq095oq8VTuzf6f76elYtdCYbD8GDWFNddQbKgtjTKmGB/exec";
+
+  const PW_KEY = "gagyebu-pw";
+  const CACHE_KEY = "gagyebu-cache";
+  const DEMO_KEY = "gagyebu-demo";
+  const MONEY = ["won", "re", "cma", "wonCard", "reCard"];
+
+  const $ = id => document.getElementById(id);
+  const won = n => Number(n || 0).toLocaleString("ko-KR");
+  const man = n => {
+    const v = Math.round(n / 1000) / 10;
+    return v.toLocaleString("ko-KR") + "만";
+  };
+  const num = v => Number(String(v ?? "").replace(/[^\d]/g, "")) || 0;
+  const has = v => String(v ?? "").replace(/[^\d]/g, "") !== "";
+  const ym = (y, m) => y + "-" + String(m).padStart(2, "0");
+  const tithe = r => Math.floor((num(r.won) + num(r.re)) / 10);
+
+  let pw = "";
+  try { pw = localStorage.getItem(PW_KEY) || ""; } catch {}
+  const today = new Date();
+  let viewY = today.getFullYear(), viewM = today.getMonth() + 1;
+  let rows = {};          // "2026-10" → { m, won, re, titheDone, xferDone, cma, wonCard, reCard, special }
+  let editSeq = 0;        // 화면에서 고친 횟수 — 서버 응답이 더 옛날 것이면 지금 달은 덮어쓰지 않아요
+  try { (JSON.parse(localStorage.getItem(CACHE_KEY)) || []).forEach(r => rows[r.m] = r); } catch {}
+
+  const blank = m => ({ m, won: "", re: "", titheDone: false, xferDone: false, cma: "", wonCard: "", reCard: "", special: "" });
+  const cur = () => rows[ym(viewY, viewM)] || (rows[ym(viewY, viewM)] = blank(ym(viewY, viewM)));
+  const isEmpty = r => !r || (!has(r.won) && !has(r.re) && !has(r.cma) && !has(r.wonCard) && !has(r.reCard) && !String(r.special || "").trim() && !r.titheDone && !r.xferDone);
+
+  function setSync(msg, err) {
+    $("sync").textContent = msg;
+    $("sync").classList.toggle("err", !!err);
+  }
+
+  // ── 서버 ──
+  const demo = !SHEET_URL;
+  async function call(body) {
+    if (demo) {
+      let d = [];
+      try { d = JSON.parse(localStorage.getItem(DEMO_KEY)) || []; } catch {}
+      if (body.action === "save") {
+        d = d.filter(r => r.m !== body.row.m).concat([body.row]).sort((a, b) => a.m.localeCompare(b.m));
+        try { localStorage.setItem(DEMO_KEY, JSON.stringify(d)); } catch {}
+      }
+      return { ok: true, rows: d };
+    }
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...body, pw }),
+    });
+    return res.json();
+  }
+  // 성공 true / 암호 틀림 "pw" / 실패 false
+  async function send(body, busyMsg) {
+    const seq = editSeq;
+    setSync(busyMsg);
+    try {
+      const d = await call(body);
+      if (!d.ok) { setSync(d.error === "pw" ? "" : "저장 실패", d.error !== "pw"); return d.error === "pw" ? "pw" : false; }
+      const keep = editSeq !== seq ? cur() : null; // 응답 오는 사이에 또 고쳤으면 그건 살려두기
+      rows = {};
+      (d.rows || []).forEach(r => rows[r.m] = r);
+      if (keep) rows[keep.m] = keep;
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(Object.values(rows).filter(r => !isEmpty(r)))); } catch {}
+      if (!keep) { setSync(body.action === "save" ? "저장됨 ✓" : ""); fillForm(); }
+      renderAll();
+      return true;
+    } catch {
+      setSync("연결 실패 — 다시 시도해 주세요", true);
+      return false;
+    }
+  }
+
+  // 고친 뒤 잠깐 쉬면 저장
+  let saveTimer = 0;
+  function queueSave(now) {
+    editSeq++;
+    setSync("저장 대기…");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => send({ action: "save", row: { ...cur() } }, "저장 중…"), now ? 0 : 900);
+  }
+  function flushSave() {
+    if (saveTimer && $("sync").textContent === "저장 대기…") { clearTimeout(saveTimer); queueSave(true); }
+  }
+
+  // ── 화면 ──
+  function fillForm() {
+    const r = cur();
+    MONEY.forEach(k => { if ($(k) !== document.activeElement) $(k).value = has(r[k]) ? won(num(r[k])) : ""; });
+    if ($("special") !== document.activeElement) $("special").value = r.special || "";
+    renderMonth();
+  }
+
+  function renderMonth() {
+    const r = cur();
+    $("monthTitle").textContent = viewY + "년 " + viewM + "월";
+    $("salSum").textContent = won(num(r.won) + num(r.re)) + "원";
+    $("titheAmt").innerHTML = won(tithe(r)) + "<small>원</small>";
+    $("cardSum").textContent = won(num(r.wonCard) + num(r.reCard)) + "원";
+    $("titheBtn").className = "toggle" + (r.titheDone ? " done" : "");
+    $("titheBtn").innerHTML = r.titheDone
+      ? '<span class="box">✓</span>십일조 냈어요'
+      : '<span class="box"></span>아직 안 냈어요 — 내면 눌러 주세요';
+    $("xferBtn").className = "toggle" + (r.xferDone ? " done" : "");
+    $("xferBtn").innerHTML = r.xferDone
+      ? '<span class="box">✓</span>이체 했어요'
+      : '<span class="box"></span>아직 안 했어요 — 하면 눌러 주세요';
+    // 올해 이 달까지 모은 저축
+    const y = r.m.slice(0, 4);
+    const upto = Object.values(rows).filter(x => x.m.slice(0, 4) === y && x.m <= r.m).reduce((a, x) => a + num(x.cma), 0);
+    $("cmaHint").textContent = upto ? y + "년 " + Number(r.m.slice(5)) + "월까지 저축 합계: " + won(upto) + "원" : "";
+  }
+
+  function renderAll() {
+    $("yearLabel").textContent = viewY + "년";
+    $("yearTitle").textContent = viewY + "년 한눈에";
+    $("months").innerHTML = Array.from({ length: 12 }, (_, i) => {
+      const r = rows[ym(viewY, i + 1)] || {};
+      return `<button data-m="${i + 1}" class="${i + 1 === viewM ? "on" : ""}">${i + 1}월
+        <span class="dots"><i class="${r.titheDone ? "t" : ""}"></i><i class="${r.xferDone ? "x" : ""}"></i></span></button>`;
+    }).join("");
+
+    let sSal = 0, sTithe = 0, sCard = 0, sSave = 0;
+    $("tbody").innerHTML = Array.from({ length: 12 }, (_, i) => {
+      const r = rows[ym(viewY, i + 1)];
+      const empty = isEmpty(r);
+      const sal = r ? num(r.won) + num(r.re) : 0, card = r ? num(r.wonCard) + num(r.reCard) : 0, t = r ? tithe(r) : 0, sv = r ? num(r.cma) : 0;
+      sSal += sal; sTithe += t; sCard += card; sSave += sv;
+      const mark = v => v ? '<span class="ok">✓</span>' : '<span class="no">–</span>';
+      return `<tr data-m="${i + 1}" class="${i + 1 === viewM ? "on " : ""}${empty ? "empty" : ""}">
+        <td>${i + 1}월</td>
+        <td>${sal ? man(sal) : "-"}</td>
+        <td>${t ? won(t) : "-"}</td>
+        <td class="c">${empty && !sal ? "" : mark(r.titheDone)}</td>
+        <td class="c">${empty ? "" : mark(r.xferDone)}</td>
+        <td>${card ? man(card) : "-"}</td>
+        <td>${sv ? man(sv) : "-"}</td></tr>`;
+    }).join("");
+    $("tfoot").innerHTML = `<tr><td>합계</td><td>${man(sSal)}</td><td>${won(sTithe)}</td><td></td><td></td><td>${man(sCard)}</td><td>${man(sSave)}</td></tr>`;
+
+    $("saveLabel").textContent = viewY + "년 저축 합계 (CMA 이체)";
+    $("cmaLatest").textContent = won(sSave) + "원";
+    renderMonth();
+  }
+
+  function goMonth(y, m) {
+    flushSave();
+    viewY = y; viewM = m;
+    fillForm();
+    renderAll();
+  }
+
+  // ── 입력 ──
+  MONEY.forEach(k => {
+    const el = $(k);
+    el.addEventListener("input", () => {
+      // 쉼표 자동으로 넣고 커서 위치 지키기
+      const digitsBefore = el.value.slice(0, el.selectionStart).replace(/\D/g, "").length;
+      const d = el.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, 13);
+      el.value = d ? won(Number(d)) : "";
+      let pos = 0, seen = 0;
+      while (pos < el.value.length && seen < digitsBefore) { if (/\d/.test(el.value[pos])) seen++; pos++; }
+      el.setSelectionRange(pos, pos);
+      cur()[k] = d ? Number(d) : "";
+      renderMonth();
+      renderAll();
+      queueSave();
+    });
+    el.addEventListener("blur", flushSave);
+  });
+  $("special").addEventListener("input", () => { cur().special = $("special").value; queueSave(); });
+  $("special").addEventListener("blur", flushSave);
+
+  $("titheBtn").onclick = () => { cur().titheDone = !cur().titheDone; renderAll(); queueSave(true); };
+  $("xferBtn").onclick = () => { cur().xferDone = !cur().xferDone; renderAll(); queueSave(true); };
+  $("prevY").onclick = () => goMonth(viewY - 1, viewM);
+  $("nextY").onclick = () => goMonth(viewY + 1, viewM);
+  $("months").onclick = e => { const b = e.target.closest("button[data-m]"); if (b) goMonth(viewY, Number(b.dataset.m)); };
+  $("tbody").onclick = e => {
+    const tr = e.target.closest("tr[data-m]");
+    if (!tr) return;
+    goMonth(viewY, Number(tr.dataset.m));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  window.addEventListener("pagehide", flushSave);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) flushSave();
+    else if (pw || demo) { if (!saveTimer || $("sync").textContent !== "저장 대기…") send({ action: "load" }, ""); }
+  });
+
+  // ── 시작 ──
+  async function start() {
+    if (demo) $("demoNote").classList.remove("hidden");
+    fillForm();
+    renderAll();
+    if (!pw && !demo) { $("lock").classList.remove("hidden"); $("pwInput").focus(); return; }
+    const r = await send({ action: "load" }, "불러오는 중…");
+    if (r === "pw") {
+      pw = "";
+      try { localStorage.removeItem(PW_KEY); } catch {}
+      $("lock").classList.remove("hidden");
+    }
+  }
+  async function tryPw() {
+    pw = $("pwInput").value.trim();
+    if (!pw) return;
+    $("pwErr").textContent = "확인 중…";
+    const r = await send({ action: "load" }, "불러오는 중…");
+    if (r === true) {
+      try { localStorage.setItem(PW_KEY, pw); } catch {}
+      $("lock").classList.add("hidden");
+      $("pwErr").textContent = "";
+    } else {
+      $("pwErr").textContent = r === "pw" ? "암호가 틀렸어요" : "연결에 실패했어요. 다시 시도해 주세요.";
+      $("pwInput").select();
+    }
+  }
+  $("pwBtn").onclick = tryPw;
+  $("pwInput").addEventListener("keydown", e => { if (e.key === "Enter") tryPw(); });
+  start();
+</script>
+</body>
+</html>
