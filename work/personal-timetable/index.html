@@ -1,0 +1,1234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인시간표</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="parser.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --ink: #1d2330; --muted: #6b7280; --line: #dde1e7;
+    --accent: #2f6fde; --accent-soft: #e8f0fd; --lesson: #eef4ff; --lesson-ink: #1e4fb3;
+    --g12: #edf8f0; --g12-ink: #1f6b3a;
+    --study: #fff6dc; --study-ink: #8a6100; --event: #f1f2f4; --event-ink: #555c68;
+    --del: #b6bcc6; --warn: #c2410c; --warn-soft: #fff1e8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; font-size: 16px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+  .wrap.wide { max-width: none; }
+  header h1 { font-size: 24px; margin: 4px 0 2px; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .tabs { display: flex; gap: 6px; margin-top: 14px; }
+  .tabs button { border-radius: 10px 10px 0 0; border-bottom: 0; padding: 9px 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  .tabs + .card { margin-top: 0; border-top-left-radius: 0; }
+  .form { display: grid; grid-template-columns: 1.1fr 2fr; gap: 14px 18px; align-items: end; }
+  .form.nonames { grid-template-columns: 1fr; }
+  label.f { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  input[type=text], input[type=date], select { width: 100%; font: inherit; font-size: 17px; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .form > div { min-width: 0; }
+  .range { display: flex; gap: 8px; align-items: center; max-width: 560px; }
+  .range input { flex: 1; min-width: 0; }
+  .range span { color: var(--muted); }
+  .quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; grid-column: 1 / -1; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: #fff;
+    padding: 9px 14px; color: var(--ink); }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { color: #fff; filter: brightness(1.07); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chips button { padding: 5px 10px; font-size: 14px; border-radius: 999px; }
+  .msg { color: var(--muted); padding: 30px 10px; text-align: center; }
+  .msg.err { color: var(--warn); }
+
+  .summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin: 22px 2px 4px; }
+  .summary h2 { margin: 0; font-size: 22px; }
+  .summary .meta { color: var(--muted); }
+  .summary .actions { margin-left: auto; display: flex; gap: 8px; }
+
+  .week { margin-top: 18px; }
+  .week h3 { font-size: 15px; margin: 0 0 8px 2px; color: var(--muted); font-weight: 600; }
+  .week h3 b { color: var(--ink); }
+  .tt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.tt { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; min-width: 560px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .tt th, .tt td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); text-align: center; padding: 0; }
+  .tt tr > *:last-child { border-right: 0; }
+  .tt tbody tr:last-child > * { border-bottom: 0; }
+  .tt thead th { background: #fafbfc; padding: 8px 4px; font-weight: 600; vertical-align: top; }
+  .tt thead th.today { background: var(--accent-soft); }
+  .tt thead .d { font-size: 15px; }
+  .tag { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+  .tag.note { background: #eef0f3; color: #4b5260; }
+  .tag.ex { background: var(--warn-soft); color: var(--warn); }
+  .tt th.p { width: 64px; background: #fafbfc; font-weight: 600; color: var(--muted); font-size: 14px; }
+  .tt td, .tt tbody th { height: 58px; vertical-align: middle; }
+  .cell { margin: 5px; border-radius: 8px; padding: 6px 4px; font-weight: 700; font-size: 17px; line-height: 1.25; }
+  .cell small { display: block; font-weight: 500; font-size: 12px; opacity: .85; }
+  .cell.l { background: var(--lesson); color: var(--lesson-ink); }
+  .cell.g12 { background: var(--g12); color: var(--g12-ink); }
+  .cell.s { background: var(--study); color: var(--study-ink); font-size: 15px; }
+  .cell.del { color: var(--del); font-weight: 500; font-size: 14px; text-decoration: line-through; }
+  .cell + .cell { margin-top: -2px; }
+  td.ev { background: var(--event); color: var(--event-ink); font-weight: 600; font-size: 15px; }
+  td.none { background: repeating-linear-gradient(135deg, #fafbfc 0 6px, #f1f3f5 6px 12px); }
+  td.nodata { color: var(--muted); font-size: 14px; background: #fafbfc; }
+  .notes { margin: 8px 2px 0; font-size: 13px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 22px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 5px; }
+
+  /* 1~3학년 전체시간표 */
+  table.full { border-collapse: collapse; font-size: 12px; background: #fff; }
+  .full th, .full td { border: 1px solid #c9ced6; padding: 2px 3px; text-align: center; min-width: 54px; line-height: 1.25; }
+  .full thead th { background: #eef1f5; position: sticky; top: 0; }
+  .full th.g1 { background: #e3f0ff; } .full th.g2 { background: #e5f6ea; } .full th.g3 { background: #fdf0dd; }
+  .full td.day { background: #f6f7f9; font-weight: 700; min-width: 70px; }
+  .full td.per { background: #f6f7f9; color: var(--muted); min-width: 34px; }
+  .full td .s { font-weight: 600; }
+  .full td .t { color: #4b5260; }
+  .full td.ev { font-size: 14px; }
+  .full tr.dayend td { border-bottom: 2px solid #8a93a1; }
+  .full td.hl { background: #fff3a8; }
+  .full td.slot { cursor: pointer; }
+  table.full { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .full td.drag-src, .cell.drag-src { outline: 3px dashed var(--accent); outline-offset: -3px; opacity: .6; }
+  #result td.drop-ok { box-shadow: inset 0 0 0 3px #22c55e; }
+  #result td.drop-warn { box-shadow: inset 0 0 0 3px #fb923c; }
+  #result td.drop-hover { background: #bfdbfe !important; }
+  .ghost .to { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line); font-weight: 600; color: #1d4ed8; }
+  body.admin #result .tt .cell[data-key], body.admin #result .tt .cell[data-open] { cursor: grab; }
+  body.admin #result table.tt { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .ghost { position: fixed; z-index: 60; pointer-events: none; background: #fff; border: 2px solid var(--accent); border-radius: 8px;
+    padding: 4px 8px; font-size: 13px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+  .full td.slot:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .full td.chg { background: #ffe1b8; }
+  .full td.dup { background: #ffb4b4; }
+  .full td.vac { background: #dcc8ff; }
+  .full td.vac .t { color: #5b21b6; font-weight: 600; }
+  .cell.chg { box-shadow: inset 0 0 0 2px #f59e0b; }
+  .cell.dup { box-shadow: inset 0 0 0 2px #dc2626; }
+  .cell.sel { background: #2f6fde; color: #fff; }
+
+  .modal { position: fixed; inset: 0; background: rgba(20, 24, 33, .45); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 24px 12px; overflow-y: auto; }
+  .modal[hidden] { display: none; }
+  .mbox { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 980px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .mhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .mhead h2 { margin: 0; font-size: 20px; }
+  .meta { color: var(--muted); font-size: 14px; }
+  table.swap td { height: 50px; vertical-align: top; padding: 2px; }
+  table.swap .cell { font-size: 14px; margin: 3px; padding: 4px 3px; }
+  button.cand { display: block; width: calc(100% - 6px); margin: 3px; padding: 4px 3px; font-size: 13px; font-weight: 700; border-radius: 8px; line-height: 1.25; }
+  button.cand small { display: block; font-weight: 500; font-size: 11px; }
+  button.cand.ok { background: #dcfce7; border-color: #22c55e; color: #166534; }
+  button.cand.warn { background: #fff7ed; border-color: #fb923c; color: #9a3412; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  .direct { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; font-size: 14px; }
+  .direct input { font-size: 14px; padding: 7px 9px; }
+
+  footer { margin-top: 34px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  footer button { font-size: 13px; padding: 6px 10px; }
+  details#loader { padding: 12px 18px; }
+  details#loader summary { cursor: pointer; font-size: 15px; }
+  details#loader[open] summary { margin-bottom: 12px; }
+  .drop { border: 2px dashed var(--line); border-radius: 14px; padding: 26px 16px; text-align: center; color: var(--muted); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop b { color: var(--ink); }
+  .files { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; font-size: 14px; }
+  .files div { background: #fafbfc; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .files b { display: block; margin-bottom: 2px; }
+  table.cal { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+  .cal th, .cal td { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: middle; }
+  .cal select, .cal input { font-size: 14px; padding: 6px 8px; }
+  .cal .auto { color: var(--muted); font-size: 12px; }
+
+  @media (max-width: 720px) {
+    .form { grid-template-columns: 1fr; }
+    .files { grid-template-columns: 1fr; }
+    .summary .actions { margin-left: 0; }
+    .tt th.p { width: 44px; font-size: 12px; }
+    .cell { font-size: 15px; margin: 3px; }
+  }
+  @media print {
+    /* A4 세로 · 한 줄에 1주 · 한 장에 4주 */
+    @page { size: A4 portrait; margin: 8mm; }
+    body { background: #fff; font-size: 9pt; }
+    .no-print, header, .legend { display: none !important; }
+    .notes { font-size: 6.5pt; margin: 0.5mm 0 0; }
+    .wrap { max-width: none; padding: 0; }
+    .card { border: 0; padding: 0; margin: 0; }
+    .summary { margin: 0 0 2mm; }
+    .summary h2 { font-size: 13pt; }
+    .summary .meta { font-size: 9pt; }
+    .week { break-inside: avoid; margin-top: 2.5mm; }
+    .week.pb { break-after: page; }
+    .week h3 { font-size: 8.5pt; margin: 0 0 1mm; }
+    .tt-scroll { overflow: visible; }
+    table.tt { min-width: 0; border-radius: 4px; }
+    .tt thead th { padding: 0.6mm 0.5mm; }
+    .tt thead .d { font-size: 8pt; }
+    .tag { font-size: 6pt; padding: 0 1mm; margin-top: 0.3mm; }
+    .tt th.p { width: 11mm; font-size: 7pt; }
+    .tt td, .tt tbody th { height: 6.4mm; }
+    .cell { font-size: 8pt; padding: 0.3mm; margin: 0.4mm; border-radius: 3px; line-height: 1.1; }
+    .cell small { font-size: 6pt; }
+    .cell.del, .cell.s { font-size: 7.5pt; }
+    .cell + .cell { margin-top: 0; }
+    td.ev { font-size: 8pt; }
+    .tt th, .tt td, .cell, td.ev, td.none, .tag, .full th, .full td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <header>
+    <h1>개인시간표</h1>
+    <div class="sub" id="dataInfo">시간표를 불러오는 중…</div>
+  </header>
+
+  <details class="card no-print" id="loader" hidden>
+    <summary><b>📂 시간표 파일 올리기</b> <span class="meta" id="fileShort"></span></summary>
+    <div class="drop" id="drop">
+      <p><b>엑셀 파일</b>을 여기에 끌어다 놓거나</p>
+      <button class="primary" id="pickBtn">📂 파일 선택</button>
+      <p style="font-size:13px;margin-top:12px">두 종류 모두 여기서 올려요. 어떤 파일인지 앱이 알아서 구분해요.<br>
+        ① <b>3학년 날짜별 시간표</b> (예: 10.12 이후 3학년 시간표) — 3학년은 이 파일로 적용<br>
+        ② <b>요일별 전체시간표</b> (1·2·3학년이 다 들어간 파일) — 여기서 <b>1·2학년만</b> 뽑아 써요</p>
+    </div>
+    <div class="files" id="fileState"></div>
+    <p id="adminStatus" style="margin:12px 2px 0;font-size:14px"></p>
+
+  </details>
+
+  <div class="tabs no-print" id="tabs" hidden>
+    <button data-v="me" class="on">👤 개인시간표</button>
+    <button data-v="all">🗓️ 1~3학년 전체시간표</button>
+  </div>
+  <section class="card no-print" id="query" hidden>
+    <div class="form" id="form">
+      <div id="nameBox">
+        <label class="f" for="name">선생님 이름</label>
+        <input type="text" id="name" list="names" placeholder="예: 홍길동" autocomplete="off">
+        <datalist id="names"></datalist>
+      </div>
+      <div>
+        <label class="f">기간</label>
+        <div class="range">
+          <input type="date" id="from"><span>~</span><input type="date" id="to">
+        </div>
+      </div>
+      <div class="quick" id="quick">
+        <button data-q="this">이번 주</button>
+        <button data-q="next">다음 주</button>
+        <button data-q="2w">2주</button>
+        <button data-q="month">이번 달</button>
+        <button data-q="all">전체 기간</button>
+      </div>
+    </div>
+    <div class="chips" id="suggest"></div>
+  </section>
+
+  <section id="result"></section>
+
+  <section class="card no-print" id="calCard" hidden>
+    <h3 style="margin:0 0 4px;font-size:16px">📅 1·2학년 특별한 날</h3>
+    <p style="margin:0;font-size:13px;color:var(--muted)">3학년 시간표의 날짜 메모(금요일수업, 1,2학년 현장체험, 휴업일 등)를 보고 자동으로 정했어요. 다르면 바꾸고 저장하세요.</p>
+    <table class="cal" id="calTable"></table>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">
+      <input type="date" id="calAddDate" style="width:auto">
+      <button id="calAdd">+ 날짜 추가</button>
+      <button class="primary" id="calSave">💾 특별한 날 저장</button>
+      <span id="calStatus" style="font-size:13px;color:var(--muted)"></span>
+    </div>
+  </section>
+
+  <footer class="no-print">
+    <span id="footNote"></span>
+    <button id="adminBtn">🔐 담당자</button>
+  </footer>
+  <input type="file" id="file" accept=".xlsx,.xlsm" hidden>
+</div>
+<div class="modal no-print" id="modal" hidden><div class="mbox" id="swapBox"></div></div>
+
+<script>
+(function () {
+  const KEY = 'tt3.data.v1', NAME_KEY = 'tt3.name', VIEW_KEY = 'tt3.view';
+  const API = 'https://script.google.com/macros/s/AKfycbxL8XPTzzn_rlcEIN659a7f_sIgxiDayNbju3PUh2B7ORXurkiJpduyRwzLKjHY9mMe/exec';
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+  const names = s => String(s || '').split(/[,\n\/·]+/).map(x => x.trim()).filter(Boolean);
+
+  let D = null;          // 3학년 날짜별 시간표
+  let W = null;          // 요일별 전체시간표에서 뽑은 1·2학년
+  let CAL = {};          // 날짜별 1·2학년 운영 (담당자가 바꾼 것)
+  let CHG = {};          // 수업 교체: 날짜 → { 'p|col': {s, t} }
+  let LOG = [];          // 교체 내역: [{at, desc, cells:[{d, k, before, after}]}]
+  let by3 = {}, by12 = {};
+  let view = store.get(VIEW_KEY) === 'all' ? 'all' : 'me';
+
+  // ---------- 날짜 도우미 ----------
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const parseIso = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const monday = d => addDays(d, -((d.getDay() + 6) % 7));
+  const md = s => { const d = parseIso(s); return (d.getMonth() + 1) + '/' + d.getDate(); };
+  const dowOf = s => DOW[parseIso(s).getDay()];
+  const today = iso(new Date());
+
+  // ---------- 1·2학년: 그날 어떤 요일 시간표로 도는지 ----------
+  // 반환: {mode:'normal'|'dow'|'off', dow, label, auto}
+  function autoPlan(d) {
+    const info = D && D.dayInfo[d];
+    const note = info ? info.note : '';
+    const m = note.match(/([월화수목금])요일\s*수업/);
+    if (m) return { mode: 'dow', dow: m[1], label: note };
+    if (/1\s*[,·.]\s*2\s*학년/.test(note)) return { mode: 'off', label: note };
+    if (info) {
+      const whole = info.events.find(e => e.periods[0] === 1 && e.periods.length >= Math.min(4, info.maxP));
+      if (whole && !/^3\s*학년|진로체험|장행식/.test(whole.text) && /휴업|성탄|신정|수능|공휴|휴일|종업|방학|학력평가|개교기념/.test(whole.text))
+        return { mode: 'off', label: whole.text };
+    }
+    return { mode: 'normal' };
+  }
+  function plan12(d) {
+    const a = autoPlan(d);
+    const o = CAL[d];
+    return o ? { ...o, auto: false } : { ...a, auto: true };
+  }
+  const dow12 = (d, p) => p.mode === 'dow' ? p.dow : dowOf(d);
+
+  // 3학년 칸 이름: "2반" → "3-2"
+  const place3 = pl => /^(\d+)반$/.test(pl) ? '3-' + pl.replace('반', '') : pl;
+  function places3() {
+    if (!D) return [];
+    const seen = [];
+    D.lessons.forEach(l => { if (!seen.includes(l.place)) seen.push(l.place); });
+    const cls = seen.filter(p => /^\d+반$/.test(p)).sort((a, b) => parseInt(a) - parseInt(b));
+    return cls.concat(seen.filter(p => !/^\d+반$/.test(p)));
+  }
+
+  // ---------- 데이터 ----------
+  function refresh() {
+    by3 = {}; by12 = {};
+    if (D) D.lessons.forEach(l => (by3[l.teacher] = by3[l.teacher] || []).push(l));
+    if (W) W.lessons.forEach(l => names(l.teacher).forEach(t => (by12[t] = by12[t] || []).push(l)));
+    const all = [...new Set([...(D ? D.teachers : []), ...(W ? W.teachers : [])])].sort((a, b) => a.localeCompare(b, 'ko'));
+    $('names').innerHTML = all.map(t => '<option value="' + esc(t) + '">').join('');
+    const parts = [];
+    if (D) parts.push('3학년 ' + md(D.from) + '~' + md(D.to));
+    if (W) parts.push('1·2학년 요일별 시간표');
+    $('dataInfo').textContent = parts.length ? parts.join(' + ') + ' · 선생님 ' + all.length + '명' : '아직 시간표가 올라오지 않았어요. 담당자가 올리면 볼 수 있어요.';
+    $('footNote').textContent = W ? '1·2학년은 요일별 시간표, 3학년은 날짜별 시간표로 보여 줘요.' : '3학년 수업만 표기 · 1, 2학년 시간표는 기존 시간표와 같아요.';
+    $('query').hidden = $('tabs').hidden = !(D || W);
+    if (!D && !W) $('result').innerHTML = '';
+    if ((D || W) && !$('from').value) {
+      const inRange = !D || (today >= D.from && today <= D.to);
+      quick(inRange ? 'this' : 'all', true);
+    }
+    const saved = store.get(NAME_KEY);
+    if (saved && !$('name').value) $('name').value = saved;
+    setView(view, true);
+    renderCal();
+  }
+  function allTeachers() { return [...new Set([...Object.keys(by3), ...Object.keys(by12)])]; }
+
+  // ---------- 공유 저장소 (Apps Script) ----------
+  async function pack(obj) {
+    const s = new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'));
+    const buf = new Uint8Array(await new Response(s).arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+    return { z: btoa(bin) };
+  }
+  async function unpack(v) {
+    if (!v || !v.z) return v;
+    const bin = atob(v.z), buf = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+    const s = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return JSON.parse(await new Response(s).text());
+  }
+  const api = body => fetch(API, { method: 'POST', body: JSON.stringify(body) }).then(r => r.json());
+  let server = { hasPw: true, updated: '' };
+  let adminPw = null;
+  try { adminPw = sessionStorage.getItem('tt3.pw'); } catch (e) {}
+
+  const fmtTime = s => { const d = new Date(s); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  function cacheSave(updated) {
+    store.set(KEY, JSON.stringify({ data: D, g12: W, cal: CAL, chg: { CHG, LOG } }));
+    store.set(KEY + '.updated', updated || '');
+  }
+
+  function showAdmin() {
+    $('loader').hidden = $('calCard').hidden = !adminPw;
+    document.body.classList.toggle('admin', !!adminPw);
+    $('fileShort').textContent = '· ' + [D ? '3학년 ✔' : '3학년 없음', W ? '1·2학년 ✔' : '1·2학년 없음'].join(' · ') + (server.updated ? ' · 마지막 저장 ' + fmtTime(server.updated) : '') + ' (눌러서 펼치기)';
+    $('adminBtn').textContent = adminPw ? '🔓 담당자 모드 끝내기' : '🔐 담당자';
+    $('fileState').innerHTML =
+      '<div><b>① 3학년 날짜별 시간표</b>' + (D ? esc(D.fileName || D.title) + '<br>' + md(D.from) + ' ~ ' + md(D.to) + ' · 선생님 ' + D.teachers.length + '명' : '아직 없음') + '</div>'
+      + '<div><b>② 1·2학년 (요일별 전체시간표)</b>' + (W ? esc(W.fileName || W.title) + '<br>' + W.cols.length + '칸 · 선생님 ' + W.teachers.length + '명' : '아직 없음') + '</div>';
+    if (!$('adminStatus').dataset.keep)
+      $('adminStatus').textContent = server.updated ? '마지막으로 저장한 때: ' + fmtTime(server.updated) : '';
+  }
+
+  async function adminToggle() {
+    if (adminPw) { adminPw = null; try { sessionStorage.removeItem('tt3.pw'); } catch (e) {} showAdmin(); return; }
+    if (!server.hasPw) {
+      const pw = prompt('처음이라 담당자 암호를 정해 주세요. (4자 이상)\n이 암호가 있어야 시간표 파일을 올릴 수 있어요.');
+      if (!pw) return;
+      const r = await api({ a: 'setpw', pw });
+      if (!r.ok) return alert(r.msg);
+      server.hasPw = true; adminPw = pw;
+    } else {
+      const pw = prompt('담당자 암호');
+      if (!pw) return;
+      const r = await api({ a: 'check', pw });
+      if (!r.ok) return alert(r.msg);
+      adminPw = pw;
+    }
+    try { sessionStorage.setItem('tt3.pw', adminPw); } catch (e) {}
+    showAdmin();
+  }
+
+  async function save(set) {
+    const body = {};
+    for (const k in set) body[k] = k === 'cal' ? set[k] : await pack(set[k]);
+    const r = await api({ a: 'save', pw: adminPw, set: body });
+    if (!r.ok) throw new Error(r.msg);
+    server.updated = r.updated;
+    cacheSave(r.updated);
+    return r;
+  }
+
+  async function loadFile(file) {
+    if (!adminPw) return;
+    const st = $('adminStatus');
+    st.dataset.keep = 1;
+    st.textContent = '파일 읽는 중…';
+    try {
+      const buf = await file.arrayBuffer();
+      let kind, data;
+      try {
+        data = TTParser.parse(buf);
+        if (data.dates.length && data.teachers.length) kind = 'data';
+      } catch (e) {}
+      if (!kind) {
+        data = TTParser.parseWeekly(buf, { grades: [1, 2] });
+        kind = 'g12';
+      }
+      data.fileName = file.name;
+      if (kind === 'data') D = data; else W = data;
+      refresh();
+      st.textContent = '선생님들 화면에 올리는 중…';
+      await save({ [kind]: data });
+      showAdmin();
+      st.textContent = '✅ ' + (kind === 'data'
+        ? '3학년 날짜별 시간표를 올렸어요. (' + file.name + ' · ' + md(data.from) + '~' + md(data.to) + ')'
+        : '1·2학년 시간표를 올렸어요. (' + file.name + ' · ' + data.cols.map(c => c.label).join(', ') + ' · 3학년 칸은 뺐어요)')
+        + ' 이제 모든 선생님 화면에 보여요.';
+    } catch (e) {
+      console.error(e);
+      st.textContent = '⚠️ 올리지 못했어요: ' + e.message;
+    }
+  }
+
+  // ---------- 특별한 날 (1·2학년) ----------
+  function calDates() {
+    const set = new Set(Object.keys(CAL));
+    if (D) D.dates.forEach(d => { if (autoPlan(d).mode !== 'normal') set.add(d); });
+    return [...set].sort();
+  }
+  function planText(p) { return p.mode === 'off' ? '수업 없음' : p.mode === 'dow' ? p.dow + '요일 시간표' : '평소대로'; }
+  function renderCal() {
+    if (!adminPw) return;
+    const rows = calDates().map(d => {
+      const p = plan12(d), a = autoPlan(d);
+      const val = p.mode === 'dow' ? 'dow:' + p.dow : p.mode;
+      const opts = [['normal', '평소대로 (' + dowOf(d) + '요일 시간표)'], ...'월화수목금'.split('').filter(x => x !== dowOf(d)).map(x => ['dow:' + x, x + '요일 시간표로']), ['off', '1·2학년 수업 없음']];
+      const info = D && D.dayInfo[d];
+      const why = [info && info.note, ...(info ? info.events.map(e => e.text) : [])].filter(Boolean).join(', ');
+      return '<tr data-d="' + d + '"><td><b>' + md(d) + ' (' + dowOf(d) + ')</b><div class="auto">' + esc(why || '직접 추가') + '</div></td>'
+        + '<td><select data-k="mode">' + opts.map(([v, t]) => '<option value="' + v + '"' + (v === val ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></td>'
+        + '<td><input data-k="label" type="text" placeholder="표시할 이름 (예: 현장체험)" value="' + esc(p.label || '') + '"></td>'
+        + '<td class="auto">' + (CAL[d] ? '직접 정함 · <a href="#" data-reset="' + d + '">자동으로</a>' : '자동: ' + planText(a)) + '</td></tr>';
+    });
+    $('calTable').innerHTML = '<tr><th>날짜</th><th>1·2학년</th><th>표시</th><th></th></tr>' + (rows.join('') || '<tr><td colspan="4" class="auto">특별한 날이 없어요.</td></tr>');
+  }
+  function readCalRow(tr) {
+    const d = tr.dataset.d;
+    const v = tr.querySelector('[data-k=mode]').value, label = tr.querySelector('[data-k=label]').value.trim();
+    const p = v.startsWith('dow:') ? { mode: 'dow', dow: v.slice(4) } : { mode: v };
+    if (label) p.label = label;
+    const a = autoPlan(d);
+    const same = a.mode === p.mode && (a.dow || '') === (p.dow || '') && (a.label || '') === (p.label || '');
+    if (same) delete CAL[d]; else CAL[d] = p;
+  }
+
+  async function init() {
+    const s = store.get(KEY);
+    if (s) {
+      try {
+        const c = JSON.parse(s);
+        if (c && c.lessons) D = c; else if (c) { D = c.data || null; W = c.g12 || null; CAL = c.cal || {}; CHG = (c.chg && c.chg.CHG) || {}; LOG = (c.chg && c.chg.LOG) || []; }
+      } catch (e) {}
+      if (D || W) refresh();
+    }
+    try {
+      const r = await fetch(API + '?a=load&t=' + Date.now()).then(r => r.json());
+      server = { hasPw: r.hasPw, updated: r.updated };
+      if (r.updated !== store.get(KEY + '.updated')) {
+        D = r.data ? await unpack(r.data) : null;
+        W = r.g12 ? await unpack(r.g12) : null;
+        CAL = r.cal || {};
+        const ch = r.chg ? await unpack(r.chg) : null;
+        CHG = (ch && ch.CHG) || {}; LOG = (ch && ch.LOG) || [];
+        cacheSave(r.updated);
+      }
+      refresh();
+    } catch (e) {
+      console.error(e);
+      if (!D && !W) $('dataInfo').textContent = '시간표를 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.';
+    }
+    showAdmin();
+  }
+
+  // ---------- 기간 빠른 선택 ----------
+  function quick(q, silent) {
+    const t = parseIso(today);
+    let a, b;
+    if (q === 'this') { a = monday(t); b = addDays(a, 4); }
+    else if (q === 'next') { a = addDays(monday(t), 7); b = addDays(a, 4); }
+    else if (q === '2w') { a = monday(t); b = addDays(a, 11); }
+    else if (q === 'month') { a = new Date(t.getFullYear(), t.getMonth(), 1); b = new Date(t.getFullYear(), t.getMonth() + 1, 0); }
+    else if (D) { a = parseIso(D.from); b = parseIso(D.to); }
+    else { a = monday(t); b = addDays(a, 4); }
+    $('from').value = iso(a); $('to').value = iso(b);
+    document.querySelectorAll('#quick button').forEach(x => x.classList.toggle('on', x.dataset.q === q));
+    if (!silent) render();
+  }
+
+  function setView(v, silent) {
+    view = v;
+    store.set(VIEW_KEY, v);
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    $('nameBox').hidden = v === 'all';
+    $('form').classList.toggle('nonames', v === 'all');
+    $('wrap').classList.toggle('wide', v === 'all');
+    render();
+  }
+
+  // ---------- 이름 찾기 ----------
+  function findTeacher(raw) {
+    const n = raw.replace(/\s|선생님|쌤|교사/g, '');
+    if (!n) return { name: null, cands: [] };
+    const all = allTeachers();
+    if (all.includes(n)) return { name: n, cands: [] };
+    const cands = all.filter(t => t.includes(n) || n.includes(t)).sort((a, b) => a.localeCompare(b, 'ko'));
+    return { name: cands.length === 1 ? cands[0] : null, cands };
+  }
+
+  function weeksOf(from, to) {
+    const weeks = [];
+    for (let w = monday(parseIso(from)); iso(w) <= to; w = addDays(w, 7)) {
+      const days = [];
+      for (let i = 0; i < 5; i++) { const s = iso(addDays(w, i)); if (s >= from && s <= to) days.push(s); }
+      if (days.length) weeks.push(days);
+    }
+    return weeks;
+  }
+  function getRange() {
+    let from = $('from').value, to = $('to').value;
+    if (!from || !to) return null;
+    if (from > to) [from, to] = [to, from];
+    return [from, to];
+  }
+  const rangeNote = d => D && (D.rangeNotes || []).find(r => d >= r.from && d <= r.to);
+
+  // 그날 3학년 상태: {info, off(하루 전체 행사·자료 없음), label}
+  function day3(d) {
+    if (!D) return { off: true, label: '' };
+    const info = D.dayInfo[d];
+    if (!info) { const rn = rangeNote(d); return { off: true, label: rn ? '3학년 ' + rn.text.replace(/^3\s*학년\s*/, '') : (d < D.from || d > D.to ? '' : '3학년 시간표 없음') }; }
+    const whole = info.events.find(e => e.periods[0] === 1 && e.periods.length >= info.maxP);
+    return { info, off: !!whole, label: whole ? whole.text : '' };
+  }
+
+  // ---------- 날짜별 수업 칸 (원래 시간표 + 교체 내역) ----------
+  // 칸 키 col: 'a:1-3' (1·2학년 칸) / 'c:3반' (3학년 칸),  셀 키: 'p|col'
+  let dayCache = {};
+  const invalidate = () => { dayCache = {}; };
+  function dayCells(d) {
+    if (dayCache[d]) return dayCache[d];
+    const pl = W ? plan12(d) : { mode: 'off' }, s3 = day3(d);
+    const dw = W ? dow12(d, pl) : null;
+    const maxP12 = W && pl.mode !== 'off' ? (W.maxP[dw] || 0) : 0;
+    const info = s3.info;
+    const maxP3 = info && !s3.off ? info.maxP : 0;
+    const evP = new Set(info ? info.events.flatMap(e => e.periods) : []);
+    const cells = {};
+    if (maxP12) W.lessons.filter(l => l.dow === dw).forEach(l => {
+      const col = 'a:' + l.col;
+      cells[l.p + '|' + col] = { p: l.p, col, g: +l.col[0] || 2, s: l.subject, t: l.teacher };
+    });
+    if (maxP3) D.lessons.filter(l => l.date === d && !l.deleted && !evP.has(l.p)).forEach(l => {
+      const col = 'c:' + l.place, k = l.p + '|' + col;
+      if (cells[k]) cells[k].t += ', ' + l.teacher;
+      else cells[k] = { p: l.p, col, g: 3, s: l.sub || '', t: l.teacher };
+    });
+    Object.values(cells).forEach(c => { c.base = { s: c.s, t: c.t }; });
+    const valid = (p, col) => col.startsWith('a:') ? p <= maxP12 : (p <= maxP3 && !evP.has(p));
+    Object.entries(CHG[d] || {}).forEach(([k, v]) => {
+      const [p, col] = [+k.split('|')[0], k.slice(k.indexOf('|') + 1)];
+      if (!valid(p, col)) return;
+      const c = cells[k] || (cells[k] = { p, col, g: col.startsWith('c:') ? 3 : (+col[2] || 2), base: null });
+      c.s = v.s; c.t = v.t; c.changed = true;
+    });
+    // 같은 시간 두 수업 / 비게 된 수업
+    const seen = {};
+    Object.entries(cells).forEach(([k, c]) => {
+      c.vacated = !!(c.base && c.base.t && !c.t);
+      names(c.t).forEach(n => (seen[c.p + '|' + n] = seen[c.p + '|' + n] || []).push(c));
+    });
+    Object.values(seen).forEach(list => { if (list.length > 1) list.forEach(c => { c.dup = true; }); });
+    return (dayCache[d] = { d, pl, s3, dw, maxP12, maxP3, cells, valid, maxP: Math.max(maxP12, maxP3) });
+  }
+  const colLabel = col => col.startsWith('a:') ? ((W && W.cols.find(c => c.key === col.slice(2)) || {}).label || col.slice(2)) : place3(col.slice(2));
+  function busyAt(name, d, p, exceptCol) {
+    return Object.values(dayCells(d).cells).filter(c => c.p === p && c.col !== exceptCol && names(c.t).includes(name));
+  }
+  const weekDays = d => { const m = monday(parseIso(d)); return [0, 1, 2, 3, 4].map(i => iso(addDays(m, i))); };
+  const slotName = (d, p) => md(d) + '(' + dowOf(d) + ') ' + p + '교시';
+
+  // ---------- 개인시간표 ----------
+  // 한 선생님의 기간 시간표 표 (sel: 강조할 칸 키)
+  function personalHTML(name, from, to, sel) {
+    // 삭제된 3학년 수업 (빗금) 은 원본에서 따로
+    const del3 = {};
+    (by3[name] || []).forEach(l => { if (l.deleted && l.date >= from && l.date <= to) (del3[l.date + '|' + l.p] = del3[l.date + '|' + l.p] || []).push(l); });
+
+    const weeks = weeksOf(from, to);
+    let total = 0, html = '';
+    weeks.forEach((days, wi) => {
+      const plans = {}, d3s = {}, dmax = {}, dcs = {};
+      days.forEach(d => {
+        const dc = dcs[d] = dayCells(d);
+        plans[d] = dc.pl;
+        d3s[d] = dc.s3;
+        dmax[d] = dc.maxP;
+      });
+      const maxP = Math.max(6, ...Object.values(dmax));
+
+      let head = '<tr><th class="p"></th>';
+      const notes = [];
+      days.forEach(d => {
+        const info = d3s[d].info, p = plans[d];
+        const tags = [];
+        if (info && info.note) tags.push(['note', info.note]);
+        if (W && p.mode === 'dow' && !(info && info.note && info.note.includes(p.dow + '요일')))
+          tags.push(['note', '1·2학년 ' + p.dow + '요일 시간표']);
+        if (W && p.mode === 'off' && !(d3s[d].off && d3s[d].label === p.label) && !(info && p.label && info.note === p.label))
+          tags.push(['note', (/학년/.test(p.label || '') ? '' : '1·2학년 ') + (p.label || '수업 없음')]);
+        if (d3s[d].off && d3s[d].label && !(p.mode === 'off' && d3s[d].label === p.label) && (W || !info))
+          tags.push(['note', /학년/.test(d3s[d].label) ? d3s[d].label : '3학년 ' + d3s[d].label]);
+        if (info) info.events.filter(e => !(e.periods[0] === 1 && e.periods.length >= info.maxP))
+          .forEach(e => tags.push(['note', '3학년 ' + e.text + ' (' + e.periods[0] + '~' + e.periods[e.periods.length - 1] + '교시)']));
+        if (info && info.excluded.includes(name)) tags.push(['ex', '당일수업제외명단']);
+        if (info) info.notes.forEach(n => notes.push(md(d) + ' ' + n));
+        head += '<th class="' + (d === today ? 'today' : '') + '"><div class="d">' + md(d) + ' (' + dowOf(d) + ')</div>'
+          + tags.filter(([k, t], i) => tags.findIndex(x => x[1] === t) === i).map(([k, t]) => '<div><span class="tag ' + k + '">' + esc(t) + '</span></div>').join('') + '</th>';
+      });
+      head += '</tr>';
+
+      let body = '', weekCount = 0;
+      const skip = {};
+      for (let p = 1; p <= maxP; p++) {
+        body += '<tr><th class="p">' + p + '교시</th>';
+        days.forEach(d => {
+          if (skip[d + '|' + p]) return;
+          const pl = plans[d], s3 = d3s[d];
+          const off12 = !W || pl.mode === 'off';
+          // 1·2·3학년 모두 수업이 없는 날 → 하루 칸 하나로
+          if (off12 && s3.off) {
+            if (p === 1) {
+              const labels = [...new Set([W ? pl.label : '', s3.label].filter(Boolean))];
+              body += '<td class="' + (labels.length ? 'ev' : 'nodata') + '" rowspan="' + maxP + '">' + esc(labels.join(' / ') || '시간표 없음') + '</td>';
+              for (let k = 2; k <= maxP; k++) skip[d + '|' + k] = 1;
+            }
+            return;
+          }
+          const ls = [];
+          Object.values(dcs[d].cells).filter(c => c.p === p && names(c.t).includes(name)).sort((a, b) => a.g - b.g).forEach(c => {
+            const study = /도서관|자습/.test(c.col);
+            const k = c.g < 3 ? 'g12' : study ? 's' : 'l';
+            const small = [c.g < 3 ? c.s : c.s ? '3학년 ' + c.s : ''];
+            if (c.changed) small.push('교체');
+            if (c.dup) small.push('⚠ 겹침');
+            ls.push({ k: k + (c.changed ? ' chg' : '') + (c.dup ? ' dup' : '') + (sel === d + '|' + c.p + '|' + c.col ? ' sel' : ''), big: study ? '도서관 자습감독' : colLabel(c.col), small: small.filter(Boolean).join(' · '), key: d + '|' + c.p + '|' + c.col });
+          });
+          // 원래 내 수업이었는데 교체로 빠진 칸
+          Object.values(dcs[d].cells).filter(c => c.p === p && c.changed && c.base && names(c.base.t).includes(name) && !names(c.t).includes(name))
+            .forEach(c => ls.push({ k: 'del', big: colLabel(c.col), small: '교체로 빠짐', open: d + '|' + c.p + '|' + c.col }));
+          (del3[d + '|' + p] || []).forEach(l => ls.push({ k: 'del', big: place3(l.place), small: '삭제' }));
+          if (!ls.length && p > dmax[d]) { body += '<td class="none"></td>'; return; }
+          body += '<td data-dp="' + d + '|' + p + '">' + ls.map(c => {
+            if (c.k !== 'del') weekCount++;
+            return '<div class="cell ' + c.k + '"' + (c.key ? ' data-key="' + esc(c.key) + '"' : c.open ? ' data-open="' + esc(c.open) + '"' : '') + '>' + esc(c.big) + (c.small ? '<small>' + esc(c.small) + '</small>' : '') + '</div>';
+          }).join('') + '</td>';
+        });
+        body += '</tr>';
+      }
+      total += weekCount;
+      html += '<div class="week' + (wi % 4 === 3 && wi < weeks.length - 1 ? ' pb' : '') + '"><h3><b>' + md(days[0]) + ' ~ ' + md(days[days.length - 1]) + '</b> · 수업 ' + weekCount + '시간</h3>'
+        + '<div class="tt-scroll"><table class="tt"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>'
+        + (notes.length ? '<div class="notes">※ ' + notes.map(esc).join(' · ') + '</div>' : '') + '</div>';
+    });
+
+    return { html, total, weeks };
+  }
+
+  function render() {
+    invalidate();
+    if (!D && !W) return;
+    if (view === 'all') return renderAll();
+    const out = $('result');
+    const raw = $('name').value.trim();
+    const { name, cands } = findTeacher(raw);
+    $('suggest').innerHTML = !name && cands.length > 1
+      ? cands.map(c => '<button data-n="' + esc(c) + '">' + esc(c) + '</button>').join('') : '';
+    if (!raw) { out.innerHTML = '<p class="msg">선생님 이름을 입력하세요.</p>'; return; }
+    if (!name) {
+      out.innerHTML = '<p class="msg">' + (cands.length > 1 ? '위에서 선생님을 골라 주세요.'
+        : '‘' + esc(raw) + '’ 선생님은 시간표에 없어요. 이름을 다시 확인해 주세요.') + '</p>';
+      return;
+    }
+    store.set(NAME_KEY, name);
+    const rg = getRange();
+    if (!rg) { out.innerHTML = '<p class="msg">기간을 선택하세요.</p>'; return; }
+    const [from, to] = rg;
+
+    const { html, total, weeks } = personalHTML(name, from, to);
+
+    const range = md(from) + '(' + dowOf(from) + ') ~ ' + md(to) + '(' + dowOf(to) + ')';
+    out.innerHTML = '<div class="card">'
+      + '<div class="summary"><h2>' + esc(name) + ' 선생님</h2><span class="meta">' + range + ' · 수업 ' + total + '시간</span>'
+      + '<span class="actions no-print"><button id="printBtn">🖨️ 인쇄</button></span></div>'
+      + (weeks.length ? html : '<p class="msg">선택한 기간에 평일이 없어요.</p>')
+      + '<div class="legend">'
+      + (W ? '<span><i style="background:var(--g12)"></i>1·2학년 수업 (반 · 과목)</span>' : '')
+      + '<span><i style="background:var(--lesson)"></i>3학년 수업</span>'
+      + '<span><i style="background:var(--study)"></i>도서관 자습감독</span>'
+      + '<span><i style="background:var(--event)"></i>학교 행사</span>'
+      + '<span><s style="color:var(--del)">3-3</s> 삭제된 수업</span>'
+      + '<span><i style="background:repeating-linear-gradient(135deg,#fafbfc 0 3px,#e5e8ec 3px 6px)"></i>수업 없는 교시</span></div>'
+      + '<div class="legend no-print" style="margin-top:4px"><span>' + (adminPw
+        ? '✏️ 수업을 끌어다 다른 교시에 놓으면 그 시간 같은 반 수업과 맞바꿔요 (터치는 꾹 눌렀다 끌기) · <b style="color:#16a34a">초록 테두리</b>=교체 가능, <b style="color:#ea580c">주황</b>=겹침 · 수업을 누르면 직접 바꾸기. 바꾼 내용은 전체시간표에도 바로 반영돼요.'
+        : '수업 바꾸기는 담당자 모드에서 할 수 있어요.') + '</span></div>'
+      + '</div>';
+    $('printBtn').onclick = () => window.print();
+  }
+
+  // ---------- 1~3학년 전체시간표 ----------
+  // 한 주 → 표 모델 {cols, rows:[[{t,k}|null]], merges:[{r,c,rs,cs}], dayEnds:[]}
+  function weekModel(days) {
+    const c12 = W ? W.cols : [];
+    const p3 = places3();
+    const cols = [{ h: '날짜', g: 0 }, { h: '교시', g: 0 },
+      ...c12.map(c => ({ h: c.cls, g: c.grade, key: c.key })),
+      ...p3.map(p => ({ h: /^\d+반$/.test(p) ? p.replace('반', '') : p.replace('도서관 자습감독', '도서관 자습'), g: 3, key: p }))];
+    const o12 = 2, o3 = 2 + c12.length;
+    const rows = [], merges = [], dayEnds = [];
+    const colKeys = cols.map((c, i) => i < o12 ? null : i < o3 ? 'a:' + c.key : 'c:' + c.key);
+    days.forEach(d => {
+      const dc = dayCells(d);
+      const pl = dc.pl, s3 = dc.s3;
+      const n = Math.max(dc.maxP, 4);
+      const r0 = rows.length;
+      const info = s3.info;
+      let dayLabel = md(d) + ' (' + dowOf(d) + ')';
+      const sub = [];
+      if (info && info.note) sub.push(info.note);
+      else if (W && pl.mode === 'dow') sub.push(pl.dow + '요일 시간표');
+      for (let p = 1; p <= n; p++) {
+        const row = new Array(cols.length).fill(null).map(() => ({ t: '', k: '' }));
+        row[0] = { t: dayLabel + (sub.length ? '\n' + sub.join(' ') : ''), k: 'day' };
+        row[1] = { t: String(p), k: 'per' };
+        for (let ci = o12; ci < cols.length; ci++) {
+          const col = colKeys[ci];
+          if (!dc.valid(p, col)) continue;
+          const c = dc.cells[p + '|' + col];
+          const cell = { t: '', k: '', key: d + '|' + p + '|' + col };
+          if (c) {
+            cell.k = c.g < 3 ? 'g12' : 'g3';
+            cell.t = c.g < 3 ? (c.s || '') + '\n' + (c.t || '') : c.t;
+            cell.chg = !!c.changed; cell.dup = !!c.dup; cell.vac = c.vacated;
+          }
+          row[ci] = cell;
+        }
+        rows.push(row);
+      }
+      merges.push({ r: r0, c: 0, rs: n, cs: 1 });
+      // 1·2학년 쉬는 날
+      if (W && pl.mode === 'off' && c12.length) {
+        rows[r0][o12] = { t: pl.label || '수업 없음', k: 'ev' };
+        merges.push({ r: r0, c: o12, rs: n, cs: c12.length });
+      }
+      // 3학년 행사·자료 없음
+      if (p3.length) {
+        if (s3.off) {
+          rows[r0][o3] = { t: s3.label || '', k: s3.label ? 'ev' : '' };
+          merges.push({ r: r0, c: o3, rs: n, cs: p3.length });
+        } else if (info) {
+          info.events.forEach(e => {
+            const a = e.periods[0], b = Math.min(e.periods[e.periods.length - 1], n);
+            rows[r0 + a - 1][o3] = { t: e.text, k: 'ev' };
+            merges.push({ r: r0 + a - 1, c: o3, rs: b - a + 1, cs: p3.length });
+          });
+        }
+      }
+      dayEnds.push(rows.length - 1);
+    });
+    return { cols, rows, merges, dayEnds, n12: c12.length, n3: p3.length };
+  }
+
+  function renderAll() {
+    const out = $('result');
+    $('suggest').innerHTML = '';
+    const rg = getRange();
+    if (!rg) { out.innerHTML = '<p class="msg">기간을 선택하세요.</p>'; return; }
+    const weeks = weeksOf(rg[0], rg[1]);
+    let html = '';
+    weeks.forEach(days => {
+      const M = weekModel(days);
+      const covered = new Set(), span = {};
+      M.merges.forEach(m => {
+        span[m.r + '|' + m.c] = m;
+        for (let r = m.r; r < m.r + m.rs; r++) for (let c = m.c; c < m.c + m.cs; c++) if (r !== m.r || c !== m.c) covered.add(r + '|' + c);
+      });
+      let head = '<tr><th rowspan="2">날짜</th><th rowspan="2">교시</th>';
+      [1, 2, 3].forEach(g => { const n = M.cols.filter(c => c.g === g).length; if (n) head += '<th class="g' + g + '" colspan="' + n + '">' + g + '학년</th>'; });
+      head += '</tr><tr>' + M.cols.slice(2).map(c => '<th class="g' + c.g + '">' + esc(c.h) + '</th>').join('') + '</tr>';
+      let body = '';
+      M.rows.forEach((row, r) => {
+        body += '<tr' + (M.dayEnds.includes(r) ? ' class="dayend"' : '') + '>';
+        row.forEach((cell, c) => {
+          if (covered.has(r + '|' + c)) return;
+          const m = span[r + '|' + c];
+          const attr = m ? ' rowspan="' + m.rs + '" colspan="' + m.cs + '"' : '';
+          let inner;
+          if (cell.k === 'g12') { const [s, t] = cell.t.split('\n'); inner = '<div class="s">' + esc(s) + '</div><div class="t">' + esc(t || '') + '</div>'; }
+          else inner = esc(cell.t).replace(/\n/g, '<br>');
+          const cls = [cell.k === 'day' ? 'day' : cell.k === 'per' ? 'per' : cell.k === 'ev' ? 'ev' : '',
+            cell.dup ? 'dup' : cell.vac ? 'vac' : cell.chg ? 'chg' : '', cell.key ? 'slot' : ''].filter(Boolean).join(' ');
+          if (cell.vac) inner = '<div class="s">' + esc((cell.t.split('\n')[0]) || '') + '</div><div class="t">빈 수업</div>';
+          body += '<td class="' + cls + '"' + attr + (cell.key ? ' data-key="' + esc(cell.key) + '"' : '') + '>' + inner + '</td>';
+        });
+        body += '</tr>';
+      });
+      html += '<div class="week"><h3><b>' + md(days[0]) + ' ~ ' + md(days[days.length - 1]) + '</b></h3>'
+        + '<div class="tt-scroll"><table class="full"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div></div>';
+    });
+    out.innerHTML = '<div class="card"><div class="summary"><h2>1~3학년 전체시간표</h2>'
+      + '<span class="meta">' + md(rg[0]) + ' ~ ' + md(rg[1]) + (W ? '' : ' · 1·2학년 시간표가 아직 없어요') + '</span>'
+      + '<span class="actions no-print"><input id="hl" type="text" placeholder="이름 강조" style="width:130px;font-size:14px;padding:7px 10px">'
+      + '<button id="xlsxBtn">📥 엑셀로 받기</button></span></div>'
+      + '<div class="legend" style="margin-top:6px"><span>이름을 누르면 그 선생님 시간표가 나와요. '
+      + (adminPw ? '칸을 끌어다 다른 칸에 놓으면 맞바꿔요 (터치는 꾹 눌렀다 끌기) · 끄는 동안 <b style="color:#16a34a">초록 테두리</b>=교체 가능, <b style="color:#ea580c">주황</b>=겹침.' : '수업 바꾸기는 담당자 모드에서 할 수 있어요.') + '</span>'
+      + '<span><i style="background:#ffe1b8"></i>교체한 수업</span><span><i style="background:#ffb4b4"></i>같은 시간 두 수업 (겹침)</span>'
+      + '<span><i style="background:#dcc8ff"></i>빈 수업 (아무도 없음)</span></div>'
+      + (weeks.length ? html : '<p class="msg">선택한 기간에 평일이 없어요.</p>')
+      + logHTML(rg) + '</div>';
+    $('xlsxBtn').onclick = () => exportXlsx(weeks, rg);
+    $('hl').oninput = e => {
+      const q = e.target.value.trim();
+      out.querySelectorAll('table.full td').forEach(td => td.classList.toggle('hl', !!q && td.textContent.includes(q) && !td.classList.contains('day')));
+    };
+  }
+
+  // ---------- 수업 교체 ----------
+  function logHTML(rg) {
+    const list = LOG.map((e, i) => ({ e, i })).filter(({ e }) => e.cells.some(c => c.d >= rg[0] && c.d <= rg[1])).reverse();
+    if (!list.length) return '';
+    return '<h3 style="margin:24px 2px 8px;font-size:16px">🔁 교체 내역</h3><table class="cal">'
+      + list.map(({ e, i }) => '<tr><td style="width:90px" class="auto">' + fmtTime(e.at) + '</td><td>' + esc(e.desc) + '</td><td style="width:100px">'
+        + (adminPw ? '<button data-undo="' + i + '" style="font-size:13px;padding:5px 9px">되돌리기</button>' : '') + '</td></tr>').join('')
+      + '</table>';
+  }
+
+  // 칸 값 바꾸기 (원래 값과 같으면 교체 기록에서 지움)
+  function setSlot(d, k, val) {
+    const dc = dayCells(d), c = dc.cells[k];
+    const base = c && c.base;
+    const same = base ? base.s === val.s && base.t === val.t : !val.s && !val.t;
+    if (same) { if (CHG[d]) { delete CHG[d][k]; if (!Object.keys(CHG[d]).length) delete CHG[d]; } }
+    else (CHG[d] = CHG[d] || {})[k] = { s: val.s || '', t: val.t || '' };
+    invalidate();
+  }
+  // 교체는 바뀐 칸만 서버로 보내고, 서버가 최신 내역 위에 합쳐서 돌려줌
+  // (다른 창·기기에서 한 교체를 덮어쓰지 않도록)
+  let chgBusy = false;
+  async function sendChg(body, rollback) {
+    render();
+    if (!adminPw) return;
+    chgBusy = true;
+    try {
+      const r = await api({ a: 'chg', pw: adminPw, ...body });
+      if (!r.ok) throw new Error(r.msg);
+      CHG = r.chg.CHG || {}; LOG = r.chg.LOG || [];
+      server.updated = r.updated;
+      cacheSave(r.updated);
+    } catch (e) {
+      rollback();
+      alert('저장하지 못했어요: ' + e.message);
+    } finally {
+      chgBusy = false;
+      invalidate();
+      render();
+    }
+  }
+  const snap = () => JSON.stringify({ CHG, LOG });
+  const restore = s => { const o = JSON.parse(s); CHG = o.CHG; LOG = o.LOG; };
+  async function applyOps(ops, desc) {
+    if (chgBusy) return alert('저장 중이에요. 잠깐 뒤에 다시 해 주세요.');
+    const old = snap();
+    const entry = { id: new Date().toISOString() + '#' + Math.random().toString(36).slice(2, 7), at: new Date().toISOString(), desc, cells: [] };
+    const send = [];
+    ops.forEach(o => {
+      const k = o.p + '|' + o.col;
+      const before = CHG[o.d] && CHG[o.d][k] ? { ...CHG[o.d][k] } : null;
+      setSlot(o.d, k, o.val);
+      const after = CHG[o.d] && CHG[o.d][k] ? { ...CHG[o.d][k] } : null;
+      entry.cells.push({ d: o.d, k, before, after });
+      send.push({ d: o.d, k, v: after });
+    });
+    LOG.push(entry);
+    await sendChg({ ops: send, add: entry }, () => restore(old));
+  }
+  async function undo(i) {
+    if (chgBusy) return alert('저장 중이에요. 잠깐 뒤에 다시 해 주세요.');
+    const e = LOG[i];
+    if (!e) return;
+    const old = snap();
+    const send = e.cells.slice().reverse().map(c => ({ d: c.d, k: c.k, v: c.before }));
+    send.forEach(o => {
+      if (o.v) (CHG[o.d] = CHG[o.d] || {})[o.k] = o.v;
+      else if (CHG[o.d]) { delete CHG[o.d][o.k]; if (!Object.keys(CHG[o.d]).length) delete CHG[o.d]; }
+    });
+    LOG.splice(i, 1);
+    invalidate();
+    await sendChg({ ops: send, remove: e.id || e.at }, () => restore(old));
+  }
+
+  // 다른 곳에서 바꾼 내용 받아오기 (창으로 돌아올 때 · 1분마다)
+  async function pull() {
+    if (drag || chgBusy || document.hidden || !$('modal').hidden) return;
+    try {
+      const r = await fetch(API + '?a=load&t=' + Date.now()).then(r => r.json());
+      if (!r.ok || r.updated === server.updated) return;
+      server = { hasPw: r.hasPw, updated: r.updated };
+      D = r.data ? await unpack(r.data) : null;
+      W = r.g12 ? await unpack(r.g12) : null;
+      CAL = r.cal || {};
+      const ch = r.chg ? await unpack(r.chg) : null;
+      CHG = (ch && ch.CHG) || {}; LOG = (ch && ch.LOG) || [];
+      cacheSave(r.updated);
+      if (!drag && !chgBusy) { refresh(); showAdmin(); }
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
+  setInterval(pull, 60000);
+
+  // 칸 키 "날짜|교시|칸" 나누기
+  const splitKey = key => { const [d, ps, ...rest] = key.split('|'); return { d, p: +ps, col: rest.join('|') }; };
+  const cellOf = key => { const { d, p, col } = splitKey(key); return dayCells(d).cells[p + '|' + col] || { s: '', t: '' }; };
+
+  // 이름을 누르면: 그 선생님 시간표만 (그 주)
+  let swapAt = null;
+  function openTeacher(key, who) {
+    swapAt = key;
+    const { d, p, col } = splitKey(key);
+    const c1 = cellOf(key);
+    const A = names(c1.t);
+    const name = who || A[0];
+    if (!name && !adminPw) return;
+    const days = weekDays(d);
+    const g12 = col.startsWith('a:');
+    let html = '<div class="mhead"><div><h2>' + (name ? esc(name) + ' 선생님' : '빈 칸') + '</h2>'
+      + '<div class="meta">' + md(days[0]) + ' ~ ' + md(days[4]) + ' 시간표 · 누른 칸: ' + slotName(d, p) + ' ' + esc(colLabel(col)) + '</div></div>'
+      + '<button id="swapClose">✕ 닫기</button></div>';
+    if (A.length > 1) html += '<div class="chips">' + A.map(n => '<button data-who="' + esc(n) + '"' + (n === name ? ' class="on"' : '') + '>' + esc(n) + '</button>').join('') + '</div>';
+    if (name) {
+      const r = personalHTML(name, days[0], days[4], key);
+      html += r.html.replace('<div class="week"><h3>', '<div class="week"><h3 style="display:none">');
+    }
+    if (adminPw) {
+      html += '<div class="direct"><b>누른 칸 직접 바꾸기</b>'
+        + (g12 ? '<input id="dirS" type="text" placeholder="과목" value="' + esc(c1.s || '') + '" style="width:110px">' : '')
+        + '<input id="dirT" type="text" list="names" placeholder="선생님 이름" value="' + esc(c1.t || '') + '" style="width:160px">'
+        + '<button id="dirApply">넣기</button><button id="dirClear">비우기</button>'
+        + (c1.changed ? '<button id="dirReset">원래대로 (' + esc((c1.base && c1.base.t) || '빈 칸') + ')</button>' : '') + '</div>';
+    }
+    $('swapBox').innerHTML = html;
+    $('modal').hidden = false;
+  }
+
+  // 두 칸 맞바꾸기
+  async function swapKeys(k1, k2) {
+    const a = splitKey(k1), b = splitKey(k2);
+    const c1 = cellOf(k1), c2 = cellOf(k2);
+    if (a.col !== b.col && !confirm(colLabel(a.col) + '과 ' + colLabel(b.col) + '은 다른 반이에요. 그래도 맞바꿀까요?')) return;
+    const side = (x, c) => (a.col !== b.col ? colLabel(x.col) + ' ' : '') + slotName(x.d, x.p) + ' ' + (c.t || '빈 칸');
+    const desc = (a.col === b.col ? colLabel(a.col) + ' ' : '') + side(a, c1) + ' ↔ ' + side(b, c2);
+    await applyOps([
+      { d: a.d, p: a.p, col: a.col, val: { s: c2.s || '', t: c2.t || '' } },
+      { d: b.d, p: b.p, col: b.col, val: { s: c1.s || '', t: c1.t || '' } },
+    ], desc);
+  }
+
+  // ---------- 끌어다 놓기 (마우스: 바로 끌기 / 터치: 꾹 눌렀다 끌기) ----------
+  let drag = null;   // {key, ghost, x0, y0, started, over}
+  // 놓을 곳: 전체시간표는 칸 그대로, 개인시간표는 그 교시의 같은 반 칸
+  const TARGETS = '#result td.slot, #result td[data-dp]';
+  function dropKey(el, srcKey) {
+    const td = el && el.closest && el.closest(TARGETS);
+    if (!td) return null;
+    if (td.dataset.key) return { td, key: td.dataset.key };
+    const { col } = splitKey(srcKey), [d, ps] = td.dataset.dp.split('|');
+    return dayCells(d).valid(+ps, col) ? { td, key: d + '|' + ps + '|' + col } : null;
+  }
+  function dropState(srcKey, tgtKey) {
+    const a = splitKey(srcKey), b = splitKey(tgtKey);
+    if (b.col !== a.col || tgtKey === srcKey) return '';
+    const A = names(cellOf(srcKey).t), B = names(cellOf(tgtKey).t);
+    if (!A.length && !B.length) return '';
+    const bad = A.some(n => busyAt(n, b.d, b.p, b.col).length) || B.some(n => busyAt(n, a.d, a.p, a.col).length);
+    return bad ? 'drop-warn' : 'drop-ok';
+  }
+  function dragBegin(td, x, y) {
+    if (!adminPw) return false;
+    const key = td.dataset.key;
+    if (!names(cellOf(key).t).length && !td.classList.contains('vac')) return false;
+    drag.started = true;
+    drag.personal = td.classList.contains('cell');
+    td.classList.add('drag-src');
+    document.querySelectorAll(TARGETS).forEach(t => { const k = dropKey(t, key); const st = k && dropState(key, k.key); if (st) t.classList.add(st); });
+    const g = drag.ghost = document.createElement('div');
+    g.className = 'ghost';
+    g.innerHTML = td.innerHTML + (drag.personal ? '<div class="to"></div>' : '');
+    document.body.appendChild(g);
+    dragMove(x, y);
+    return true;
+  }
+  function dragMove(x, y) {
+    if (!drag || !drag.started) return;
+    drag.ghost.style.left = (x + 12) + 'px';
+    drag.ghost.style.top = (y + 12) + 'px';
+    const tg = dropKey(document.elementFromPoint(x, y), drag.key);
+    const td = tg && tg.key !== drag.key ? tg.td : null;
+    if (drag.over && drag.over !== td) drag.over.classList.remove('drop-hover');
+    drag.over = td;
+    if (td) td.classList.add('drop-hover');
+    // 개인시간표: 어느 수업과 바뀌는지 보여 주기
+    if (drag.personal) {
+      const { d, p } = td ? splitKey(tg.key) : {};
+      drag.ghost.querySelector('.to').textContent = td ? '↔ ' + slotName(d, p) + ' ' + (cellOf(tg.key).t || '빈 칸') : '';
+    }
+  }
+  function dragEnd(x, y) {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    if (!d.started) return;
+    d.ghost.remove();
+    document.querySelectorAll('#result .drag-src, #result .drop-ok, #result .drop-warn, #result .drop-hover')
+      .forEach(t => t.classList.remove('drag-src', 'drop-ok', 'drop-warn', 'drop-hover'));
+    const tg = dropKey(document.elementFromPoint(x, y), d.key);
+    if (tg && tg.key !== d.key) swapKeys(d.key, tg.key);
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 50);
+  }
+  let suppressClick = false;
+  const SOURCES = '#result td.slot, #result .tt .cell[data-key]';
+  // 마우스
+  document.addEventListener('mousedown', e => {
+    const td = e.button === 0 && e.target.closest(SOURCES);
+    if (!td) return;
+    drag = { key: td.dataset.key, td, x0: e.clientX, y0: e.clientY, started: false };
+  });
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    if (!drag.started) {
+      if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) < 6) return;
+      if (!dragBegin(drag.td, e.clientX, e.clientY)) { drag = null; return; }
+    }
+    e.preventDefault();
+    dragMove(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', e => dragEnd(e.clientX, e.clientY));
+  // 터치: 0.35초 꾹 누르면 끌기 시작 (그 전에 움직이면 그냥 스크롤)
+  document.addEventListener('touchstart', e => {
+    const td = e.target.closest && e.target.closest(SOURCES);
+    if (!td || e.touches.length > 1) return;
+    const t = e.touches[0];
+    drag = { key: td.dataset.key, td, x0: t.clientX, y0: t.clientY, x: t.clientX, y: t.clientY, started: false };
+    drag.timer = setTimeout(() => {
+      if (drag && !drag.started && dragBegin(drag.td, drag.x, drag.y) && navigator.vibrate) navigator.vibrate(30);
+    }, 350);
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (!drag) return;
+    const t = e.touches[0];
+    drag.x = t.clientX; drag.y = t.clientY;
+    if (!drag.started) {
+      if (Math.abs(t.clientX - drag.x0) + Math.abs(t.clientY - drag.y0) > 10) { clearTimeout(drag.timer); drag = null; }
+      return;
+    }
+    e.preventDefault();
+    dragMove(t.clientX, t.clientY);
+  }, { passive: false });
+  document.addEventListener('touchend', e => {
+    if (!drag) return;
+    clearTimeout(drag.timer);
+    if (drag.started) { e.preventDefault(); dragEnd(drag.x, drag.y); } else drag = null;
+  });
+  document.addEventListener('contextmenu', e => { if (drag && drag.started) e.preventDefault(); });
+
+  // 엑셀: 주마다 시트 하나 (화면과 같은 모양)
+  function exportXlsx(weeks, rg) {
+    const X = window.XLSX;
+    const wb = X.utils.book_new();
+    const thin = { style: 'thin', color: { rgb: 'A0A7B2' } }, thick = { style: 'medium', color: { rgb: '4B5260' } };
+    const fill = { 1: 'E3F0FF', 2: 'E5F6EA', 3: 'FDF0DD', 0: 'EEF1F5' };
+    weeks.forEach(days => {
+      const M = weekModel(days);
+      const aoa = [], merges = [];
+      const h1 = ['날짜', '교시'], h2 = ['', ''];
+      M.cols.slice(2).forEach((c, i) => { h1.push(i === 0 || M.cols[i + 1].g !== c.g ? c.g + '학년' : ''); h2.push(c.h); });
+      aoa.push(h1, h2);
+      merges.push({ s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } });
+      [1, 2, 3].forEach(g => {
+        const idx = M.cols.map((c, i) => c.g === g ? i : -1).filter(i => i >= 0);
+        if (idx.length > 1) merges.push({ s: { r: 0, c: idx[0] }, e: { r: 0, c: idx[idx.length - 1] } });
+      });
+      M.rows.forEach(row => aoa.push(row.map(c => c.vac ? (c.t.split('\n')[0] ? c.t.split('\n')[0] + '\n' : '') + '(빈 수업)' : c.t)));
+      M.merges.forEach(m => merges.push({ s: { r: m.r + 2, c: m.c }, e: { r: m.r + 1 + m.rs, c: m.c + m.cs - 1 } }));
+      const ws = X.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = merges;
+      ws['!cols'] = M.cols.map((c, i) => ({ wch: i === 0 ? 11 : i === 1 ? 4 : 8 }));
+      ws['!rows'] = aoa.map((r, i) => ({ hpt: i < 2 ? 18 : 28 }));
+      for (let r = 0; r < aoa.length; r++) for (let c = 0; c < M.cols.length; c++) {
+        const ref = X.utils.encode_cell({ r, c });
+        if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+        const body = r >= 2 ? M.rows[r - 2][c] : null;
+        const end = r >= 2 && M.dayEnds.includes(r - 2);
+        ws[ref].s = {
+          font: { name: '맑은 고딕', sz: r < 2 ? 10 : 9, bold: r < 2 || (body && (body.k === 'day' || body.k === 'ev')) },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          border: { top: thin, left: thin, right: thin, bottom: end ? thick : thin },
+          ...(r < 2 ? { fill: { patternType: 'solid', fgColor: { rgb: fill[M.cols[c].g] } } }
+            : body && (body.dup || body.vac || body.chg) ? { fill: { patternType: 'solid', fgColor: { rgb: body.dup ? 'FFB4B4' : body.vac ? 'DCC8FF' : 'FFE1B8' } } }
+            : body && body.k === 'ev' ? { fill: { patternType: 'solid', fgColor: { rgb: 'EDEEF1' } } }
+            : body && (body.k === 'day' || body.k === 'per') ? { fill: { patternType: 'solid', fgColor: { rgb: 'F6F7F9' } } } : {}),
+        };
+      }
+      ws['!freeze'] = { xSplit: 2, ySplit: 2 };
+      X.utils.book_append_sheet(wb, ws, (md(days[0]) + '~' + md(days[days.length - 1])).replace(/\//g, '.'));
+    });
+    X.writeFile(wb, '1~3학년 전체시간표 ' + md(rg[0]).replace('/', '.') + '~' + md(rg[1]).replace('/', '.') + '.xlsx');
+  }
+
+  // ---------- 이벤트 ----------
+  $('name').addEventListener('input', render);
+  const manual = () => { document.querySelectorAll('#quick button').forEach(x => x.classList.remove('on')); render(); };
+  $('from').addEventListener('change', manual);
+  $('to').addEventListener('change', manual);
+  $('quick').addEventListener('click', e => { const b = e.target.closest('button'); if (b) quick(b.dataset.q); });
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setView(b.dataset.v); });
+  $('suggest').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { $('name').value = b.dataset.n; render(); } });
+  $('pickBtn').onclick = () => $('file').click();
+  $('adminBtn').onclick = async () => { await adminToggle(); renderCal(); render(); };
+  $('file').addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
+  const drop = $('drop');
+  ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+  // 수업 교체
+  $('result').addEventListener('click', e => {
+    const td = e.target.closest('td.slot');
+    if (td) { if (!suppressClick) openTeacher(td.dataset.key); return; }
+    // 개인시간표 수업 누르기 → 그 칸 직접 바꾸기 (담당자)
+    const pc = adminPw && e.target.closest('.tt .cell[data-key], .tt .cell[data-open]');
+    if (pc) { if (!suppressClick) openTeacher(pc.dataset.key || pc.dataset.open, findTeacher($('name').value.trim()).name); return; }
+    const u = e.target.closest('[data-undo]');
+    if (u && confirm('이 교체를 되돌릴까요?')) undo(+u.dataset.undo);
+  });
+  const closeSwap = () => { $('modal').hidden = true; swapAt = null; };
+  // 바깥 어두운 곳을 눌렀다 뗐을 때만 닫기 (칸 안에서 글자 고르다 밖에서 떼면 안 닫힘)
+  let downOnBack = false;
+  $('modal').addEventListener('pointerdown', e => { downOnBack = e.target === $('modal'); });
+  $('modal').addEventListener('click', async e => {
+    if ((e.target === $('modal') && downOnBack) || e.target.closest('#swapClose')) return closeSwap();
+    const w = e.target.closest('[data-who]');
+    if (w && swapAt) return openTeacher(swapAt, w.dataset.who);
+    if (!swapAt || !adminPw) return;
+    const { d, p, col } = splitKey(swapAt);
+    const c1 = dayCells(d).cells[p + '|' + col] || { s: '', t: '' };
+    const slot = colLabel(col) + ' ' + slotName(d, p);
+    if (e.target.closest('#dirApply')) {
+      const t = $('dirT').value.trim(), s = $('dirS') ? $('dirS').value.trim() : (c1.s || '');
+      closeSwap();
+      return applyOps([{ d, p, col, val: { s, t } }], slot + ' ' + (c1.t || '빈 칸') + ' → ' + (t || '빈 칸'));
+    }
+    if (e.target.closest('#dirClear')) {
+      closeSwap();
+      return applyOps([{ d, p, col, val: { s: c1.s || '', t: '' } }], slot + ' ' + (c1.t || '') + ' 비움');
+    }
+    if (e.target.closest('#dirReset')) {
+      closeSwap();
+      return applyOps([{ d, p, col, val: c1.base || { s: '', t: '' } }], slot + ' 원래대로 (' + ((c1.base && c1.base.t) || '빈 칸') + ')');
+    }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modal').hidden) closeSwap(); });
+  // 직접 바꾸기 칸에서 엔터 = 넣기 (한글 입력 중이면 글자가 완성된 뒤에)
+  let enterAfterIme = false;
+  const dirEnter = () => { const b = $('dirApply'); if (b && !$('modal').hidden) b.click(); };
+  $('modal').addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !e.target.matches('#dirT, #dirS')) return;
+    e.preventDefault();
+    if (e.isComposing || e.keyCode === 229) enterAfterIme = true; else dirEnter();
+  });
+  $('modal').addEventListener('compositionend', () => { if (enterAfterIme) { enterAfterIme = false; setTimeout(dirEnter, 0); } });
+
+  $('calTable').addEventListener('change', e => { const tr = e.target.closest('tr[data-d]'); if (tr) { readCalRow(tr); $('calStatus').textContent = '저장하지 않은 변경이 있어요.'; render(); } });
+  $('calTable').addEventListener('click', e => {
+    const a = e.target.closest('[data-reset]');
+    if (a) { e.preventDefault(); delete CAL[a.dataset.reset]; renderCal(); render(); $('calStatus').textContent = '저장하지 않은 변경이 있어요.'; }
+  });
+  $('calAdd').onclick = () => {
+    const d = $('calAddDate').value;
+    if (!d) return;
+    if (!CAL[d]) CAL[d] = { mode: 'off', label: '' };
+    renderCal(); render();
+    $('calStatus').textContent = '저장하지 않은 변경이 있어요.';
+  };
+  $('calSave').onclick = async () => {
+    $('calStatus').textContent = '저장 중…';
+    try { await save({ cal: CAL }); $('calStatus').textContent = '✅ 저장했어요.'; renderCal(); }
+    catch (e) { $('calStatus').textContent = '⚠️ ' + e.message; }
+  };
+
+  init();
+})();
+</script>
+</body>
+</html>
