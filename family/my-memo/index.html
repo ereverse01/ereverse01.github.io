@@ -1633,7 +1633,6 @@ editor.addEventListener('click', e => {
   $$('img.sel', editor).forEach(i => i.classList.remove('sel'));
   const li = e.target.closest('ul.todo > li');
   if (li && e.target === li && e.clientX - li.getBoundingClientRect().left < 24) {
-    if (li.hasAttribute('data-checked')) { li.removeAttribute('data-checked'); sortTodo(li); markChanged(); return; }
     removeDone(li); return;
   }
   const sum = e.target.closest('summary');
@@ -2257,7 +2256,19 @@ async function init() {
   if (!syncOn()) { setStatus('local'); afterFirstSync(); }
   else if (!cfg.key) { setStatus('auth'); askPassword(); }
   else sync().then(() => afterFirstSync());
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    // 켜 둔 채로 새 버전이 나오면 알려 줌 (창으로 돌아올 때마다 확인)
+    const had = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+    }).catch(() => {});
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!had) return;
+      toast('새 버전이 나왔어요', '새로고침', async () => { try { await flushEditor(); } catch (_) {} location.reload(); });
+      clearTimeout(toastT); // 누를 때까지 남겨 둠
+    });
+  }
 }
 init();
 </script>
