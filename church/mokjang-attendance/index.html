@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>목원 출석부</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --card: #ffffff;
+    --ink: #2b2a27;
+    --muted: #8a867d;
+    --line: #e4e0d6;
+    --accent: #6b5b3e;
+    --c-in: #2e7d5b;      /* 현장 예배 */
+    --c-in-bg: #e3f5ea;
+    --c-on: #3b6fd8;      /* 온라인 */
+    --c-on-bg: #e6eefc;
+    --c-out: #d0552f;     /* 못드림 */
+    --c-out-bg: #fcebe4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.5;
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px 90px; }
+  header { text-align: center; padding: 26px 16px 8px; }
+  header h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+  #sync { color: var(--muted); font-size: 0.85rem; min-height: 1.3em; margin-top: 2px; }
+  #sync.err { color: var(--c-out); }
+  #who { color: var(--muted); font-size: 0.9rem; }
+  #who button { border: 0; background: none; color: var(--accent); text-decoration: underline; padding: 0 0 0 6px; font-size: inherit; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 6px; justify-content: center; margin: 10px 0 14px; }
+  .tabs button {
+    border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+    padding: 7px 16px; font-size: 0.95rem;
+  }
+  .tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* 달 이동 */
+  .month { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 10px; }
+  .month b { font-size: 1.2rem; min-width: 8em; text-align: center; }
+  .month button {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--card); font-size: 1.1rem;
+  }
+
+  /* 주일 고르기 */
+  .sundays { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; justify-content: center; flex-wrap: wrap; }
+  .sundays button {
+    border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+    padding: 6px 12px; text-align: center; min-width: 74px;
+  }
+  .sundays button small { display: block; color: var(--muted); font-size: 0.75rem; }
+  .sundays button.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .sundays button.on small { color: var(--accent); }
+
+  .count { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 12px; }
+  .count b { color: var(--ink); }
+
+  /* 목원 카드 */
+  .member {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .member .name { font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .member .name small { font-weight: 400; color: var(--muted); }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opts button {
+    border: 1px solid var(--line); background: #fbfaf7; border-radius: 10px;
+    padding: 7px 0; min-width: 52px; flex: 1 0 52px; font-size: 0.95rem;
+  }
+  .opts button.in.on { background: var(--c-in-bg); border-color: var(--c-in); color: var(--c-in); font-weight: 700; }
+  .opts button.on-line.on { background: var(--c-on-bg); border-color: var(--c-on); color: var(--c-on); font-weight: 700; }
+  .opts button.out.on { background: var(--c-out-bg); border-color: var(--c-out); color: var(--c-out); font-weight: 700; }
+  .reason {
+    width: 100%; margin-top: 8px; border: 1px solid var(--c-out); border-radius: 10px;
+    padding: 8px 10px; background: #fffaf8;
+  }
+
+  /* 월별 현황 */
+  .table-box { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 6px; text-align: center; white-space: nowrap; }
+  th { background: #faf8f3; font-weight: 600; }
+  td:first-child, th:first-child { text-align: left; padding-left: 12px; position: sticky; left: 0; background: inherit; }
+  tbody tr { background: var(--card); }
+  tr:last-child td { border-bottom: 0; }
+  .tag { display: inline-block; border-radius: 6px; padding: 1px 6px; font-size: 0.85rem; }
+  .tag.in { background: var(--c-in-bg); color: var(--c-in); }
+  .tag.on-line { background: var(--c-on-bg); color: var(--c-on); }
+  .tag.out { background: var(--c-out-bg); color: var(--c-out); }
+  .blank { color: #cfcabe; }
+  h3 { margin: 22px 0 8px; font-size: 1.05rem; }
+  .reasons { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 14px; }
+  .reasons div { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .reasons div:last-child { border-bottom: 0; }
+  .reasons span { color: var(--muted); margin-right: 8px; }
+  .row-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  .btn {
+    border: 1px solid var(--accent); background: var(--card); color: var(--accent);
+    border-radius: 10px; padding: 8px 14px;
+  }
+  .btn.main { background: var(--accent); color: #fff; }
+
+  /* 목원 관리 */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .panel label { display: block; font-weight: 600; margin: 4px 0 6px; }
+  .panel input, .panel textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; background: #fbfaf7;
+  }
+  .panel textarea { min-height: 260px; line-height: 1.6; }
+  .hint { color: var(--muted); font-size: 0.85rem; margin: 6px 0 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+  .codes { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .codes div { display: flex; justify-content: space-between; padding: 5px 2px; border-bottom: 1px dashed var(--line); }
+  .codes div:last-child { border-bottom: 0; }
+  .codes code { font-size: 1rem; letter-spacing: 0.08em; }
+
+  /* 로그인 */
+  #login { max-width: 340px; margin: 60px auto; text-align: center; }
+  #login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; margin: 14px 0 10px; text-align: center; font-size: 1.1rem; }
+  #login .btn { width: 100%; padding: 12px; font-size: 1rem; }
+  #loginMsg { color: var(--c-out); min-height: 1.4em; margin-top: 8px; font-size: 0.9rem; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">목원 출석부</h1>
+  <div id="who" class="hidden"><span id="whoName"></span><button id="logout">나가기</button></div>
+  <div id="sync"></div>
+</header>
+
+<div class="wrap">
+  <div id="login" class="hidden">
+    <p>개인 코드를 입력해 주세요.<br><small style="color:var(--muted)">관리자는 관리자 암호를 넣어요.</small></p>
+    <input id="pw" type="password" autocomplete="current-password">
+    <button class="btn main" id="loginBtn">들어가기</button>
+    <div id="loginMsg"></div>
+  </div>
+
+  <div id="app" class="hidden">
+    <nav class="tabs">
+      <button data-tab="check" class="on">출석 체크</button>
+      <button data-tab="month">월별 현황</button>
+      <button data-tab="members">목원 관리</button>
+    </nav>
+
+    <div class="month" id="monthNav">
+      <button id="prevM" aria-label="이전 달">‹</button>
+      <b id="monthLabel"></b>
+      <button id="nextM" aria-label="다음 달">›</button>
+    </div>
+
+    <section id="tab-check">
+      <div class="sundays" id="sundays"></div>
+      <p class="count" id="count"></p>
+      <div id="list"></div>
+    </section>
+
+    <section id="tab-month" class="hidden">
+      <div class="table-box"><table id="table"></table></div>
+      <div class="row-btns"><button class="btn" id="copyBtn">표 복사 (엑셀에 붙여넣기)</button></div>
+      <h3>못 드린 사유</h3>
+      <div class="reasons" id="reasons"></div>
+    </section>
+
+    <section id="tab-members" class="hidden">
+      <div class="panel">
+        <label for="titleIn">목장 이름</label>
+        <input id="titleIn" placeholder="예: 09목장">
+        <label for="membersIn" style="margin-top:16px">목원 명단</label>
+        <textarea id="membersIn" placeholder="한 줄에 한 가정씩 적어 주세요&#10;예) 홍길동, 김영희&#10;    김철수"></textarea>
+        <p class="hint">한 줄에 한 가정씩 적어요. 부부는 <b>쉼표(,)</b>로 이어 적으면 코드 하나로 같이 들어와서 각자 따로 체크해요.<br>순서대로 출석부에 나와요. 이름을 지워도 지난 출석 기록은 시트에 남아 있어요.</p>
+        <div class="row-btns" style="margin-top:0"><button class="btn main" id="saveMembers">저장</button></div>
+        <div class="codes">
+          <label>개인 코드</label>
+          <p class="hint" style="margin-top:0">가정마다 그 가정 코드만 알려 주세요. 코드로 들어오면 본인(부부) 기록만 보고 고칠 수 있어요.<br>새 목원의 코드는 저장하면 만들어져요. 코드를 바꾸려면 시트의 ‘목원’ 탭 B열을 고치세요.</p>
+          <div id="codes"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+  // ▼ Apps Script 배포 후 받은 웹 앱 URL을 따옴표 안에 붙여넣으세요 (비워두면 이 기기에만 저장되는 연습용)
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbzDOheeS5h7LbttbEHcjBi8J9jNHhvLXCOzh7HKIj06FJuH4hXqPasB2E1ZAdPZjLV0qw/exec";
+
+  const PW_KEY = "mokjang-attend-pw";
+  const LOCAL_KEY = "mokjang-attend-local";
+  const OPTIONS = [
+    { v: "1부", cls: "in" }, { v: "2부", cls: "in" }, { v: "3부", cls: "in" },
+    { v: "4부", cls: "in" }, { v: "5부", cls: "in" },
+    { v: "온라인", cls: "on-line" }, { v: "못드림", cls: "out" },
+  ];
+  const CLS = Object.fromEntries(OPTIONS.map(o => [o.v, o.cls]));
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  const $ = id => document.getElementById(id);
+
+  // data = { title, members: [이름], codes: { 이름: 코드 }, rec: { "2026-10-18": { 이름: { s: "2부", r: "사유" } } } }
+  let data = { title: "", members: [], codes: {}, rec: {} };
+  // 관리자("admin")는 전체, 목원("member")은 서버가 본인(me) 기록만 보내줌
+  let role = "admin", me = "";
+  let pw = "";
+  try { pw = localStorage.getItem(PW_KEY) || ""; } catch {}
+
+  const pad = n => String(n).padStart(2, "0");
+  const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+
+  // 오늘 기준 가장 가까운 지난 주일(오늘이 주일이면 오늘)
+  const today = new Date();
+  const lastSun = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+  let viewY = lastSun.getFullYear(), viewM = lastSun.getMonth();
+  let selDate = ymd(lastSun);
+  let tab = "check";
+
+  function sundaysOf(y, m) {
+    const out = [];
+    const d = new Date(y, m, 1);
+    d.setDate(1 + (7 - d.getDay()) % 7);
+    while (d.getMonth() === m) { out.push(ymd(d)); d.setDate(d.getDate() + 7); }
+    return out;
+  }
+  const parts = s => s ? s.split(", ") : [];   // "1부, 2부" → ["1부", "2부"]
+  const md = s => { const [, m, d] = s.split("-"); return (+m) + "/" + (+d); };
+
+  // ---------- 저장소 ----------
+  async function call(body) {
+    const res = await fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ ...body, pw }),
+    });
+    return res.json();
+  }
+
+  function setSync(msg, err) {
+    $("sync").textContent = msg;
+    $("sync").className = err ? "err" : "";
+  }
+
+  function saveLocal() {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch {}
+  }
+
+  // 저장 요청은 순서대로 하나씩 보냄
+  let queue = Promise.resolve();
+  let pending = 0;
+  function send(body) {
+    if (!SHEET_URL) { saveLocal(); setSync("이 기기에 저장됨 (연습용)"); return Promise.resolve(null); }
+    pending++;
+    setSync("저장 중…");
+    return queue = queue.then(async () => {
+      try {
+        const d = await call(body);
+        if (!d.ok) throw new Error(d.error);
+        pending--;
+        if (!pending) setSync("저장됨 ✓");
+        return d;
+      } catch (e) {
+        pending--;
+        setSync(e.message === "forbidden" ? "저장 실패 — 권한이 없어요"
+          : "저장 실패 — 인터넷 연결을 확인하고 다시 눌러 주세요", true);
+        return null;
+      }
+    });
+  }
+
+  function mark(date, name, s, r) {
+    const day = data.rec[date] = data.rec[date] || {};
+    if (!s) delete day[name]; else day[name] = { s, r: s === "못드림" ? (r || "") : "" };
+    send({ action: "mark", date, name, service: s || "", reason: s === "못드림" ? (r || "") : "" });
+  }
+
+  async function load() {
+    if (!SHEET_URL) {
+      try { data = JSON.parse(localStorage.getItem(LOCAL_KEY)) || data; } catch {}
+      setSync("연습용 — 이 기기에만 저장돼요");
+      return true;
+    }
+    setSync("불러오는 중…");
+    try {
+      const d = await call({ action: "load" });
+      if (!d.ok) { setSync(""); return d.error === "pw" ? "pw" : false; }
+      role = d.role || "admin";
+      me = d.me || "";
+      data = { title: d.title || "", members: d.members || [], codes: d.codes || {}, rec: {} };
+      (d.records || []).forEach(([date, name, s, r]) => {
+        (data.rec[date] = data.rec[date] || {})[name] = { s, r: r || "" };
+      });
+      setSync("");
+      return true;
+    } catch (e) {
+      setSync("불러오기 실패 — 인터넷 연결을 확인해 주세요", true);
+      return false;
+    }
+  }
+
+  // ---------- 화면 ----------
+  function render() {
+    const t = data.title ? data.title + " 출석부" : "목원 출석부";
+    $("title").textContent = t;
+    document.title = t;
+    $("monthLabel").textContent = viewY + "년 " + (viewM + 1) + "월";
+    $("who").classList.toggle("hidden", !SHEET_URL);
+    $("whoName").textContent = role === "member" ? me + " 님" : "관리자";
+    document.querySelectorAll(".tabs button").forEach(b => {
+      b.classList.toggle("on", b.dataset.tab === tab);
+      b.classList.toggle("hidden", b.dataset.tab === "members" && role !== "admin");
+    });
+    ["check", "month", "members"].forEach(k => $("tab-" + k).classList.toggle("hidden", k !== tab));
+    $("monthNav").classList.toggle("hidden", tab === "members");
+    if (tab === "check") renderCheck();
+    if (tab === "month") renderMonth();
+    if (tab === "members") renderMembers();
+  }
+
+  function attended(day) {
+    return data.members.filter(n => day[n] && day[n].s !== "못드림").length;
+  }
+
+  function renderCheck() {
+    const suns = sundaysOf(viewY, viewM);
+    if (!suns.includes(selDate)) selDate = suns.includes(ymd(lastSun)) ? ymd(lastSun) : suns[0];
+    $("sundays").innerHTML = suns.map(s => {
+      const day = data.rec[s] || {};
+      const sub = role === "member" && data.members.length === 1
+        ? (day[data.members[0]] ? day[data.members[0]].s : "—")
+        : `${attended(day)}/${data.members.length}명`;
+      return `<button data-date="${s}" class="${s === selDate ? "on" : ""}">${md(s)} (일)<small>${esc(sub)}</small></button>`;
+    }).join("");
+
+    const day = data.rec[selDate] || {};
+    const marked = data.members.filter(n => day[n]).length;
+    $("count").innerHTML = data.members.length && role === "admin"
+      ? `출석 <b>${attended(day)}</b>명 · 체크 안 함 <b>${data.members.length - marked}</b>명`
+      : "";
+
+    if (!data.members.length) {
+      $("list").innerHTML = `<div class="empty">아직 목원이 없어요.<br>‘목원 관리’에서 명단을 넣어 주세요.</div>`;
+      return;
+    }
+    $("list").innerHTML = data.members.map((n, i) => {
+      const cur = day[n] || {};
+      return `<div class="member" data-i="${i}">
+        <div class="name">${esc(n)}<small>${cur.s ? "" : "체크 안 함"}</small></div>
+        <div class="opts">${OPTIONS.map(o =>
+          `<button class="${o.cls}${parts(cur.s).includes(o.v) ? " on" : ""}" data-v="${o.v}">${o.v}</button>`).join("")}</div>
+        ${cur.s === "못드림" ? `<input class="reason" placeholder="못 드린 사유 (예: 출장, 아파서)" value="${esc(cur.r || "")}">` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  function monthRows() {
+    const suns = sundaysOf(viewY, viewM);
+    const names = [...data.members];
+    // 명단에서 빠졌지만 이번 달 기록이 있는 사람도 표시
+    suns.forEach(s => Object.keys(data.rec[s] || {}).forEach(n => { if (!names.includes(n)) names.push(n); }));
+    return { suns, names };
+  }
+
+  function renderMonth() {
+    const { suns, names } = monthRows();
+    if (!names.length) {
+      $("table").innerHTML = `<tr><td class="empty">목원이 없어요.</td></tr>`;
+      $("reasons").innerHTML = `<div class="empty">—</div>`;
+      return;
+    }
+    let html = `<thead><tr><th>이름</th>${suns.map(s => `<th>${md(s)}</th>`).join("")}<th>출석</th></tr></thead><tbody>`;
+    names.forEach(n => {
+      let cnt = 0;
+      const cells = suns.map(s => {
+        const c = (data.rec[s] || {})[n];
+        if (!c) return `<td class="blank">·</td>`;
+        if (c.s !== "못드림") cnt++;
+        return `<td>${parts(c.s).map(v =>
+          `<span class="tag ${CLS[v] || "in"}" title="${esc(c.r || "")}">${v === "못드림" ? "✕" : v}</span>`).join(" ")}</td>`;
+      }).join("");
+      html += `<tr><td>${esc(n)}</td>${cells}<td><b>${cnt}</b>/${suns.length}</td></tr>`;
+    });
+    if (role === "admin") html += `<tr><td><b>합계</b></td>${suns.map(s => `<td><b>${attended(data.rec[s] || {})}</b></td>`).join("")}<td></td></tr>`;
+    html += `</tbody>`;
+    $("table").innerHTML = html;
+
+    const rs = [];
+    suns.forEach(s => names.forEach(n => {
+      const c = (data.rec[s] || {})[n];
+      if (c && c.s === "못드림") rs.push(`<div><span>${md(s)}</span><b>${esc(n)}</b> — ${c.r ? esc(c.r) : '<span>사유 없음</span>'}</div>`);
+    }));
+    $("reasons").innerHTML = rs.join("") || `<div class="empty">이번 달은 없어요 🙌</div>`;
+  }
+
+  // 같은 코드를 가진 사람끼리 한 가정으로 묶음 (코드 없는 사람은 혼자)
+  function groupsOf() {
+    const out = [], byCode = {};
+    data.members.forEach(n => {
+      const c = data.codes[n];
+      if (c && byCode[c]) byCode[c].push(n);
+      else { const g = [n]; out.push(g); if (c) byCode[c] = g; }
+    });
+    return out;
+  }
+
+  function renderMembers() {
+    $("titleIn").value = data.title;
+    $("membersIn").value = groupsOf().map(g => g.join(", ")).join("\n");
+    renderCodes();
+  }
+
+  function renderCodes() {
+    $("codes").innerHTML = !SHEET_URL ? `<p class="hint">시트를 연결하면 만들어져요.</p>`
+      : groupsOf().map(g => `<div><span>${esc(g.join(" · "))}</span><code>${data.codes[g[0]] ? esc(data.codes[g[0]]) : "저장하면 생겨요"}</code></div>`).join("");
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  // ---------- 이벤트 ----------
+  document.querySelector(".tabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    tab = b.dataset.tab; render();
+  });
+  $("prevM").onclick = () => { viewM--; if (viewM < 0) { viewM = 11; viewY--; } render(); };
+  $("nextM").onclick = () => { viewM++; if (viewM > 11) { viewM = 0; viewY++; } render(); };
+  $("sundays").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    selDate = b.dataset.date; renderCheck();
+  });
+
+  $("list").addEventListener("click", e => {
+    const b = e.target.closest(".opts button"); if (!b) return;
+    const name = data.members[b.closest(".member").dataset.i];
+    const cur = (data.rec[selDate] || {})[name] || {};
+    const v = b.dataset.v;
+    // 예배는 여러 개 고를 수 있고, 같은 걸 다시 누르면 해제. 못드림은 다른 것과 함께 못 고름
+    let sel = parts(cur.s).filter(x => x !== "못드림");
+    if (v === "못드림") sel = cur.s === "못드림" ? [] : ["못드림"];
+    else if (sel.includes(v)) sel = sel.filter(x => x !== v);
+    else sel = OPTIONS.map(o => o.v).filter(x => x === v || sel.includes(x));   // 1부, 2부 … 순서 유지
+    mark(selDate, name, sel.join(", "), cur.r);
+    renderCheck();
+    if (v === "못드림" && cur.s !== v) {
+      const inp = document.querySelector(`.member[data-i="${b.closest(".member").dataset.i}"] .reason`);
+      if (inp) inp.focus();
+    }
+  });
+
+  // 사유는 입력을 멈추면 저장
+  let reasonTimer = null;
+  function saveReason(inp) {
+    clearTimeout(reasonTimer);
+    const name = data.members[inp.closest(".member").dataset.i];
+    const cur = (data.rec[selDate] || {})[name];
+    if (!cur || cur.r === inp.value.trim()) return;
+    mark(selDate, name, "못드림", inp.value.trim());
+  }
+  $("list").addEventListener("input", e => {
+    if (!e.target.classList.contains("reason")) return;
+    clearTimeout(reasonTimer);
+    reasonTimer = setTimeout(() => saveReason(e.target), 800);
+  });
+  $("list").addEventListener("focusout", e => {
+    if (e.target.classList.contains("reason")) saveReason(e.target);
+  });
+
+  $("saveMembers").onclick = () => {
+    // 한 줄 = 한 가정, 쉼표로 부부 구분
+    const list = [], groups = [];
+    $("membersIn").value.split("\n").forEach(line => {
+      const g = line.split(/[,，、·]/).map(s => s.trim()).filter(n => n && !list.includes(n));
+      if (!g.length) return;
+      list.push(...g);
+      groups.push(g);
+    });
+    data.members = list;
+    data.title = $("titleIn").value.trim();
+    send({ action: "members", members: list, groups, title: data.title }).then(d => {
+      if (!d || !d.codes) return;
+      data.codes = d.codes;
+      if (tab === "members") renderMembers();
+    });
+    // 시트에 연결돼 있으면 새 코드를 확인할 수 있게 목원 관리에 머무름
+    if (!SHEET_URL) tab = "check";
+    render();
+  };
+
+  $("copyBtn").onclick = async () => {
+    const { suns, names } = monthRows();
+    const lines = [["이름", ...suns.map(md), "출석"].join("\t")];
+    names.forEach(n => {
+      let cnt = 0;
+      const cells = suns.map(s => {
+        const c = (data.rec[s] || {})[n];
+        if (!c) return "";
+        if (c.s !== "못드림") { cnt++; return c.s; }
+        return "못드림" + (c.r ? "(" + c.r + ")" : "");
+      });
+      lines.push([n, ...cells, cnt + "/" + suns.length].join("\t"));
+    });
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      $("copyBtn").textContent = "복사됐어요 ✓";
+    } catch {
+      $("copyBtn").textContent = "복사 실패";
+    }
+    setTimeout(() => $("copyBtn").textContent = "표 복사 (엑셀에 붙여넣기)", 1800);
+  };
+
+  // ---------- 시작 ----------
+  async function enter() {
+    const r = await load();
+    if (r === true) {
+      $("login").classList.add("hidden");
+      $("app").classList.remove("hidden");
+      if (role !== "admin" && tab === "members") tab = "check";
+      if (!data.members.length && role === "admin") tab = "members";
+      render();
+      return;
+    }
+    $("login").classList.remove("hidden");
+    $("app").classList.add("hidden");
+    if (r === "pw") {
+      $("loginMsg").textContent = pw ? "코드가 맞지 않아요." : "";
+      try { localStorage.removeItem(PW_KEY); } catch {}
+    } else {
+      $("loginMsg").textContent = "연결이 안 돼요. 잠시 후 다시 눌러 주세요.";
+    }
+  }
+  $("loginBtn").onclick = () => {
+    pw = $("pw").value.trim();
+    try { localStorage.setItem(PW_KEY, pw); } catch {}
+    enter();
+  };
+  $("logout").onclick = () => {
+    pw = "";
+    try { localStorage.removeItem(PW_KEY); } catch {}
+    data = { title: "", members: [], codes: {}, rec: {} };
+    role = "admin"; me = "";
+    $("pw").value = ""; $("loginMsg").textContent = "";
+    $("app").classList.add("hidden");
+    $("who").classList.add("hidden");
+    $("login").classList.remove("hidden");
+  };
+  $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+
+  if (!SHEET_URL || pw) enter();
+  else $("login").classList.remove("hidden");
+</script>
+</body>
+</html>
