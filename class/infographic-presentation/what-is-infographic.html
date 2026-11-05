@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>인포그래픽이란?</title>
+<style>
+:root{--bg:#f6f6f3;--card:#fff;--ink:#1f2328;--muted:#6b6f76;--line:#d9d9d3;--accent:#2a6fdb;--tint:#e8f0fc}
+@media (prefers-color-scheme:dark){:root{--bg:#16181c;--card:#1f2228;--ink:#e8e9eb;--muted:#9aa0a8;--line:#3a3e46;--accent:#7fa8ff;--tint:#24324a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.65;word-break:keep-all}
+main{max-width:760px;margin:0 auto;padding:32px 16px 56px}
+h1{font-size:1.7rem;margin:0 0 12px}
+h2{font-size:1.2rem;margin:40px 0 12px;padding-top:8px;border-top:1px solid var(--line)}
+p{margin:0 0 12px}
+.lead{font-size:1.05rem}
+blockquote{margin:0 0 16px;padding:12px 16px;background:var(--card);border-left:4px solid var(--line);border-radius:4px;color:var(--muted)}
+ul,ol{margin:0 0 12px;padding-left:22px}
+li{margin:4px 0}
+.table-wrap{overflow-x:auto;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:.95rem}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--tint)}
+figure{margin:0 0 12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+figure svg{display:block;width:100%;height:auto}
+figcaption{font-size:.85rem;color:var(--muted);margin-top:6px;text-align:center}
+@media print{body{background:#fff}figure,table{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1>인포그래픽이란?</h1>
+<p class="lead">인포그래픽(infographic)은 information + graphic, 즉 <b>정보를 그림·도표·숫자로 한눈에 보이게 만든 그래픽</b>입니다. 긴 글을 읽지 않아도 핵심을 바로 이해할 수 있게 하는 것이 목표입니다.</p>
+
+<h2>글 vs 인포그래픽</h2>
+<p>같은 내용도 인포그래픽으로 만들면 가장 중요한 숫자와 메시지가 먼저 눈에 들어옵니다.</p>
+<p><b>글로 쓸 때</b></p>
+<blockquote>조사에 따르면 청소년의 85%가 하루 3시간 이상 스마트폰을 사용한다. 이런 과도한 사용은 수면 부족, 눈의 피로, 집중력 저하로 이어질 수 있다. 따라서 스마트폰 사용 시간을 조절해야 한다.</blockquote>
+<p><b>인포그래픽으로 만들 때</b></p>
+<ul>
+<li>제목: <i>Too Much Screen Time?</i></li>
+<li>가운데에 큰 숫자 <b>85%</b> + 스마트폰 그림</li>
+<li>문제 3가지를 아이콘과 단어로: Sleep · Eyes · Focus</li>
+<li>맨 아래 한 줄 메시지: <i>Put your phone down!</i></li>
+</ul>
+<p>글은 처음부터 끝까지 읽어야 하지만, 인포그래픽은 3초 안에 핵심이 전달됩니다.</p>
+
+<h2>좋은 인포그래픽의 4가지 요소</h2>
+<ol>
+<li><b>Title</b> — 무엇에 관한 그래픽인지 짧고 분명하게 알려 줍니다.</li>
+<li><b>Main Message</b> — 보는 사람이 가장 먼저 이해해야 할 한 문장입니다.</li>
+<li><b>Key Information</b> — 메시지를 뒷받침하는 숫자, 사실, 예시입니다.</li>
+<li><b>Visual</b> — 그림, 아이콘, 색, 배치로 정보의 관계(비교, 순서, 원인과 결과 등)를 보여 줍니다.</li>
+</ol>
+<p>글자는 적게, 가장 중요한 것은 가장 크게, 색은 2~3가지만 쓰면 읽기 쉬워집니다.</p>
+
+<h2>예시 그림</h2>
+<figure>
+<svg viewBox="0 0 760 560" role="img" aria-label="인포그래픽 예시: 핵심이 한눈에 들어온다" font-size="13" font-family="system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif">
+<text x="24" y="32" font-size="15" font-weight="600" fill="var(--ink)">인포그래픽 예시: 핵심이 한눈에 들어온다</text>
+<rect x="40" y="56" width="380" height="480" rx="12" fill="none" stroke="var(--line)" stroke-width="1.5"/>
+<text x="230" y="102" text-anchor="middle" font-size="22" font-weight="700" fill="var(--ink)">Too Much Screen Time?</text>
+<rect x="84" y="132" width="70" height="120" rx="10" fill="none" stroke="var(--accent)" stroke-width="2"/>
+<line x1="108" y1="240" x2="130" y2="240" stroke="var(--accent)" stroke-width="2"/>
+<text x="290" y="200" text-anchor="middle" font-size="56" font-weight="700" fill="var(--accent)">85%</text>
+<text x="290" y="228" text-anchor="middle" fill="var(--ink)">of teenagers use their phones</text>
+<text x="290" y="246" text-anchor="middle" fill="var(--ink)">3+ hours a day</text>
+<line x1="60" y1="280" x2="400" y2="280" stroke="var(--line)"/>
+<g>
+<rect x="60" y="300" width="104" height="110" rx="8" fill="none" stroke="var(--line)"/><circle cx="112" cy="334" r="18" fill="var(--tint)" stroke="var(--accent)" stroke-width="2"/>
+<text x="112" y="378" text-anchor="middle" font-weight="600" fill="var(--ink)">Sleep</text><text x="112" y="396" text-anchor="middle" font-size="11" fill="var(--muted)">Less sleep</text>
+<rect x="178" y="300" width="104" height="110" rx="8" fill="none" stroke="var(--line)"/><circle cx="230" cy="334" r="18" fill="var(--tint)" stroke="var(--accent)" stroke-width="2"/>
+<text x="230" y="378" text-anchor="middle" font-weight="600" fill="var(--ink)">Eyes</text><text x="230" y="396" text-anchor="middle" font-size="11" fill="var(--muted)">Tired eyes</text>
+<rect x="296" y="300" width="104" height="110" rx="8" fill="none" stroke="var(--line)"/><circle cx="348" cy="334" r="18" fill="var(--tint)" stroke="var(--accent)" stroke-width="2"/>
+<text x="348" y="378" text-anchor="middle" font-weight="600" fill="var(--ink)">Focus</text><text x="348" y="396" text-anchor="middle" font-size="11" fill="var(--muted)">Hard to focus</text>
+</g>
+<rect x="60" y="430" width="340" height="56" rx="8" fill="var(--tint)" stroke="var(--accent)" stroke-width="2"/>
+<text x="230" y="463" text-anchor="middle" font-size="14" font-weight="600" fill="var(--ink)">Too much phone time harms your health.</text>
+<text x="230" y="516" text-anchor="middle" font-size="11" fill="var(--muted)">* 예시용 숫자입니다</text>
+<g stroke="var(--muted)" stroke-dasharray="3 3">
+<line x1="420" y1="96" x2="462" y2="96"/><line x1="420" y1="206" x2="462" y2="206"/><line x1="420" y1="354" x2="462" y2="354"/><line x1="420" y1="458" x2="462" y2="458"/>
+</g>
+<g fill="var(--muted)"><circle cx="420" cy="96" r="3"/><circle cx="420" cy="206" r="3"/><circle cx="420" cy="354" r="3"/><circle cx="420" cy="458" r="3"/></g>
+<text x="474" y="94" font-weight="600" fill="var(--ink)">① Title</text><text x="474" y="112" font-size="11.5" fill="var(--muted)">주제를 짧고 분명하게</text>
+<text x="474" y="204" font-weight="600" fill="var(--ink)">② Key Information</text><text x="474" y="222" font-size="11.5" fill="var(--muted)">가장 중요한 숫자를 가장 크게</text>
+<text x="474" y="352" font-weight="600" fill="var(--ink)">③ Visual</text><text x="474" y="370" font-size="11.5" fill="var(--muted)">아이콘과 배치로 내용을 묶어 보여 줌</text>
+<text x="474" y="456" font-weight="600" fill="var(--ink)">④ Main Message</text><text x="474" y="474" font-size="11.5" fill="var(--muted)">보는 사람이 기억할 한 문장</text>
+</svg>
+<figcaption>인포그래픽 예시 · 4가지 요소 표시</figcaption>
+</figure>
+<p>위 ‘글 vs 인포그래픽’의 내용을 실제 한 장으로 그려 보면 이렇습니다. 숫자 85%가 가장 크고, 문제 3가지는 같은 모양의 칸으로 묶였습니다.</p>
+
+<h2>유형별 예시</h2>
+<p>내용의 성격에 따라 알맞은 모양(Graphic Organizer)을 고릅니다.</p>
+<div class="table-wrap"><table>
+<tr><th>유형</th><th>이럴 때</th><th>예시 주제</th><th>그리는 방법</th></tr>
+<tr><td>Statistics</td><td>숫자·비율을 보여줄 때</td><td>Teenagers’ smartphone use</td><td>큰 숫자, 막대·원 그래프</td></tr>
+<tr><td>Compare &amp; Contrast</td><td>두 대상의 같은 점·다른 점</td><td>Paper books vs E-books</td><td>왼쪽/오른쪽 나눠 나란히</td></tr>
+<tr><td>Process</td><td>순서·단계</td><td>How to recycle plastic</td><td>번호 + 화살표로 이어진 단계</td></tr>
+<tr><td>Cause &amp; Effect</td><td>원인과 결과</td><td>Causes of climate change</td><td>원인 → 결과 화살표</td></tr>
+<tr><td>Timeline</td><td>시간의 흐름</td><td>History of the smartphone</td><td>가로줄 위에 연도별 사건</td></tr>
+<tr><td>Problem &amp; Solution</td><td>문제와 해결책</td><td>Food waste at school</td><td>문제 칸 → 해결책 칸</td></tr>
+</table></div>
+</main>
+</body>
+</html>
