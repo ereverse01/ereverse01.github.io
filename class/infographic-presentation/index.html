@@ -580,8 +580,9 @@ async function submit() {
   if (!ok) state.submittedAt = prev;
   localStorage.setItem(LS_KEY, JSON.stringify(state));
   render();
-  if (!ok) $('#msg').textContent = '제출하지 못했습니다. 인터넷 연결을 확인하고 [최종 제출]을 다시 누르세요.';
+  if (!ok) $('#msg').textContent = '제출하지 못했습니다. 잠시 후 [최종 제출]을 다시 누르세요. (입력한 내용은 그대로 남아 있습니다 · 원인: ' + lastErr + ')';
 }
+let lastErr = '';
 
 // 학생의 글 기록 (자동 전송과 제출에 쓴다)
 function recordData() {
@@ -596,6 +597,29 @@ function recordData() {
   };
 }
 
+/* ---------- 서버 전송: 반 전체가 한꺼번에 제출해도 버티도록 시간 제한 + 자동 재시도 ---------- */
+// text/plain 으로 보내야 Apps Script 가 사전 요청(preflight) 없이 받는다
+async function post(body, { tries = 4, timeout = 60000, keepalive = false, onRetry } = {}) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    if (i) { onRetry && onRetry(i); await new Promise(r => setTimeout(r, 1500 * 2 ** (i - 1) + Math.random() * 2000)); }
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), timeout);
+    try {
+      const r = await fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body, keepalive, signal: ac.signal });
+      const txt = await r.text();
+      let j; try { j = JSON.parse(txt); } catch (e) { throw new Error('서버 응답 오류 ' + r.status); }   // 서버가 바빠서 오류 페이지를 준 경우
+      if (j.ok) return j;
+      if (j.error === 'key' || j.error === 'data' || j.error === 'file' || j.error === 'action') { const e = new Error(j.error); e.final = true; throw e; }
+      throw new Error(j.error || '서버 오류');   // 잠금 시간 초과 등 → 다시 시도
+    } catch (e) {
+      last = e.name === 'AbortError' ? new Error('응답 시간 초과') : e;
+      if (e.final || keepalive) break;
+    } finally { clearTimeout(t); }
+  }
+  throw last;
+}
+
 /* ---------- 글 기록 자동 전송 (SHEET_URL 을 설정했을 때만) ---------- */
 let syncTimer = null;
 function queueSync() {
@@ -607,13 +631,10 @@ async function syncNow(leaving) {
   if (!SHEET_URL || !doneList()[0]) return false;
   const el = $('#sync');
   try {
-    // text/plain 으로 보내야 Apps Script 가 사전 요청(preflight) 없이 받는다
-    const r = await fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'save', data: recordData() }), keepalive: !!leaving });
-    const j = await r.json();
-    if (!j.ok) throw new Error(j.error);
+    await post(JSON.stringify({ action: 'save', data: recordData() }), { keepalive: !!leaving, tries: leaving ? 1 : 4,
+      onRetry: i => { el.className = ''; el.textContent = '☁ 기록 다시 보내는 중… (' + i + ')'; } });
     const d = new Date(); el.className = ''; el.textContent = '☁ 기록 전송됨 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  } catch (e) { el.className = 'fail'; el.textContent = '⚠ 기록 전송 실패 (인터넷 확인)'; return false; }
+  } catch (e) { lastErr = e.message; el.className = 'fail'; el.textContent = '⚠ 기록 전송 실패 (' + e.message + ')'; return false; }
   if (!leaving) sendGraphic();
   return true;
 }
@@ -633,24 +654,22 @@ async function sendGraphicOnce() {
     try {
       el.className = ''; el.textContent = '☁ 그래픽 전송 중…';
       const data = await toJpegBase64(blob);
-      const r = await fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'image', studentId: state.studentId.trim(), name: state.name.trim(), mime: 'image/jpeg', data }) });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error);
+      await post(JSON.stringify({ action: 'image', studentId: state.studentId.trim(), name: state.name.trim(), mime: 'image/jpeg', data }),
+        { timeout: 90000, onRetry: i => { el.className = ''; el.textContent = '☁ 그래픽 다시 보내는 중… (' + i + ')'; } });
       if (media.graphic === blob && baseName(state) === who) { state.graphicSentFor = who; localStorage.setItem(LS_KEY, JSON.stringify(state)); }
       const d = new Date(); el.textContent = '☁ 그래픽 전송됨 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-    } catch (e) { el.className = 'fail'; el.textContent = '⚠ 그래픽 전송 실패 (인터넷 확인)'; return false; }
+    } catch (e) { lastErr = e.message; el.className = 'fail'; el.textContent = '⚠ 그래픽 전송 실패 (' + e.message + ')'; return false; }
   }
 }
-// 긴 변 2000px JPEG 로 줄여 보낸다 (투명 부분은 흰색)
+// 긴 변 1600px JPEG 로 줄여 보낸다 (투명 부분은 흰색)
 async function toJpegBase64(blob) {
   const img = await createImageBitmap(blob);
-  const s = Math.min(1, 2000 / Math.max(img.width, img.height));
+  const s = Math.min(1, 1600 / Math.max(img.width, img.height));   // 학교 와이파이에서 빨리 가도록 (발표 화면에 충분한 크기)
   const c = document.createElement('canvas');
   c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
-  const jpg = await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('변환 실패')), 'image/jpeg', 0.9));
+  const jpg = await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('변환 실패')), 'image/jpeg', 0.85));
   const url = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(jpg); });
   return url.slice(url.indexOf(',') + 1);
 }
