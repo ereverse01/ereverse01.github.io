@@ -97,6 +97,12 @@
   td.y { color: var(--ok); font-weight: 700; } td.n { color: #b0b5c8; }
   td button.link { border: 0; background: none; color: var(--main-dark); text-decoration: underline; padding: 0; }
   tr.cur { background: var(--main-soft); }
+  tr.none td { color: #b0b5c8; } tr.none td:first-child, tr.none td:nth-child(2) { color: var(--sub); }
+  td .tag { margin-left: 4px; white-space: nowrap; }
+  #tAuto { font-size: 13px; color: var(--sub); }
+  .gal figcaption .tag { display: inline-block; margin: 2px 4px 0 0; }
+  .gal figcaption .gdel { float: right; padding: 2px 8px; font-size: 12px; }
+  .gal figure.bad { border-color: var(--warn); }
   /* 영어 발표 대본 */
   .script { background: #fffdf7; border: 1px solid #ece4cf; border-radius: 16px; padding: 26px 28px 22px; margin-top: 6px;
     box-shadow: 0 2px 0 #ece4cf, 0 10px 24px rgba(31, 37, 64, .06);
@@ -207,15 +213,18 @@
     <div class="card">
       <h2><small>TEACHER</small>교사용 Dashboard</h2>
       <div class="guide">
-        <p>학생이 입력한 내용과 그래픽은 자동으로 이곳에 모입니다. 학생이 [최종 제출]을 누르면 '제출' 칸에 ✓가 표시됩니다. 최신 상태를 보려면 [새로 고침]을 누르세요.</p>
+        <p>학생이 입력한 내용과 그래픽은 자동으로 이곳에 모입니다. 학생이 [최종 제출]을 누르면 '제출' 칸에 ✓가 표시됩니다. 진행 상황은 <b>1분마다 자동으로 새로 고침</b>되고, 브라우저를 새로 고침해도 이 탭을 닫기 전까지는 비밀번호를 다시 넣지 않아도 됩니다.</p>
+        <p>반 탭을 누르면 그 반 학생만 봅니다. 명렬을 불러왔다면 아직 시작하지 않은 학생도 함께 보입니다. <span class="tag warn">명렬: 이름</span> 표시는 학번과 이름이 명렬과 다른 기록(학번을 잘못 쓴 경우)입니다.</p>
         <p>그래픽은 아래 <b>[반별 그래픽 열람]</b>에서 반별로 크게 띄워 볼 수 있습니다.</p>
       </div>
       <div class="tools">
         <b id="tCount"></b>
         <span style="flex:1"></span>
+        <span id="tAuto"></span>
         <button id="btnOnline" class="small">새로 고침</button>
-        <button id="btnXlsx" class="primary">전체 학생 결과 Excel 다운로드</button>
+        <button id="btnXlsx" class="primary">결과 Excel 다운로드 (전체 + 반별)</button>
       </div>
+      <div class="tabs" id="tTabs"></div>
       <div class="msg" id="tMsg"></div>
       <p class="hint">✓ 완료 · - 아직 안 함. 학생 이름을 누르면 자세히 볼 수 있습니다.</p>
       <div class="tablewrap">
@@ -260,7 +269,8 @@
     </div>
     <div class="card" id="gCard" style="margin-top:16px">
       <h2><small>GALLERY</small>반별 그래픽 열람</h2>
-      <p class="hint">학생이 STEP 4에서 그래픽을 올리면 여기로 자동으로 모입니다. 반을 고르고 <b>[▶ 이 반 발표 화면]</b>을 누르면 전체 화면으로 한 장씩 크게 띄웁니다. 그림을 눌러도 크게 볼 수 있습니다. 넘기기: ← → 키 또는 ‹ › 버튼.</p>
+      <p class="hint">학생이 STEP 4에서 그래픽을 올리면 여기로 자동으로 모입니다. 반을 고르고 <b>[▶ 이 반 발표 화면]</b>을 누르면 전체 화면으로 한 장씩 크게 띄웁니다. 그림을 눌러도 크게 볼 수 있습니다. 넘기기: ← → 키 또는 ‹ › 버튼.<br>
+        빨간 테두리 = 학번·이름이 명렬과 다르거나 같은 학번이 여러 장인 그래픽입니다. 잘못 들어간 것은 [삭제]를 누르세요. (발표 화면에서는 빠집니다)</p>
       <div class="tools"><b id="galInfo"></b><span style="flex:1"></span><button id="btnGal" class="small">새로 고침</button><button id="btnShow" class="primary">▶ 이 반 발표 화면</button></div>
       <div class="tabs" id="galTabs"></div>
       <div class="gal" id="galGrid"></div>
@@ -455,11 +465,22 @@ function scriptText(gap = '') {
 }
 const LS_KEY = 'infographic-presentation-v1';
 const blank = () => ({ step: 0, studentId: '', name: '', title: '', mainMessage: '', keyInfo: [''], organizer: '',
-  prompt: '', check4: [], check6: [], audioSec: 0, videoExt: '', submittedAt: '', graphicSentFor: '', scTopic: '', scMessage: '', scDetail: '' });
+  prompt: '', check4: [], check6: [], audioSec: 0, videoExt: '', submittedAt: '', graphicSentFor: '', scTopic: '', scMessage: '', scDetail: '',
+  sentAs: null, graphicSentAs: null, graphicV: 2 });
 
 let state = blank();
-try { state = Object.assign(blank(), JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) {}
+try { state = Object.assign(blank(), { graphicV: 1 }, JSON.parse(localStorage.getItem(LS_KEY) || '{}')); } catch (e) {}
 const save = () => { localStorage.setItem(LS_KEY, JSON.stringify(state)); queueSync(); };
+const persist = () => localStorage.setItem(LS_KEY, JSON.stringify(state));
+// 서버에 보낸 학번·이름 (학번을 고치면 예전에 잘못 보낸 줄을 서버가 지우게 함께 보낸다)
+const me = () => ({ studentId: state.studentId.trim(), name: state.name.trim() });
+const sameWho = (a, b) => !!a && !!b && a.studentId === b.studentId && a.name === b.name;
+if (!state.sentAs && state.studentId.trim() && state.name.trim()) state.sentAs = me();   // 예전 버전에서 쓰던 기기
+// 2026-11-13: 그래픽이 다른 학번으로 들어간 오류를 고친 뒤, 모든 학생의 그래픽을 한 번 다시 보낸다
+if (state.graphicV !== 2) { state.graphicV = 2; state.graphicSentFor = ''; state.graphicSentAs = null; persist(); }
+// 학번과 이름이 둘 다 바뀌었으면 = 다른 학생이 이 기기를 쓰는 중 → 확인하기 전까지는 아무것도 보내지 않는다
+const otherStudent = () => { const a = state.sentAs, b = me();
+  return !!a && !!b.studentId && !!b.name && a.studentId !== b.studentId && a.name !== b.name; };
 
 // 이미지·음성·영상은 IndexedDB에 저장하고 메모리에 올려 둔다
 const media = { graphic: null, audio: null, video: null }, urls = {};
@@ -492,6 +513,25 @@ let busy = false;
 
 function go(step) {
   if (busy) return;
+  if (state.step === 0 && step !== 0 && otherStudent()) {
+    const a = state.sentAs;
+    if (confirm(`이 기기에는 ${a.studentId} ${a.name} 학생이 하던 작업(글·그래픽)이 남아 있습니다.
+
+` +
+      `[확인] 그 작업을 이 기기에서 지우고 ${state.studentId.trim()} ${state.name.trim()}(으)로 새로 시작합니다.
+` +
+      `(${a.name} 학생이 이미 선생님께 보낸 것은 지워지지 않습니다)
+
+[취소] 학번·이름을 다시 확인합니다.`)) {
+      const who = me(); state = Object.assign(blank(), who, { sentAs: null }); persist();
+      for (const k of Object.keys(media)) setMedia(k, null);
+    } else {
+      $('#msg').innerHTML = `${esc(a.studentId)} ${esc(a.name)} 학생의 작업이 남아 있는 기기입니다. 학번·이름을 다시 확인하세요. ` +
+        `<button class="small" id="keepWho">학번·이름을 고친 것이 맞아요 (내 작업 그대로 계속)</button>`;
+      $('#keepWho').onclick = () => { state.sentAs = null; persist(); go(step); };
+      return;
+    }
+  }
   state.step = Math.max(0, Math.min(LAST, step)); save(); render();
   window.scrollTo({ top: 0 });
 }
@@ -743,11 +783,13 @@ function queueSync() {
 }
 async function syncNow(leaving) {
   clearTimeout(syncTimer); syncTimer = null;
-  if (!SHEET_URL || !doneList()[0]) return false;
-  const el = $('#sync');
+  if (!SHEET_URL || !doneList()[0] || otherStudent()) return false;
+  const el = $('#sync'), rec = recordData(), who = { studentId: rec.studentId, name: rec.name };
+  const old = sameWho(state.sentAs, who) ? undefined : state.sentAs;
   try {
-    await post(JSON.stringify({ action: 'save', data: recordData() }), { keepalive: !!leaving, tries: leaving ? 1 : 4,
+    await post(JSON.stringify({ action: 'save', data: rec, old }), { keepalive: !!leaving, tries: leaving ? 1 : 4,
       onRetry: i => { el.className = ''; el.textContent = '☁ 기록 다시 보내는 중… (' + i + ')'; } });
+    state.sentAs = who; persist();
     const d = new Date(); el.className = ''; el.textContent = '☁ 기록 전송됨 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   } catch (e) { lastErr = e.message; el.className = 'fail'; el.textContent = '⚠ 기록 전송 실패 (' + e.message + ')'; return false; }
   if (!leaving) sendGraphic();
@@ -764,14 +806,18 @@ function sendGraphic() {
 async function sendGraphicOnce() {
   const el = $('#sync');
   for (;;) {   // 전송 중에 이미지가 바뀌면 한 번 더 보낸다
-    const who = baseName(state), blob = media.graphic;
+    const who = baseName(state), blob = media.graphic, id = me();
     if (!SHEET_URL || !blob || state.graphicSentFor === who) return true;
+    if (!id.studentId || !id.name || otherStudent()) return false;   // 다른 학생 확인 전에는 보내지 않는다
+    const old = sameWho(state.graphicSentAs, id) ? undefined : state.graphicSentAs;
     try {
       el.className = ''; el.textContent = '☁ 그래픽 전송 중…';
       const data = await toJpegBase64(blob);
-      await post(JSON.stringify({ action: 'image', studentId: state.studentId.trim(), name: state.name.trim(), mime: 'image/jpeg', data }),
+      await post(JSON.stringify({ action: 'image', studentId: id.studentId, name: id.name, mime: 'image/jpeg', data, old }),
         { timeout: 90000, onRetry: i => { el.className = ''; el.textContent = '☁ 그래픽 다시 보내는 중… (' + i + ')'; } });
-      if (media.graphic === blob && baseName(state) === who) { state.graphicSentFor = who; localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+      state.graphicSentAs = id;
+      if (media.graphic === blob && baseName(state) === who) state.graphicSentFor = who;
+      persist();
       const d = new Date(); el.textContent = '☁ 그래픽 전송됨 ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
     } catch (e) { lastErr = e.message; el.className = 'fail'; el.textContent = '⚠ 그래픽 전송 실패 (' + e.message + ')'; return false; }
   }
@@ -805,38 +851,83 @@ async function fetchRecords(key) {
   return r.json();
 }
 const setRecords = list => { subs = list.filter(d => d && d.studentId).sort(byId); };
-async function loadRecords() {
+async function loadRecords(quiet) {
   $('#tMsg').textContent = '';
-  $('#tCount').textContent = '학생 기록을 불러오는 중…';
+  if (!quiet) $('#tCount').textContent = '학생 기록을 불러오는 중…';
   try {
     const j = await fetchRecords(teacherKey);
     if (!j.ok) throw new Error(j.error);
     setRecords(j.records);
-  } catch (e) { $('#tMsg').textContent = '학생 기록을 불러오지 못했습니다. 인터넷 연결을 확인하고 [새로 고침]을 누르세요.'; }
+    const d = new Date(); $('#tAuto').textContent = `${pad(d.getHours())}:${pad(d.getMinutes())} 새로 고침 · 1분마다 자동`;
+  } catch (e) {
+    if (String(e.message) === 'key') { logout(); return; }   // 비밀번호가 바뀌었으면 다시 로그인
+    $('#tMsg').textContent = '학생 기록을 불러오지 못했습니다. 인터넷 연결을 확인하고 [새로 고침]을 누르세요.';
+  }
   renderTeacher();
 }
-const galOf = id => gal.find(g => g.studentId === String(id).trim());
+// 같은 학번에 기록·그래픽이 여러 개일 수 있다 (학번을 잘못 쓴 학생) → 학번 + 이름으로 구분한다
+const norm = s => String(s ?? '').replace(/\s+/g, '');
+const keyOf = d => String(d.studentId).trim() + '\t' + String(d.name ?? '').trim();
+const rosterName = id => { const r = rosterList.find(x => x.studentId === String(id).trim()); return r ? r.name : ''; };
+const wrongName = (id, name) => { const r = rosterName(id); return !!r && norm(r) !== norm(name); };
+// 그 학생의 그래픽: 이름까지 같은 것 → 명렬 이름과 맞는 것. 명렬과 이름이 다른 그래픽은 다른 학생 것으로 보고 붙이지 않는다
+function galOf(id, name) {
+  id = String(id).trim();
+  const list = gal.filter(g => g.studentId === id);
+  return (name !== undefined && list.find(g => norm(g.name) === norm(name))) || list.find(g => !wrongName(id, g.name));
+}
+// 확인이 필요한 그래픽: 명렬과 이름이 다름 (명렬이 없으면: 같은 학번이 여러 장)
+const galBad = g => wrongName(g.studentId, g.name) || (!rosterName(g.studentId) && gal.filter(x => x.studentId === g.studentId).length > 1);
+
+// 반 고르기: 표 · 평가 · 그래픽 열람이 같은 반을 본다
+let tClass = '';   // '' = 전체
+function setClass(c) {
+  tClass = c;
+  if (c) { evalClass = c; if (gal.some(g => classOf(g.studentId) === c)) galClass = c; }
+  renderTeacher(); renderGallery();
+}
+// 표에 보일 학생: 기록 + (명렬에 있는데 아직 기록이 없는 학생)
+function tableRows(cls = tClass) {
+  const rows = subs.map(d => ({ d, id: String(d.studentId).trim(), name: String(d.name ?? '') }));
+  const have = new Set(rows.map(r => r.id));
+  for (const r of rosterList) if (!have.has(r.studentId)) rows.push({ d: null, id: r.studentId, name: r.name });
+  return rows.filter(r => !cls || classOf(r.id) === cls)
+    .sort((a, b) => byId({ studentId: a.id }, { studentId: b.id }) || (wrongName(a.id, a.name) - wrongName(b.id, b.name)));
+}
 
 function renderTeacher() {
-  $('#tCount').textContent = `학생 ${subs.length}명 · 제출 ${subs.filter(d => d.submittedAt).length}명`;
+  const all = tableRows(''), classes = [...new Set(all.map(r => classOf(r.id)))];
+  if (tClass && !classes.includes(tClass)) tClass = '';
+  const sub = list => list.filter(r => r.d && r.d.submittedAt).length;
+  $('#tTabs').innerHTML = classes.length ? [['', '전체', all], ...classes.map(c => [c, c, all.filter(r => classOf(r.id) === c)])]
+    .map(([c, label, list]) => `<button class="small ${c === tClass ? 'sel' : ''}" data-c="${esc(c)}">${esc(label)} (제출 ${sub(list)}/${list.length})</button>`).join('') : '';
+  const rows = tableRows(), recs = rows.filter(r => r.d);
+  $('#tCount').textContent = `${tClass || '전체'} · 학생 ${rows.length}명 · 기록 ${recs.length}명 · 제출 ${sub(rows)}명`;
   const m = ok => ok ? '<td class="y">✓</td>' : '<td class="n">-</td>';
-  $('#tBody').innerHTML = subs.length ? subs.map(d => `<tr class="${String(d.studentId) === curId ? 'cur' : ''}">
-    <td>${esc(d.studentId)}</td><td><button class="link" data-id="${esc(d.studentId)}">${esc(d.name)}</button></td>
-    ${m(d.title && d.mainMessage && (d.keyInformation || []).length)}${m(d.organizer)}${m(d.designPrompt)}${m(galOf(d.studentId) || d.hasGraphic)}${m(d.presentationScript)}${m(d.submittedAt)}${m(hasEval(d.studentId))}</tr>`).join('')
-    : '<tr><td colspan="9" class="n">아직 기록한 학생이 없습니다.</td></tr>';
+  const dup = id => subs.filter(d => String(d.studentId).trim() === id).length > 1;
+  $('#tBody').innerHTML = rows.length ? rows.map(({ d, id, name }) => {
+    if (!d) return `<tr class="none"><td>${esc(id)}</td><td>${esc(name)}</td><td colspan="7" class="n">아직 시작하지 않음</td></tr>`;
+    const bad = wrongName(id, d.name);
+    const warn = (bad ? `<span class="tag warn">명렬: ${esc(rosterName(id))}</span>` : '') + (dup(id) ? '<span class="tag warn">학번 중복</span>' : '');
+    return `<tr class="${keyOf(d) === curId ? 'cur' : ''}">
+    <td>${esc(d.studentId)}</td><td><button class="link" data-id="${esc(keyOf(d))}">${esc(d.name)}</button>${warn}</td>
+    ${m(d.title && d.mainMessage && (d.keyInformation || []).length)}${m(d.organizer)}${m(d.designPrompt)}${m(galOf(d.studentId, d.name))}${m(d.presentationScript)}${m(d.submittedAt)}${m(!bad && hasEval(d.studentId))}</tr>`; }).join('')
+    : `<tr><td colspan="9" class="n">${tClass ? '이 반은 아직 기록한 학생이 없습니다.' : '아직 기록한 학생이 없습니다.'}</td></tr>`;
   $('#btnXlsx').disabled = !subs.length;
   renderDetail();
   renderEvals();
 }
 
 function renderDetail() {
-  const d = subs.find(x => String(x.studentId) === curId), box = $('#tDetail');
+  const d = subs.find(x => keyOf(x) === curId), box = $('#tDetail');
   box.classList.toggle('hidden', !d);
   if (!d) return;
   if (box.dataset.id === curId && box.contains(document.activeElement) && document.activeElement.closest('[data-ev]')) return;   // 평가를 적는 중에는 다시 그리지 않는다
   box.dataset.id = curId;
-  const g = galOf(d.studentId), none = '<dd class="empty">없음</dd>';
+  const g = galOf(d.studentId, d.name), none = '<dd class="empty">없음</dd>', bad = wrongName(d.studentId, d.name);
   box.innerHTML = `<h2><small>STUDENT</small>${esc(d.studentId)} ${esc(d.name)}</h2>
+    ${bad ? `<p class="msg">명렬에서 ${esc(d.studentId)}번은 <b>${esc(rosterName(d.studentId))}</b> 학생입니다. 학번을 잘못 쓴 기록일 수 있습니다.
+      학생이 학번을 바르게 고치면 이 줄은 저절로 지워집니다. 필요 없는 줄이면 <button class="small" id="dDel">이 기록 줄 지우기</button></p>` : ''}
     <dl class="sum">
       <dt>학번</dt><dd>${esc(d.studentId)}</dd><dt>이름</dt><dd>${esc(d.name)}</dd>
       <dt>제출 시간</dt><dd>${d.submittedAt ? esc(fmtTime(d.submittedAt)) : '미제출 (마지막 저장 ' + esc(fmtTime(d.savedAt)) + ')'}</dd>
@@ -847,8 +938,16 @@ function renderDetail() {
       <dt>Final Graphic</dt>${g ? `<dd><div class="zoom" data-f="${esc(g.fileId)}">${galUrls[g.fileId] ? `<img src="${galUrls[g.fileId]}" alt="최종 그래픽">` : '불러오는 중…'}</div>
         <button class="small" id="dBig">크게 보기</button></dd>` : none}
       <dt>Presentation Script</dt>${d.presentationScript ? `<dd>${esc(d.presentationScript)}</dd>` : none}
-      <dt>발표 평가</dt><dd style="white-space:normal">${evalHtml(String(d.studentId).trim(), nameOf(String(d.studentId).trim()) || d.name)}</dd>
+      ${bad ? '' : `<dt>발표 평가</dt><dd style="white-space:normal">${evalHtml(String(d.studentId).trim(), nameOf(String(d.studentId).trim()) || d.name)}</dd>`}
     </dl>`;
+  if (bad) $('#dDel').onclick = async () => {
+    if (!confirm(`${d.studentId} ${d.name} 기록 줄을 시트에서 지울까요?\n(${rosterName(d.studentId)} 학생의 기록은 지워지지 않습니다)`)) return;
+    try {
+      const j = await tPost({ action: 'recDel', studentId: d.studentId, name: d.name });
+      if (!j.ok) throw new Error(j.error === 'action' ? OLD_SCRIPT : j.error);
+      subs = subs.filter(x => x !== d); curId = null; renderTeacher();
+    } catch (err) { alert('지우지 못했습니다: ' + (err.message || err)); }
+  };
   if (g) {
     if (!galUrls[g.fileId]) fetchImages([g]);
     box.querySelector('.zoom').onclick = $('#dBig').onclick = () => showLb(0, [g]);
@@ -857,15 +956,20 @@ function renderDetail() {
 
 $('#tBody').onclick = e => { const b = e.target.closest('[data-id]'); if (!b) return; curId = b.dataset.id; renderTeacher(); $('#tDetail').scrollIntoView({ behavior: 'smooth' }); };
 $('#btnOnline').onclick = () => { loadRecords(); loadGallery(); loadEvals(); };
+$('#tTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (b) setClass(b.dataset.c); };
 
 $('#btnXlsx').onclick = async () => {
-  const rows = [['학번', '이름', 'Title', 'Main Message', 'Key Information', 'Graphic Organizer', 'Graphic Design Prompt', 'Presentation Script', '제출 여부', '제출 시간', '그래픽 업로드', '마지막 저장 시간', '발표 평가(상중하)', '서술 평가', '생기부 문구']];
-  for (const d of subs) {
-    const ev = evals[String(d.studentId).trim()] || {};
-    rows.push([d.studentId, d.name, d.title, d.mainMessage, (d.keyInformation || []).map((k, i) => `${i + 1}. ${k}`).join('\n'), d.organizer, d.designPrompt,
-      d.presentationScript || '', d.submittedAt ? '제출' : '미제출', fmtTime(d.submittedAt), galOf(d.studentId) || d.hasGraphic ? 'O' : '', fmtTime(d.savedAt || d.submittedAt), ev.level || '', ev.note || '', ev.seteuk || '']);
-  }
-  download(await makeXlsx(rows), 'Infographic_Presentation_Results.xlsx');
+  const head = ['학번', '이름', 'Title', 'Main Message', 'Key Information', 'Graphic Organizer', 'Graphic Design Prompt', 'Presentation Script', '제출 여부', '제출 시간', '그래픽 업로드', '마지막 저장 시간', '발표 평가(상중하)', '서술 평가', '생기부 문구'];
+  const widths = [10, 10, 28, 40, 50, 20, 60, 60, 10, 18, 12, 18, 8, 50, 60];
+  const row = ({ d, id, name }) => {
+    if (!d) return [id, name, '', '', '', '', '', '', '시작 안 함', '', '', '', '', '', ''];
+    const bad = wrongName(id, d.name), ev = bad ? {} : evals[id] || {};
+    return [d.studentId, d.name + (bad ? ` (명렬: ${rosterName(id)})` : ''), d.title, d.mainMessage, (d.keyInformation || []).map((k, i) => `${i + 1}. ${k}`).join('\n'), d.organizer, d.designPrompt,
+      d.presentationScript || '', d.submittedAt ? '제출' : '미제출', fmtTime(d.submittedAt), galOf(d.studentId, d.name) ? 'O' : '', fmtTime(d.savedAt || d.submittedAt), ev.level || '', ev.note || '', ev.seteuk || ''];
+  };
+  const all = tableRows(''), classes = [...new Set(all.map(r => classOf(r.id)))];
+  download(await makeXlsxBook([{ name: '전체', rows: [head, ...all.map(row)], widths },
+    ...classes.map(c => ({ name: c, rows: [head, ...all.filter(r => classOf(r.id) === c).map(row)], widths }))]), 'Infographic_Presentation_Results.xlsx');
 };
 
 /* ---------- 발표 평가 · 생기부 (명렬 · 상/중/하 · 서술 평가 · AI 생기부 문구) ---------- */
@@ -876,7 +980,7 @@ const LEVELS = ['상', '중', '하'];
 const EV_FIELDS = ['level', 'note', 'seteuk', 'analysis'];
 const blankEval = (id, name) => ({ studentId: id, name, level: '', note: '', seteuk: '', analysis: '', at: '' });
 const hasEval = id => { const e = evals[String(id).trim()]; return !!(e && (e.level || e.note.trim())); };
-const recOf = id => subs.find(d => String(d.studentId).trim() === id);
+const recOf = id => { const l = subs.filter(d => String(d.studentId).trim() === id); return l.find(d => !wrongName(id, d.name)) || l[0]; };
 const tPost = (body, key = teacherKey) => fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
   body: JSON.stringify({ ...body, key }) }).then(r => r.json());
 const OLD_SCRIPT = 'Apps Script 가 예전 버전입니다. google-apps-script.gs 를 새로 붙여넣고 [배포 관리] → 새 버전으로 배포하세요.';
@@ -900,7 +1004,7 @@ async function loadEvals() {
       $('#eMsg').textContent = OLD_SCRIPT + ' (지금 적은 평가는 이 창을 닫기 전까지 Excel 로 내려받을 수 있습니다)'; }
     else $('#eMsg').textContent = '명렬·평가를 불러오지 못했습니다. 인터넷 연결을 확인하고 [새로 고침]을 누르세요.';
   }
-  renderTeacher();
+  renderTeacher(); renderGallery();   // 명렬이 오면 그래픽의 이름 확인 표시도 다시 그린다
 }
 
 // 평가할 학생 = 명렬 + (명렬에 없는) 글 기록·그래픽·평가
@@ -909,7 +1013,7 @@ function roster() {
   for (const r of rosterList) m.set(r.studentId, { studentId: r.studentId, name: r.name, num: r.num, inRoster: true });
   const add = (id, name) => { id = String(id).trim(); if (id && !m.has(id)) m.set(id, { studentId: id, name, num: id.slice(-2).replace(/^0/, ''), inRoster: false }); };
   for (const d of subs) add(d.studentId, d.name);
-  for (const g of gal) add(g.studentId, g.name);
+  for (const g of gal) if (!wrongName(g.studentId, g.name)) add(g.studentId, g.name);
   for (const id in evals) add(id, evals[id].name);
   return [...m.values()].sort(byId);
 }
@@ -1118,7 +1222,7 @@ $('#teacherView').addEventListener('click', e => {
     applyAnswer({ [id]: m[id] }); t.value = '';
   }
 });
-$('#eTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; evalClass = b.dataset.c; renderEvals(); };
+$('#eTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (b) setClass(b.dataset.c); };
 $('#btnEval').onclick = loadEvals;
 window.addEventListener('beforeunload', e => { if (teacherKey && evalPending().length) { flushEvals(); e.preventDefault(); e.returnValue = ''; } });
 
@@ -1205,9 +1309,9 @@ const classOf = id => { const s = String(id).trim();
   return /^\d{5}$/.test(s) ? `${s[0]}학년 ${+s.slice(1, 3)}반` : s.length > 2 ? s.slice(0, -2) : '기타'; };
 const byId = (a, b) => String(a.studentId).localeCompare(String(b.studentId), 'ko', { numeric: true });
 
-async function loadGallery() {
+async function loadGallery(quiet) {
   if (!SHEET_URL || !teacherKey) return;
-  $('#galInfo').textContent = '그래픽 목록을 불러오는 중…';
+  if (!quiet) $('#galInfo').textContent = '그래픽 목록을 불러오는 중…';
   try {
     const r = await fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'images', key: teacherKey }) });
@@ -1221,17 +1325,34 @@ async function loadGallery() {
 }
 
 function renderGallery() {
-  const classes = [...new Set(gal.map(g => classOf(g.studentId)))];
-  $('#galInfo').textContent = `받은 그래픽: ${gal.length}장`;
+  const classes = [...new Set(gal.map(g => classOf(g.studentId)))], bads = gal.filter(galBad);
+  if (!classes.includes(galClass)) galClass = classes[0] || '';
+  $('#galInfo').innerHTML = `받은 그래픽: ${gal.length}장` + (bads.length ? ` <span class="tag warn">확인 필요 ${bads.length}장: ${esc(bads.map(g => g.studentId + ' ' + g.name).join(', '))}</span>` : '');
   $('#galTabs').innerHTML = classes.map(c =>
     `<button class="small ${c === galClass ? 'sel' : ''}" data-c="${esc(c)}">${esc(c)} (${gal.filter(g => classOf(g.studentId) === c).length})</button>`).join('');
   galShown = gal.filter(g => classOf(g.studentId) === galClass);
-  $('#btnShow').disabled = !galShown.length;
-  $('#galGrid').innerHTML = galShown.length ? galShown.map((g, i) => `<figure data-i="${i}">
+  galShow = galShown.filter(g => !galBad(g) || galOf(g.studentId) === g);   // 발표 화면: 명렬과 이름이 다른 그래픽은 뺀다
+  $('#btnShow').disabled = !galShow.length;
+  $('#galGrid').innerHTML = galShown.length ? galShown.map((g, i) => {
+    const n = gal.filter(x => x.studentId === g.studentId).length;
+    return `<figure data-i="${i}" class="${galBad(g) ? 'bad' : ''}">
       <div class="ph" data-f="${esc(g.fileId)}">${galUrls[g.fileId] ? `<img src="${galUrls[g.fileId]}" alt="">` : '불러오는 중…'}</div>
-      <figcaption><b>${esc(g.studentId)} ${esc(g.name)}</b><small>${esc(g.at)}</small></figcaption></figure>`).join('')
+      <figcaption><button class="small gdel" data-del="${i}" title="이 그래픽 지우기">삭제</button><b>${esc(g.studentId)} ${esc(g.name)}</b>
+        ${wrongName(g.studentId, g.name) ? `<span class="tag warn">명렬: ${esc(rosterName(g.studentId))}</span>` : ''}${n > 1 ? `<span class="tag warn">같은 학번 ${n}장</span>` : ''}
+        <small>${esc(g.at)}</small></figcaption></figure>`; }).join('')
     : '<p class="hint">아직 받은 그래픽이 없습니다.</p>';
   fetchImages(galShown.filter(g => !galUrls[g.fileId]));
+}
+let galShow = [];
+async function delGraphic(g) {
+  if (!g || !confirm(`${g.studentId} ${g.name} 그래픽을 지울까요?\n(파일은 선생님 Google Drive 휴지통으로 갑니다. 학생이 다시 올리면 다시 들어옵니다)`)) return;
+  try {
+    const j = await tPost({ action: 'imgDel', fileId: g.fileId });
+    if (!j.ok) throw new Error(j.error === 'action' ? OLD_SCRIPT : j.error);
+    gal = gal.filter(x => x !== g);
+    if (galUrls[g.fileId]) { URL.revokeObjectURL(galUrls[g.fileId]); delete galUrls[g.fileId]; }
+    renderGallery(); renderTeacher();
+  } catch (err) { alert('지우지 못했습니다: ' + (err.message || err)); }
 }
 
 // 4장씩 동시에 받아 온다
@@ -1282,10 +1403,13 @@ function toggleFull() {
 }
 document.addEventListener('fullscreenchange', () => { $('#lbFull').textContent = isFull() ? '전체 화면 끄기' : '⛶ 전체 화면'; });
 
-$('#galTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; galClass = b.dataset.c; renderGallery(); };
-$('#galGrid').onclick = e => { const f = e.target.closest('figure'); if (f) showLb(+f.dataset.i, galShown); };
-$('#btnGal').onclick = loadGallery;
-$('#btnShow').onclick = () => { showLb(0, galShown); toggleFull(); };
+$('#galTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (b) { galClass = b.dataset.c; setClass(b.dataset.c); } };
+$('#galGrid').onclick = e => {
+  const d = e.target.closest('[data-del]'); if (d) { delGraphic(galShown[+d.dataset.del]); return; }
+  const f = e.target.closest('figure'); if (f) showLb(+f.dataset.i, galShown);
+};
+$('#btnGal').onclick = () => loadGallery();
+$('#btnShow').onclick = () => { showLb(0, galShow); toggleFull(); };
 $('#lbPrev').onclick = () => showLb(lbAt - 1);
 $('#lbNext').onclick = () => showLb(lbAt + 1);
 $('#lbClose').onclick = closeLb;
@@ -1299,8 +1423,21 @@ document.addEventListener('keydown', e => {
 });
 
 /* ===================== 화면 전환 · 시작 ===================== */
-/* ---------- 교사 화면 비밀번호 = Apps Script 의 TEACHER_KEY (서버에서 확인, 기기에 저장하지 않음) ---------- */
-let teacherKey = '';   // 맞는 비밀번호를 넣으면 이 창이 열려 있는 동안만 기억한다
+/* ---------- 교사 화면 비밀번호 = Apps Script 의 TEACHER_KEY (서버에서 확인) ---------- */
+// 맞는 비밀번호는 이 탭에만 기억한다 (sessionStorage: 새로 고침해도 유지, 탭을 닫거나 [학생 화면으로]를 누르면 사라짐)
+const TK = 'infographic-teacher-session';
+let teacherKey = '';
+try { teacherKey = sessionStorage.getItem(TK) || ''; } catch (e) {}
+const keepKey = k => { try { k ? sessionStorage.setItem(TK, k) : sessionStorage.removeItem(TK); } catch (e) {} };
+function logout() { teacherKey = ''; keepKey(''); stopAuto(); if (location.hash === '#teacher') renderLock(); }
+// 진행 상황 자동 새로 고침 (1분마다 · 탭이 보일 때 · 발표 화면을 띄우지 않았을 때)
+let autoTimer = null;
+function stopAuto() { clearInterval(autoTimer); autoTimer = null; }
+function startAuto() {
+  stopAuto();
+  autoTimer = setInterval(() => { if (!teacherKey || document.hidden || lbAt >= 0) return; loadRecords(true); loadGallery(true); }, 60000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && autoTimer && teacherKey && lbAt < 0) { loadRecords(true); loadGallery(true); } });
 // 예전 버전이 기기에 남긴 비밀번호·키는 지운다
 try { localStorage.removeItem('infographic-teacher-pw'); localStorage.removeItem('infographic-sheet-key'); } catch (e) {}
 function renderLock() {
@@ -1321,7 +1458,7 @@ function renderLock() {
     let j;
     try { j = await fetchRecords(pw); } catch (err) { $('#pwMsg').textContent = '확인하지 못했습니다. 인터넷 연결을 확인하세요.'; return; }
     if (!j.ok) { $('#pwMsg').textContent = j.error === 'key' ? '비밀번호가 맞지 않습니다.' : '확인하지 못했습니다: ' + j.error; $('#pw1').value = ''; return; }
-    teacherKey = pw;
+    teacherKey = pw; keepKey(pw);
     setRecords(j.records);   // 열면서 학생 기록도 바로 불러온다
     showMode();
   };
@@ -1338,7 +1475,7 @@ function showMode() {
   $('#sync').classList.toggle('hidden', teacher);
   $('#who').classList.toggle('hidden', teacher);
   if (!teacher) { flushEvals();   // 아직 저장 안 된 평가는 비밀번호를 지우기 전에 보낸다
-    teacherKey = ''; subs = []; curId = null; $('#tBody').innerHTML = ''; renderDetail();
+    teacherKey = ''; keepKey(''); stopAuto(); tClass = ''; $('#tTabs').innerHTML = $('#tAuto').textContent = ''; subs = []; curId = null; $('#tBody').innerHTML = ''; renderDetail();
     evals = {}; rosterList = []; evalClass = ''; evalOnline = true; $('#bPaste').value = $('#bMsg').textContent = ''; $('#eTabs').innerHTML = $('#eList').innerHTML = '';
     for (const o of [evalVer, evalSaved, evalTimer]) for (const k in o) { if (o === evalTimer) clearTimeout(o[k]); delete o[k]; }
     gal = []; galShown = []; closeLb(); $('#galTabs').innerHTML = $('#galGrid').innerHTML = '';
@@ -1347,8 +1484,10 @@ function showMode() {
   if (!teacherKey) { renderLock(); return; }
   $('#tLock').classList.add('hidden'); $('#tMain').classList.remove('hidden');
   renderTeacher();
+  if (!subs.length) loadRecords();   // 브라우저를 새로 고침한 뒤: 기억한 비밀번호로 바로 불러온다
   if (!gal.length) loadGallery();
   loadEvals();
+  startAuto();
 }
 $('#btnMode').onclick = () => { location.hash = ''; };
 $('#btnTeacher').onclick = () => { location.hash = '#teacher'; };

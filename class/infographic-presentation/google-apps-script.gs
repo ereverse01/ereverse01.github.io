@@ -64,8 +64,10 @@ function doPost(e) {
         d.submittedAt ? '제출' : '미제출', time_(d.submittedAt), time_(d.savedAt), json];
       return locked_(function () {
         const sh = sheet_();
-        const at = findRow_(sh, id) || sh.getLastRow() + 1;   // 같은 학번이 있으면 그 줄을 고친다
+        // 학번과 이름이 모두 같은 줄만 고친다 (학번을 잘못 쳐도 다른 친구 기록을 덮어쓰지 않게)
+        const at = findRow_(sh, id, name) || sh.getLastRow() + 1;
         sh.getRange(at, 1, 1, HEAD.length).setNumberFormat('@').setValues([row]);
+        dropOld_(req.old, id, name);
         return out_({ ok: true });
       });
     }
@@ -81,13 +83,14 @@ function doPost(e) {
         id + '_' + name + (png ? '.png' : '.jpg')));
       return locked_(function () {
         const sh = gSheet_();
-        let at = findRow_(sh, id);
+        let at = findRow_(sh, id, name);   // 학번과 이름이 모두 같은 줄만 바꾼다
         if (at) {
           const old = String(sh.getRange(at, 3).getValue());   // 예전 그래픽은 휴지통으로
           if (old) try { DriveApp.getFileById(old).setTrashed(true); } catch (err) {}
         } else at = sh.getLastRow() + 1;
         sh.getRange(at, 1, 1, HEAD_G.length).setNumberFormat('@')
           .setValues([[id, name, file.getId(), time_(new Date().toISOString()), file.getUrl()]]);
+        dropOld_(req.old, id, name);
         return out_({ ok: true });
       });
     }
@@ -110,6 +113,32 @@ function doPost(e) {
       if (!ids.some(function (r) { return String(r[0]) === req.fileId; })) return out_({ ok: false, error: 'file' });
       const blob = DriveApp.getFileById(req.fileId).getBlob();
       return out_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
+    }
+
+    // 교사: 잘못 들어간 그래픽 지우기 (파일은 Drive 휴지통으로)
+    if (req.action === 'imgDel') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      return locked_(function () {
+        const sh = gSheet_();
+        const ids = sh.getLastRow() > 1 ? sh.getRange(2, 3, sh.getLastRow() - 1, 1).getValues() : [];
+        for (let i = ids.length - 1; i >= 0; i--) if (String(ids[i][0]) === String(req.fileId || '')) {
+          try { DriveApp.getFileById(req.fileId).setTrashed(true); } catch (err) {}
+          sh.deleteRow(i + 2);
+          return out_({ ok: true });
+        }
+        return out_({ ok: false, error: 'file' });
+      });
+    }
+
+    // 교사: 잘못 들어간 학생 기록 줄 지우기 (학번 + 이름이 같은 줄)
+    if (req.action === 'recDel') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      return locked_(function () {
+        const sh = sheet_(), at = findRow_(sh, String(req.studentId || '').trim(), String(req.name || '').trim());
+        if (!at) return out_({ ok: false, error: 'data' });
+        sh.deleteRow(at);
+        return out_({ ok: true });
+      });
     }
 
     // 교사: 발표 평가 목록
@@ -175,11 +204,29 @@ function locked_(fn) {
   try { return fn(); } finally { lock.releaseLock(); }
 }
 
-function findRow_(sh, id) {
+// name 을 주면 학번(1열)과 이름(2열)이 모두 같은 줄을 찾는다
+function findRow_(sh, id, name) {
   if (sh.getLastRow() < 2) return 0;
-  const ids = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
-  for (let i = 0; i < ids.length; i++) if (String(ids[i][0]).trim() === id) return i + 2;
+  const rows = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues();
+  for (let i = 0; i < rows.length; i++)
+    if (String(rows[i][0]).trim() === id && (name === undefined || String(rows[i][1]).trim() === name)) return i + 2;
   return 0;
+}
+
+// 같은 학생이 학번(또는 이름)만 고쳐 쓴 경우: 예전에 잘못 보낸 기록·그래픽 줄을 지운다.
+// 학번과 이름이 둘 다 바뀌었으면 다른 학생일 수 있으니 지우지 않는다.
+function dropOld_(old, id, name) {
+  if (!old) return;
+  const oid = String(old.studentId || '').trim(), oname = String(old.name || '').trim();
+  if (!oid || !oname || (oid === id && oname === name) || (oid !== id && oname !== name)) return;
+  const r = sheet_(), ra = findRow_(r, oid, oname);
+  if (ra) r.deleteRow(ra);
+  const g = gSheet_(), ga = findRow_(g, oid, oname);
+  if (ga) {
+    const f = String(g.getRange(ga, 3).getValue());
+    if (f) try { DriveApp.getFileById(f).setTrashed(true); } catch (err) {}
+    g.deleteRow(ga);
+  }
 }
 
 function sheet_() {
