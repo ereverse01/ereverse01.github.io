@@ -28,6 +28,7 @@
    - [제출 파일 불러오기]로 여러 학생의 ZIP을 **한 번에 선택**(또는 끌어다 놓기)하면 학번순 현황표가 만들어진다: 학번 · 이름 · 내용 · Organizer · Prompt · Graphic · 발표 · 제출 (✓ / -).
    - 학생 이름을 클릭하면 Title, Main Message, Key Information, Organizer, Prompt, 그래픽, 녹음, 발표 영상을 한 화면에서 확인한다.
    - **[전체 학생 결과 Excel 다운로드]**: 학번, 이름, Title, Main Message, Key Information, Graphic Organizer, Graphic Design Prompt, 제출 여부, 제출 시간, 최종 그래픽 파일명, 최종 발표 영상 파일명.
+   - **발표 평가:** 교사 화면 [발표 평가] 카드(반별 탭)와 학생 상세 화면에서 학생별 점수(자유 형식)·평가 내용을 적는다. 자동 저장되어 Apps Script 의 "Evaluations" 시트에 모이며, [발표 평가 Excel 다운로드](학번·이름·반·점수·평가 내용·평가 시간)로 내려받는다. 전체 결과 Excel 에도 '발표 점수'·'발표 평가' 열이 붙는다.
    - **[전체 그래픽 ZIP 다운로드]**: `학번_이름_Infographic.png` 모음.
    - **[전체 발표 영상 ZIP 다운로드]**: `학번_이름_Presentation.mp4` 모음.
 
@@ -71,7 +72,7 @@
 - 그래픽·녹음·영상 파일의 자동 수집 — 파일은 제출 ZIP으로만 받는다. **글 기록(학번·이름·Title·Main Message·Key Information·Organizer·Prompt)은 선택 기능으로 자동 수집**한다: 교사가 `google-apps-script.gs`를 자기 Google 스프레드시트에 설치하고 그 주소를 index.html의 `SHEET_URL`에 넣으면, 학생이 파일을 내지 않아도 입력 내용이 시트에 모이고 교사 화면의 [온라인 기록 불러오기]로 표·Excel에 나타난다(무료, 학생 로그인 없음). `SHEET_URL`을 비워 두면 이 기능 없이 동작한다
 - 서버로 확인하는 교사 계정 — 대신 Apps Script 에 정한 **TEACHER_KEY 하나를 교사용 비밀번호**로 쓴다(서버에서 확인, 기기에 저장하지 않음, 창을 닫거나 학생 화면으로 돌아가면 다시 입력). 링크는 하나이고 학생 화면의 [교사] 버튼으로 들어간다
 - 이미지 생성 AI·유료 API 연결, 프롬프트 자동 영어 번역, 영어 문법 자동 검사
-- 채점·루브릭·점수 입력, 학생 피드백 작성 기능
+- 루브릭 자동 채점, 학생에게 평가를 보여 주는 기능 (교사가 적는 발표 평가는 교사 화면에서만 보인다)
 - 영상 편집(자막, 여러 장 슬라이드, 배경음악) — 그래픽 1장 + 음성만
 - 프레임워크(React 등), npm 설치, 빌드 도구, 외부 라이브러리 — ZIP·Excel 파일도 index.html 안의 JavaScript로 직접 만든다
 
