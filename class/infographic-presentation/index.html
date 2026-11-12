@@ -166,6 +166,15 @@
   .sk .tools { margin: 6px 0; }
   .ana { background: #fff; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 6px; font-size: 14px; color: #3d4360; }
   .ana p { margin: 4px 0 0; white-space: pre-wrap; }
+  .aisteps { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; font-size: 14px; color: var(--sub); }
+  .btnlink { display: inline-block; border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px; font-size: 14px; font-weight: 600;
+    color: var(--main-dark); text-decoration: none; background: var(--card); }
+  .btnlink:hover { border-color: var(--main); }
+  .pasterow { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: start; margin-bottom: 6px; }
+  .pasterow textarea { min-height: 44px; font-size: 14px; }
+  .batch { margin: 4px 0 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; background: #fbfcff; }
+  .batch summary { cursor: pointer; font-weight: 700; color: var(--main-dark); }
+  .okmsg:empty { display: none; }
   select { font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
   .evst { margin-left: auto; font-size: 13px; color: var(--sub); } .evst.fail { color: var(--warn); } .evst.ok { color: var(--ok); }
   .evrow { display: grid; grid-template-columns: 136px 1fr; gap: 8px; }
@@ -222,7 +231,7 @@
       <div class="guide">
         <p>① <b>[명렬 불러오기]</b>로 학년·반·번호·성명이 있는 엑셀을 한 번 불러오세요. (명렬은 선생님의 Google 스프레드시트에만 저장됩니다)</p>
         <p>② 학생이 발표하는 동안 <b>상 · 중 · 하</b>를 누르고 <b>서술 평가</b>를 적으세요. 적으면 자동 저장되어 다른 기기에서도 이어서 볼 수 있습니다.</p>
-        <p>③ <b>생기부 문구</b>를 펼쳐 [AI 로 생기부 문구 만들기]를 누르면, 학생의 프롬프트와 최종 그래픽을 비교 분석하고 주제·정보 조직 방식·선생님의 평가를 반영해 문구를 씁니다. 만든 문구는 고쳐 쓸 수 있습니다.</p>
+        <p>③ <b>생기부 문구</b>는 무료 AI(Claude 웹)로 만듭니다. 요청문과 그래픽을 복사해 붙여넣으면 AI 가 프롬프트와 그래픽을 비교 분석하고, 주제·정보 조직 방식·선생님의 평가를 반영해 문구를 씁니다. 받은 답을 다시 붙여넣으면 칸에 들어가고, 고쳐 쓸 수 있습니다. 반 전체는 [이 반 생기부 한꺼번에 만들기]로 10명씩 할 수 있습니다.</p>
       </div>
       <div class="tools">
         <button id="btnRoster" class="small">명렬 불러오기 (Excel)</button><input type="file" id="rosterFile" accept=".xlsx" class="hidden">
@@ -231,8 +240,20 @@
         <button id="btnEval" class="small">새로 고침</button>
       </div>
       <div class="tools"><b id="eInfo"></b><span style="flex:1"></span>
-        <button id="btnBatch" class="small">이 반 생기부 한꺼번에 만들기</button>
         <button id="btnEvalXlsx" class="primary">평가 · 생기부 Excel 다운로드</button></div>
+      <details class="batch"><summary>이 반 생기부 한꺼번에 만들기 (무료 · 10명씩)</summary>
+        <p class="hint">위 반 탭에서 고른 반이 대상입니다. 상·중·하와 서술 평가를 먼저 적어 두면 요청문에 함께 들어갑니다. 학생 이름은 요청문에 넣지 않습니다.</p>
+        <div class="tools"><b id="bInfo"></b><select id="bGroup" aria-label="학생 묶음"></select></div>
+        <div class="tools">
+          <button id="bCopy" class="small">① 요청문 복사</button>
+          <button id="bZip" class="small">② 그래픽 ZIP 받기</button>
+          <a class="small btnlink" href="https://claude.ai/new" target="_blank" rel="noopener">③ Claude 열기 ↗</a>
+        </div>
+        <p class="hint">③ 새 대화에 요청문을 붙여넣고, ZIP 을 푼 그래픽 사진들을 함께 끌어다 놓은 뒤 보내세요. 답이 오면 답 아래 [복사] 버튼으로 복사해 아래에 붙여넣으세요.</p>
+        <textarea id="bPaste" rows="4" placeholder="④ AI 의 답 전체를 여기에 붙여넣으세요 (=== 학번 === 으로 나뉜 답)"></textarea>
+        <div class="tools"><button id="bApply" class="primary small">④ 답 반영하기</button></div>
+        <div class="okmsg" id="bMsg" style="margin:0"></div>
+      </details>
       <div class="msg" id="eMsg"></div>
       <div class="tabs" id="eTabs"></div>
       <div class="evlist" id="eList"></div>
@@ -849,7 +870,7 @@ $('#btnXlsx').onclick = async () => {
 
 /* ---------- 발표 평가 · 생기부 (명렬 · 상/중/하 · 서술 평가 · AI 생기부 문구) ---------- */
 // 명렬과 평가는 교사의 Google 스프레드시트(Roster · Evaluations 시트)에 저장한다. 이 페이지 코드에는 학생 이름을 넣지 않는다.
-let rosterList = [], evals = {}, evalClass = '', evalOnline = true, batchRun = false;
+let rosterList = [], evals = {}, evalClass = '', evalOnline = true;
 const evalVer = {}, evalSaved = {}, evalTimer = {};
 const LEVELS = ['상', '중', '하'];
 const EV_FIELDS = ['level', 'note', 'seteuk', 'analysis'];
@@ -907,9 +928,12 @@ function evalHtml(id, name) {
       <textarea data-f="note" rows="2" placeholder="서술 평가 (발표하는 모습, 잘한 점, 아쉬운 점 등)" aria-label="${esc(name)} 서술 평가">${esc(e.note)}</textarea>
     </div>
     <details class="sk" ${e.seteuk ? 'open' : ''}><summary>생기부 문구${e.seteuk ? ` <small data-len>${e.seteuk.length}자</small>` : ''}</summary>
-      <div class="tools"><button type="button" class="small primary" data-gen ${d ? '' : 'disabled title="학생 기록이 없어 만들 수 없습니다"'}>${e.seteuk ? '다시 만들기' : 'AI 로 생기부 문구 만들기'}</button>
-        <button type="button" class="small" data-copy ${d ? '' : 'disabled'}>요청문 복사</button></div>
-      <textarea data-f="seteuk" rows="5" placeholder="'주제'를 주제로 인포그래픽을 제작하고 발표함. … (AI 로 만들거나 직접 쓰세요)">${esc(e.seteuk)}</textarea>
+      ${d ? `<div class="aisteps"><span>무료 AI 로 만들기:</span>
+        <button type="button" class="small" data-copy>① 요청문 복사</button>
+        <button type="button" class="small" data-img ${galOf(id) ? '' : 'disabled title="그래픽이 없습니다"'}>② 그래픽 복사</button>
+        <a class="small btnlink" href="${AI_URL}" target="_blank" rel="noopener">③ Claude 열기 ↗</a></div>
+      <div class="pasterow"><textarea data-paste rows="2" placeholder="④ AI 의 답을 여기에 그대로 붙여넣고 [반영]을 누르세요"></textarea><button type="button" class="small primary" data-apply>반영</button></div>` : '<p class="hint">학생 기록이 없어 AI 요청문을 만들 수 없습니다. 직접 쓰세요.</p>'}
+      <textarea data-f="seteuk" rows="5" placeholder="'주제'를 주제로 인포그래픽을 제작하고 발표함. … (AI 답을 반영하거나 직접 쓰세요)">${esc(e.seteuk)}</textarea>
       <div class="ana" ${e.analysis ? '' : 'hidden'}><b>프롬프트·이미지 분석 (교사 참고용)</b><p data-ana>${esc(e.analysis)}</p></div>
     </details></div>`;
 }
@@ -929,7 +953,6 @@ function syncBoxes(id, except) {
     for (const f of ['note', 'seteuk']) { const t = b.querySelector(`[data-f="${f}"]`); if (t && t !== except && t.value !== e[f]) t.value = e[f]; }
     const sm = b.querySelector('.sk summary'); sm.innerHTML = '생기부 문구' + (e.seteuk ? ` <small data-len>${e.seteuk.length}자</small>` : '');
     if (e.seteuk) b.querySelector('.sk').open = true;
-    const gen = b.querySelector('[data-gen]'); if (gen && !gen.dataset.busy) gen.textContent = e.seteuk ? '다시 만들기' : 'AI 로 생기부 문구 만들기';
     b.querySelector('.ana').hidden = !e.analysis; b.querySelector('[data-ana]').textContent = e.analysis;
   });
   countEvals();
@@ -946,8 +969,9 @@ function renderEvals() {
   $('#btnEvalXlsx').disabled = !all.length;
   $('#eTabs').innerHTML = classes.map(c => { const list = all.filter(r => classOf(r.studentId) === c);
     return `<button class="small ${c === evalClass ? 'sel' : ''}" data-c="${esc(c)}">${esc(c)} (${list.filter(r => hasEval(r.studentId)).length}/${list.length})</button>`; }).join('');
-  $('#btnBatch').disabled = !all.length;
-  if ($('#eList').contains(document.activeElement) && document.activeElement.matches('textarea')) return;   // 적는 중에는 목록을 다시 그리지 않는다
+  renderGroups();
+  if (($('#eList').contains(document.activeElement) && document.activeElement.matches('textarea'))
+    || [...$('#eList').querySelectorAll('[data-paste]')].some(t => t.value.trim())) return;   // 적는 중이거나 붙여넣은 답이 있으면 목록을 다시 그리지 않는다
   const list = all.filter(r => classOf(r.studentId) === evalClass);
   $('#eList').innerHTML = list.length ? list.map(r => evalHtml(r.studentId, r.name)).join('')
     : '<p class="hint">명렬이 없습니다. 위의 <b>[명렬 불러오기]</b>로 학년·반·번호·성명이 있는 엑셀 파일을 불러오세요.</p>';
@@ -979,37 +1003,94 @@ const later = id => { clearTimeout(evalTimer[id]); evalTimer[id] = setTimeout(()
 const evalPending = () => Object.keys(evals).filter(dirty);
 function flushEvals() { const key = teacherKey; for (const id of evalPending()) saveEval(id, key); }
 
-// 생기부 문구 만들기 (Apps Script 가 학생 기록·그래픽을 모아 Claude 에 보낸다)
-async function genSeteuk(id) {
-  const e = evals[id] ||= blankEval(id, nameOf(id));
-  const btns = () => document.querySelectorAll(`[data-ev="${CSS.escape(id)}"] [data-gen]`);
-  btns().forEach(b => { b.disabled = true; b.dataset.busy = 1; b.textContent = '만드는 중… (20초 정도)'; });
-  setSt(id, '생기부 문구 만드는 중…');
+// 생기부 문구: 무료 AI(claude.ai · ChatGPT 웹)에 요청문과 그래픽을 붙여넣고, 받은 답을 다시 붙여넣는다
+const AI_URL = 'https://claude.ai/new';
+const topicOf = d => String(d.title || d.mainMessage || '').trim();
+function studentBlock(id, withImg, batch) {
+  const d = recOf(id) || {}, e = evals[id] || {};
+  const keys = (d.keyInformation || []).map((k, i) => `  ${i + 1}. ${k}`).join('\n');
+  return [
+    batch ? `=== ${id} ===` : '[학생 기록]',
+    withImg ? (batch ? `- 그래픽: 첨부 이미지 중 맨 위에 "${id}"라고 적힌 그림` : '- 그래픽: 첨부한 이미지') : '- 그래픽: 없음 (프롬프트와 기록만으로 판단)',
+    `- 주제(Title): ${topicOf(d) || '(없음)'}`,
+    `- Main Message: ${d.mainMessage || '(없음)'}`,
+    `- Key Information:\n${keys || '  (없음)'}`,
+    `- 선택한 Graphic Organizer(정보 조직 방식): ${d.organizer || '(없음)'}`,
+    `- Graphic Design Prompt(이미지를 만들려고 학생이 쓴 프롬프트):\n${d.designPrompt || '(없음)'}`,
+    `- 영어 발표 대본:\n${d.presentationScript || '(없음)'}`,
+    `- 교사의 발표 평가 수준: ${e.level || '(입력 안 함)'}`,
+    `- 교사의 서술 평가: ${(e.note || '').trim() || '(입력 안 함)'}`,
+  ].join('\n');
+}
+// 요청문 (학생 이름은 넣지 않는다)
+function buildPrompt(ids, imgs) {
+  const batch = ids.length > 1, len = +$('#skLen').value;
+  return [
+    '당신은 한국 고등학교 영어 교사가 학교생활기록부 「과목별 세부능력 및 특기사항」을 쓰도록 돕습니다.',
+    batch ? `아래는 학생 ${ids.length}명의 영어 인포그래픽 발표 수행평가 기록입니다. 첨부한 이미지는 학생들이 각자의 Graphic Design Prompt 로 AI 이미지 도구를 써서 만든 최종 인포그래픽이며, 이미지 맨 위에 학번이 적혀 있습니다. 학생마다 따로 판단하세요.`
+      : '아래는 한 학생의 영어 인포그래픽 발표 수행평가 기록입니다. 첨부한 이미지는 학생이 Graphic Design Prompt 로 AI 이미지 도구를 써서 만든 최종 인포그래픽입니다.',
+    '',
+    '[할 일]',
+    '1. 분석 (교사 참고용, 4~6문장): 프롬프트가 레이아웃·색·글자·도형·정보 배치 등을 얼마나 구체적이고 정교하게 지시했는지, 이미지가 그 지시와 주제·핵심 정보를 얼마나 정확히 구현했는지(일치하는 점과 어긋난 점), 선택한 Graphic Organizer 가 정보의 성격에 맞고 실제로 잘 드러나는지 분석하세요. 마지막 문장은 "프롬프트 정교성: 상/중/하 중 하나"로 끝내세요. 이미지가 없으면 그 사실을 밝히고 프롬프트만으로 분석하세요.',
+    '2. 생기부 문구:',
+    "   - 반드시 '주제'을(를) 주제로 인포그래픽을 제작하고 발표함. 으로 시작하세요. 주제는 작은따옴표로 감싸고, 을/를은 앞말에 맞게 하나만 고르세요.",
+    '   - 그 뒤는 그 학생에게만 해당하는 내용으로: 정보를 조직한 방식(Graphic Organizer 선택과 구성), 프롬프트를 구체화해 의도한 이미지를 이끌어 낸 과정과 정교성, 핵심 정보 전달, 영어 발표 모습을 분석과 교사 평가에 근거해 쓰세요.',
+    '   - 교사의 서술 평가 내용은 반드시 반영하세요. 수준에 맞게 강도를 조절하세요(상: 구체적 강점과 역량을 분명히 / 중: 잘한 점 중심에 성장 가능성 / 하: 참여와 노력, 나아진 점 중심). 어느 경우든 부정적 표현은 쓰지 마세요.',
+    "   - 문체는 '~함', '~임', '~보임', '~돋보임' 같은 명사형 종결. 학생 이름이나 '학생은' 같은 주어는 쓰지 마세요.",
+    '   - 기록에 없는 사실(점수, 수상, 다른 활동)을 지어내거나 과장하지 마세요.',
+    `   - 한 문단, 공백 포함 약 ${len}자(±10%). 영어는 주제 외에는 꼭 필요할 때만 쓰세요.`,
+    '',
+    '[답 형식] 다른 말 없이 아래 형식 그대로 답하세요.' + (batch ? ' 학생마다 반복하고, === 학번 === 줄을 꼭 쓰세요.' : ''),
+    (batch ? '=== 학번 ===\n' : '') + '[분석]\n(분석 내용)\n[생기부]\n(생기부 문구)',
+    '',
+    ...ids.map(id => studentBlock(id, imgs.includes(id), batch) + '\n'),
+  ].join('\n');
+}
+// AI 답 → { 학번: { analysis, seteuk } } (한 명이면 onlyId 로)
+function parseAnswer(text, onlyId) {
+  const one = t => {
+    t = t.replace(/\*\*/g, '');
+    const a = t.match(/\[\s*분석\s*\]([\s\S]*?)(?=\[\s*생기부\s*\]|$)/), s = t.match(/\[\s*생기부\s*\]([\s\S]*)$/);
+    const clean = v => v.trim().replace(/^```\w*\s*|\s*```$/g, '').trim();
+    return s ? { analysis: a ? clean(a[1]) : '', seteuk: clean(s[1]).replace(/\s*\n\s*/g, ' ') } : { analysis: '', seteuk: clean(t).replace(/\s*\n\s*/g, ' ') };
+  };
+  const parts = text.split(/^[#\s]*={2,}\s*(\d{4,6})\s*={2,}\s*$/m), out = {};
+  if (parts.length > 1) { for (let i = 1; i < parts.length; i += 2) out[parts[i]] = one(parts[i + 1] || ''); }
+  else if (onlyId && text.trim()) out[onlyId] = one(text);
+  return out;
+}
+function applyAnswer(map) {
+  const ids = Object.keys(map).filter(id => map[id].seteuk);
+  for (const id of ids) {
+    const e = touch(id); e.seteuk = map[id].seteuk; if (map[id].analysis) e.analysis = map[id].analysis;
+    syncBoxes(id); saveEval(id);
+  }
+  return ids;
+}
+// 학생 그래픽 Blob (stamp 이면 맨 위에 학번을 적은 JPEG)
+async function graphicBlob(id, stamp) {
+  const g = galOf(id); if (!g) return null;
+  if (!galUrls[g.fileId]) await fetchImages([g]);
+  if (!galUrls[g.fileId]) return null;
+  const img = new Image(); img.src = galUrls[g.fileId]; await img.decode();
+  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+  const band = stamp ? Math.max(48, Math.round(w / 16)) : 0, c = document.createElement('canvas');
+  c.width = w; c.height = h + band;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h + band); x.drawImage(img, 0, band, w, h);
+  if (stamp) { x.fillStyle = '#1f2540'; x.fillRect(0, 0, w, band); x.fillStyle = '#fff'; x.font = `bold ${Math.round(band * .6)}px sans-serif`; x.textBaseline = 'middle'; x.fillText(id, 16, band / 2); }
+  return new Promise(res => c.toBlob(res, stamp ? 'image/jpeg' : 'image/png', .88));
+}
+async function copyText(t) { await navigator.clipboard.writeText(t); }
+async function copyGraphic(id) {
   try {
-    const j = await tPost({ action: 'seteuk', studentId: id, level: e.level, note: e.note, length: +$('#skLen').value });
-    if (!j.ok) throw new Error(j.error);
-    touch(id); e.seteuk = j.seteuk; e.analysis = j.analysis + (j.withImage ? '' : '\n(그래픽 이미지 없이 프롬프트만 보고 분석함)');
-    syncBoxes(id); await saveEval(id);
-    return true;
-  } catch (err) {
-    const m = String(err.message || err);
-    setSt(id, m === 'nokey' ? 'AI 키가 설정되지 않았습니다 — [요청문 복사]를 쓰거나 Apps Script 에 ANTHROPIC_API_KEY 를 넣으세요'
-      : m === 'action' ? OLD_SCRIPT : m === 'norecord' ? '학생 기록이 없어 만들 수 없습니다' : '만들지 못했습니다: ' + m, 'fail');
-    return m !== 'nokey' && m !== 'action';
-  } finally {
-    btns().forEach(b => { b.disabled = false; delete b.dataset.busy; b.textContent = evals[id].seteuk ? '다시 만들기' : 'AI 로 생기부 문구 만들기'; });
+    const p = graphicBlob(id, false);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': p.then(b => { if (!b) throw new Error('그래픽 없음'); return b; }) })]);
+    return '그래픽을 복사했습니다. AI 입력창에 붙여넣으세요(Ctrl+V).';
+  } catch (err) {   // 이미지 복사가 안 되는 브라우저: 파일로 받는다
+    const b = await graphicBlob(id, false); if (!b) throw new Error('그래픽을 불러오지 못했습니다');
+    download(b, id + '_graphic.png'); return '그래픽을 파일로 내려받았습니다. AI 입력창에 끌어다 놓으세요.';
   }
 }
-async function copyPrompt(id) {
-  const e = evals[id] || blankEval(id, nameOf(id));
-  try {
-    const j = await tPost({ action: 'seteuk', dry: true, studentId: id, level: e.level, note: e.note, length: +$('#skLen').value });
-    if (!j.ok) throw new Error(j.error === 'action' ? OLD_SCRIPT : j.error);
-    await navigator.clipboard.writeText(j.prompt);
-    setSt(id, '요청문을 복사했습니다. ChatGPT·Claude 에 붙여넣고, 학생 그래픽 이미지도 함께 첨부하세요.', 'ok');
-  } catch (err) { setSt(id, '복사하지 못했습니다: ' + (err.message || err), 'fail'); }
-}
-
 $('#teacherView').addEventListener('input', e => {
   const box = e.target.closest('[data-ev]'), f = e.target.dataset.f;
   if (!box || !f) return;
@@ -1026,29 +1107,51 @@ $('#teacherView').addEventListener('click', e => {
   const box = e.target.closest('[data-ev]'); if (!box) return;
   const id = box.dataset.ev, b = e.target.closest('button'); if (!b) return;
   if (b.dataset.lv) { const ev = touch(id, box.dataset.name); ev.level = ev.level === b.dataset.lv ? '' : b.dataset.lv; syncBoxes(id); saveEval(id); renderEvals(); }
-  else if ('gen' in b.dataset) { if (!evals[id] || !evals[id].seteuk || confirm('지금 생기부 문구를 새로 만든 것으로 바꿀까요?')) genSeteuk(id); }
-  else if ('copy' in b.dataset) copyPrompt(id);
+  else if ('copy' in b.dataset) copyText(buildPrompt([id], galOf(id) ? [id] : []))
+    .then(() => setSt(id, galOf(id) ? '요청문을 복사했습니다. AI 에 붙여넣고 ② 그래픽도 함께 올리세요.' : '요청문을 복사했습니다. AI 에 붙여넣으세요.', 'ok'))
+    .catch(err => setSt(id, '복사하지 못했습니다: ' + err.message, 'fail'));
+  else if ('img' in b.dataset) copyGraphic(id).then(m => setSt(id, m, 'ok')).catch(err => setSt(id, err.message, 'fail'));
+  else if ('apply' in b.dataset) {
+    const t = box.querySelector('[data-paste]'), m = parseAnswer(t.value, id);
+    if (!m[id] || !m[id].seteuk) { setSt(id, 'AI 답을 먼저 붙여넣으세요.', 'fail'); return; }
+    if (evals[id] && evals[id].seteuk && !confirm('지금 생기부 문구를 붙여넣은 답으로 바꿀까요?')) return;
+    applyAnswer({ [id]: m[id] }); t.value = '';
+  }
 });
-$('#eList').addEventListener('focusout', () => setTimeout(() => { if (!$('#eList').contains(document.activeElement)) renderEvals(); }, 0));
 $('#eTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; evalClass = b.dataset.c; renderEvals(); };
 $('#btnEval').onclick = loadEvals;
 window.addEventListener('beforeunload', e => { if (teacherKey && evalPending().length) { flushEvals(); e.preventDefault(); e.returnValue = ''; } });
 
-// 이 반 생기부 한꺼번에 (기록이 있고 아직 문구가 없는 학생만, 한 명씩)
-$('#btnBatch').onclick = async () => {
-  if (batchRun) { batchRun = false; return; }
-  const list = roster().filter(r => classOf(r.studentId) === evalClass && recOf(r.studentId) && !(evals[r.studentId] || {}).seteuk);
-  if (!list.length) { $('#eMsg').textContent = `${evalClass}: 새로 만들 학생이 없습니다. (학생 기록이 있고 생기부 문구가 빈 학생만 만듭니다)`; return; }
-  if (!confirm(`${evalClass} 학생 ${list.length}명의 생기부 문구를 차례로 만듭니다. (한 명에 20초 정도)\n상/중/하와 서술 평가를 먼저 적어 두면 반영됩니다. 시작할까요?`)) return;
-  batchRun = true; $('#btnBatch').textContent = '■ 그만 만들기'; $('#eMsg').textContent = '';
-  let done = 0;
-  for (const r of list) {
-    if (!batchRun) break;
-    $('#eInfo').textContent = `생기부 만드는 중… ${done + 1} / ${list.length} (${r.name})`;
-    if (!(await genSeteuk(r.studentId))) { $('#eMsg').textContent = '생기부를 만들 수 없어 멈췄습니다. 학생 칸의 안내를 확인하세요.'; break; }
-    done++;
-  }
-  batchRun = false; $('#btnBatch').textContent = '이 반 생기부 한꺼번에 만들기'; countEvals();
+// 반 전체를 10명씩: 요청문 복사 → 그래픽 ZIP(이미지 맨 위에 학번) → AI 답 붙여넣기
+const groupAll = () => roster().filter(r => classOf(r.studentId) === evalClass && recOf(r.studentId));
+const groupList = () => { const g = +$('#bGroup').value || 0; return groupAll().slice(g * 10, g * 10 + 10); };
+function renderGroups() {
+  const n = groupAll().length, sel = $('#bGroup'), keep = sel.value;
+  sel.innerHTML = Array.from({ length: Math.max(1, Math.ceil(n / 10)) }, (_, i) => `<option value="${i}">${i * 10 + 1}~${Math.min(n, i * 10 + 10)}번째 학생</option>`).join('');
+  if (keep && +keep < sel.options.length) sel.value = keep;
+  $('#bInfo').textContent = n ? `${evalClass}: 기록이 있는 학생 ${n}명` : `${evalClass}: 기록이 있는 학생이 없습니다`;
+  for (const b of ['#bCopy', '#bZip', '#bApply']) $(b).disabled = !n;
+}
+$('#bCopy').onclick = async () => {
+  const list = groupList(); if (!list.length) return;
+  const ids = list.map(r => r.studentId), imgs = ids.filter(id => galOf(id));
+  try { await copyText(buildPrompt(ids, imgs)); $('#bMsg').textContent = `요청문을 복사했습니다 (${ids.length}명: ${list.map(r => r.name).join(', ')}). 그래픽 ${imgs.length}장은 ② 로 받아 함께 올리세요.`; }
+  catch (err) { $('#bMsg').textContent = '복사하지 못했습니다: ' + err.message; }
+};
+$('#bZip').onclick = async () => {
+  const list = groupList().filter(r => galOf(r.studentId)); if (!list.length) { $('#bMsg').textContent = '받을 그래픽이 없습니다.'; return; }
+  $('#bMsg').textContent = '그래픽을 모으는 중…';
+  const files = [];
+  for (const r of list) { const b = await graphicBlob(r.studentId, true); if (b) files.push({ name: r.studentId + '.jpg', blob: b }); }
+  const g = +$('#bGroup').value, c = list[0].studentId;   // 파일 이름은 영문으로 (예: graphics_1-1_1-10.zip)
+  download(await makeZip(files), `graphics_${/^\d{5}$/.test(c) ? c[0] + '-' + +c.slice(1, 3) : 'class'}_${g * 10 + 1}-${g * 10 + 10}.zip`);
+  $('#bMsg').textContent = `그래픽 ${files.length}장을 ZIP 으로 받았습니다. 압축을 풀고 사진들을 AI 입력창에 한꺼번에 끌어다 놓으세요.`;
+};
+$('#bApply').onclick = () => {
+  const ids = applyAnswer(parseAnswer($('#bPaste').value));
+  $('#bMsg').textContent = ids.length ? `${ids.length}명의 생기부 문구를 넣었습니다: ${ids.map(id => nameOf(id) || id).join(', ')}` : '답에서 "=== 학번 ===" 과 [생기부] 를 찾지 못했습니다. AI 답 전체를 그대로 붙여넣으세요.';
+  if (ids.length) $('#bPaste').value = '';
+  renderEvals();
 };
 
 // 명렬 불러오기: 시트마다 학년 · 반 · 번호 · 성명(이름) 머리글이 있는 엑셀
@@ -1092,7 +1195,7 @@ $('#btnEvalXlsx').onclick = async () => {
   const all = roster(), classes = [...new Set(all.map(r => classOf(r.studentId)))];
   const sheets = [{ name: '전체', rows: [head, ...all.map(row)], widths },
     ...classes.map(c => ({ name: c, rows: [head, ...all.filter(r => classOf(r.studentId) === c).map(row)], widths }))];
-  download(await makeXlsxBook(sheets), 'Infographic_발표평가_생기부.xlsx');
+  download(await makeXlsxBook(sheets), 'Infographic_Evaluations.xlsx');
 };
 /* ---------- 반별 그래픽 열람 (온라인으로 받은 그래픽) ---------- */
 let gal = [], galClass = '', galShown = [], lbAt = -1;
@@ -1236,7 +1339,7 @@ function showMode() {
   $('#who').classList.toggle('hidden', teacher);
   if (!teacher) { flushEvals();   // 아직 저장 안 된 평가는 비밀번호를 지우기 전에 보낸다
     teacherKey = ''; subs = []; curId = null; $('#tBody').innerHTML = ''; renderDetail();
-    evals = {}; rosterList = []; evalClass = ''; evalOnline = true; batchRun = false; $('#eTabs').innerHTML = $('#eList').innerHTML = '';
+    evals = {}; rosterList = []; evalClass = ''; evalOnline = true; $('#bPaste').value = $('#bMsg').textContent = ''; $('#eTabs').innerHTML = $('#eList').innerHTML = '';
     for (const o of [evalVer, evalSaved, evalTimer]) for (const k in o) { if (o === evalTimer) clearTimeout(o[k]); delete o[k]; }
     gal = []; galShown = []; closeLb(); $('#galTabs').innerHTML = $('#galGrid').innerHTML = '';
     for (const k in galUrls) { URL.revokeObjectURL(galUrls[k]); delete galUrls[k]; }
