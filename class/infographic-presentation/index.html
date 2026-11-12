@@ -149,6 +149,37 @@
   #lightbox .lbright { position: absolute; right: 16px; display: flex; gap: 6px; }
   #lightbox .lbright button { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: #fff; }
   @media (max-width: 760px) { #lightbox .lbright { position: static; } #lightbox .lbbar { flex-wrap: wrap; } }
+  /* 발표 평가 */
+  .evlist { display: grid; gap: 10px; }
+  .ev { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fbfcff; }
+  .ev.has { border-color: #b9c0e6; background: var(--main-soft); }
+  .evhead { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .evhead small { color: var(--sub); }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #eef0f5; color: #8a90a8; }
+  .tag.ok { background: var(--ok-soft); color: #0f6b47; } .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .lv { display: flex; gap: 4px; align-self: start; }
+  .lv button { width: 40px; padding: 8px 0; font-size: 16px; }
+  .lv button.sel { background: var(--main); border-color: var(--main); color: #fff; }
+  .sk { margin-top: 8px; }
+  .sk summary { cursor: pointer; font-weight: 700; color: var(--main-dark); font-size: 14px; }
+  .sk summary small { color: var(--sub); font-weight: 400; }
+  .sk .tools { margin: 6px 0; }
+  .ana { background: #fff; border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 6px; font-size: 14px; color: #3d4360; }
+  .ana p { margin: 4px 0 0; white-space: pre-wrap; }
+  .aisteps { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; font-size: 14px; color: var(--sub); }
+  .btnlink { display: inline-block; border: 1px solid var(--line); border-radius: 10px; padding: 5px 10px; font-size: 14px; font-weight: 600;
+    color: var(--main-dark); text-decoration: none; background: var(--card); }
+  .btnlink:hover { border-color: var(--main); }
+  .pasterow { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: start; margin-bottom: 6px; }
+  .pasterow textarea { min-height: 44px; font-size: 14px; }
+  .batch { margin: 4px 0 12px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; background: #fbfcff; }
+  .batch summary { cursor: pointer; font-weight: 700; color: var(--main-dark); }
+  .okmsg:empty { display: none; }
+  select { font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+  .evst { margin-left: auto; font-size: 13px; color: var(--sub); } .evst.fail { color: var(--warn); } .evst.ok { color: var(--ok); }
+  .evrow { display: grid; grid-template-columns: 136px 1fr; gap: 8px; }
+  .evrow textarea { min-height: 44px; }
+  @media (max-width: 600px) { .evrow { grid-template-columns: 1fr; } }
   .zoom { cursor: zoom-in; } .zoom img { max-width: 100%; max-height: 420px; }
   .hidden { display: none !important; }
   @media (max-width: 600px) { dl.sum { grid-template-columns: 1fr; gap: 2px; } dl.sum dd { margin-bottom: 10px; } .card { padding: 18px; } }
@@ -189,12 +220,44 @@
       <p class="hint">✓ 완료 · - 아직 안 함. 학생 이름을 누르면 자세히 볼 수 있습니다.</p>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>학번</th><th>이름</th><th>내용</th><th>Organizer</th><th>Prompt</th><th>Graphic</th><th>Script</th><th>제출</th></tr></thead>
+          <thead><tr><th>학번</th><th>이름</th><th>내용</th><th>Organizer</th><th>Prompt</th><th>Graphic</th><th>Script</th><th>제출</th><th>평가</th></tr></thead>
           <tbody id="tBody"></tbody>
         </table>
       </div>
     </div>
     <div class="card hidden" id="tDetail" style="margin-top:16px"></div>
+    <div class="card" id="eCard" style="margin-top:16px">
+      <h2><small>EVALUATION</small>발표 평가 · 생기부</h2>
+      <div class="guide">
+        <p>① <b>[명렬 불러오기]</b>로 학년·반·번호·성명이 있는 엑셀을 한 번 불러오세요. (명렬은 선생님의 Google 스프레드시트에만 저장됩니다)</p>
+        <p>② 학생이 발표하는 동안 <b>상 · 중 · 하</b>를 누르고 <b>서술 평가</b>를 적으세요. 적으면 자동 저장되어 다른 기기에서도 이어서 볼 수 있습니다.</p>
+        <p>③ <b>생기부 문구</b>는 무료 AI(Claude 웹)로 만듭니다. 요청문과 그래픽을 복사해 붙여넣으면 AI 가 프롬프트와 그래픽을 비교 분석하고, 주제·정보 조직 방식·선생님의 평가를 반영해 문구를 씁니다. 받은 답을 다시 붙여넣으면 칸에 들어가고, 고쳐 쓸 수 있습니다. 반 전체는 [이 반 생기부 한꺼번에 만들기]로 10명씩 할 수 있습니다.</p>
+      </div>
+      <div class="tools">
+        <button id="btnRoster" class="small">명렬 불러오기 (Excel)</button><input type="file" id="rosterFile" accept=".xlsx" class="hidden">
+        <label class="hint" style="margin:0">생기부 길이 <select id="skLen"><option value="200">약 200자</option><option value="300" selected>약 300자</option><option value="400">약 400자</option><option value="500">약 500자</option></select></label>
+        <span style="flex:1"></span>
+        <button id="btnEval" class="small">새로 고침</button>
+      </div>
+      <div class="tools"><b id="eInfo"></b><span style="flex:1"></span>
+        <button id="btnEvalXlsx" class="primary">평가 · 생기부 Excel 다운로드</button></div>
+      <details class="batch"><summary>이 반 생기부 한꺼번에 만들기 (무료 · 10명씩)</summary>
+        <p class="hint">위 반 탭에서 고른 반이 대상입니다. 상·중·하와 서술 평가를 먼저 적어 두면 요청문에 함께 들어갑니다. 학생 이름은 요청문에 넣지 않습니다.</p>
+        <div class="tools"><b id="bInfo"></b><select id="bGroup" aria-label="학생 묶음"></select></div>
+        <div class="tools">
+          <button id="bCopy" class="small">① 요청문 복사</button>
+          <button id="bZip" class="small">② 그래픽 ZIP 받기</button>
+          <a class="small btnlink" href="https://claude.ai/new" target="_blank" rel="noopener">③ Claude 열기 ↗</a>
+        </div>
+        <p class="hint">③ 새 대화에 요청문을 붙여넣고, ZIP 을 푼 그래픽 사진들을 함께 끌어다 놓은 뒤 보내세요. 답이 오면 답 아래 [복사] 버튼으로 복사해 아래에 붙여넣으세요.</p>
+        <textarea id="bPaste" rows="4" placeholder="④ AI 의 답 전체를 여기에 붙여넣으세요 (=== 학번 === 으로 나뉜 답)"></textarea>
+        <div class="tools"><button id="bApply" class="primary small">④ 답 반영하기</button></div>
+        <div class="okmsg" id="bMsg" style="margin:0"></div>
+      </details>
+      <div class="msg" id="eMsg"></div>
+      <div class="tabs" id="eTabs"></div>
+      <div class="evlist" id="eList"></div>
+    </div>
     <div class="card" id="gCard" style="margin-top:16px">
       <h2><small>GALLERY</small>반별 그래픽 열람</h2>
       <p class="hint">학생이 STEP 4에서 그래픽을 올리면 여기로 자동으로 모입니다. 반을 고르고 <b>[▶ 이 반 발표 화면]</b>을 누르면 전체 화면으로 한 장씩 크게 띄웁니다. 그림을 눌러도 크게 볼 수 있습니다. 넘기기: ← → 키 또는 ‹ › 버튼.</p>
@@ -293,25 +356,77 @@ async function makeZip(files) {
   return new Blob([...parts, ...central, end.buffer], { type: 'application/zip' });
 }
 
-/* ---------- Excel(.xlsx) 만들기 ---------- */
-async function makeXlsx(rows) {
+/* ---------- Excel(.xlsx) 만들기 · 읽기 ---------- */
+// sheets: [{ name, rows, widths }] — 시트 여러 개
+async function makeXlsxBook(sheets) {
   const x = s => esc(String(s ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ''));
-  const col = i => String.fromCharCode(65 + i);
-  const sheet = rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) =>
-    `<c r="${col(ci)}${ri + 1}" t="inlineStr"${ri === 0 ? ' s="1"' : ''}><is><t xml:space="preserve">${x(v)}</t></is></c>`).join('') + '</row>').join('');
+  const col = i => (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : '') + String.fromCharCode(65 + i % 26);
+  const sheetName = (n, i) => (String(n).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31).trim() || 'Sheet' + (i + 1));
   const H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-  const widths = [10, 10, 28, 40, 50, 20, 60, 60, 10, 18, 30, 18];
-  const blob = await makeZip([
-    { name: '[Content_Types].xml', blob: H + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
+  const files = [
+    { name: '[Content_Types].xml', blob: H + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      sheets.map((s, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
     { name: '_rels/.rels', blob: H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
-    { name: 'xl/workbook.xml', blob: H + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Results" sheetId="1" r:id="rId1"/></sheets></workbook>' },
-    { name: 'xl/_rels/workbook.xml.rels', blob: H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+    { name: 'xl/workbook.xml', blob: H + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+      sheets.map((s, i) => `<sheet name="${x(sheetName(s.name, i))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('') + '</sheets></workbook>' },
+    { name: 'xl/_rels/workbook.xml.rels', blob: H + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      sheets.map((s, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('') +
+      `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
     { name: 'xl/styles.xml', blob: H + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="맑은 고딕"/></font><font><b/><sz val="11"/><name val="맑은 고딕"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>' },
-    { name: 'xl/worksheets/sheet1.xml', blob: H + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + `</cols><sheetData>${sheet}</sheetData></worksheet>` },
-  ]);
-  return new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  ];
+  sheets.forEach((s, si) => {
+    const data = s.rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) =>
+      `<c r="${col(ci)}${ri + 1}" t="inlineStr"${ri === 0 ? ' s="1"' : ''}><is><t xml:space="preserve">${x(v)}</t></is></c>`).join('') + '</row>').join('');
+    const widths = s.widths || [];
+    files.push({ name: `xl/worksheets/sheet${si + 1}.xml`, blob: H + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      (widths.length ? '<cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols>' : '') +
+      `<sheetData>${data}</sheetData></worksheet>` });
+  });
+  return new Blob([await makeZip(files)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+const makeXlsx = (rows, widths = [10, 10, 28, 40, 50, 20, 60, 60, 10, 18, 12, 18, 8, 50, 60]) => makeXlsxBook([{ name: 'Results', rows, widths }]);
+
+// ZIP 풀기 (저장 방식 0, 압축 방식 8 = deflate) → { 파일 이름: Uint8Array }
+async function readZip(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf), dec = new TextDecoder();
+  let e = u8.length - 22;
+  while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('엑셀(.xlsx) 파일이 아닙니다');
+  const n = dv.getUint16(e + 10, true), out = {};
+  let p = dv.getUint32(e + 16, true);
+  for (let i = 0; i < n; i++) {
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true);
+    const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), lo = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nl));
+    const start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+    const raw = u8.subarray(start, start + size);
+    out[name] = method === 0 ? raw : new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    p += 46 + nl + xl + cl;
+  }
+  return out;
 }
 
+// .xlsx → [{ name, rows: [[셀 문자열]] }]
+async function readXlsx(file) {
+  const z = await readZip(await file.arrayBuffer()), dec = new TextDecoder();
+  const xml = name => z[name] ? new DOMParser().parseFromString(dec.decode(z[name]), 'application/xml') : null;
+  const tags = (node, t) => [...node.getElementsByTagName(t)];
+  const strs = (() => { const d = xml('xl/sharedStrings.xml'); if (!d) return [];
+    return tags(d, 'si').map(si => tags(si, 't').filter(t => t.parentNode.nodeName !== 'rPh').map(t => t.textContent).join('')); })();
+  const wb = xml('xl/workbook.xml'), rels = xml('xl/_rels/workbook.xml.rels');
+  const target = {}; for (const r of tags(rels, 'Relationship')) target[r.getAttribute('Id')] = r.getAttribute('Target');
+  const colNo = ref => { let c = 0; for (const ch of ref.replace(/\d+/g, '')) c = c * 26 + ch.charCodeAt(0) - 64; return c - 1; };
+  return tags(wb, 'sheet').map(s => {
+    const t = target[s.getAttribute('r:id')] || '';
+    const d = xml(t.startsWith('/') ? t.slice(1) : 'xl/' + t.replace(/^\.\//, ''));
+    const rows = d ? tags(d, 'row').map(r => { const out = [];
+      for (const c of tags(r, 'c')) { const ty = c.getAttribute('t'), v = tags(c, 'v')[0];
+        out[colNo(c.getAttribute('r') || 'A')] = ty === 's' ? strs[+(v && v.textContent)] ?? '' : ty === 'inlineStr' ? tags(c, 't').map(x => x.textContent).join('') : v ? v.textContent : ''; }
+      return Array.from(out, v => String(v ?? '').trim()); }) : [];
+    return { name: s.getAttribute('name'), rows };
+  });
+}
 /* ===================== 학생 화면 ===================== */
 const STEPS = ['학생 정보', '내용 정리', 'Organizer', 'Design Prompt', 'Graphic', 'Script', '제출'];
 const ORGS = [
@@ -707,16 +822,19 @@ function renderTeacher() {
   const m = ok => ok ? '<td class="y">✓</td>' : '<td class="n">-</td>';
   $('#tBody').innerHTML = subs.length ? subs.map(d => `<tr class="${String(d.studentId) === curId ? 'cur' : ''}">
     <td>${esc(d.studentId)}</td><td><button class="link" data-id="${esc(d.studentId)}">${esc(d.name)}</button></td>
-    ${m(d.title && d.mainMessage && (d.keyInformation || []).length)}${m(d.organizer)}${m(d.designPrompt)}${m(galOf(d.studentId) || d.hasGraphic)}${m(d.presentationScript)}${m(d.submittedAt)}</tr>`).join('')
-    : '<tr><td colspan="8" class="n">아직 기록한 학생이 없습니다.</td></tr>';
+    ${m(d.title && d.mainMessage && (d.keyInformation || []).length)}${m(d.organizer)}${m(d.designPrompt)}${m(galOf(d.studentId) || d.hasGraphic)}${m(d.presentationScript)}${m(d.submittedAt)}${m(hasEval(d.studentId))}</tr>`).join('')
+    : '<tr><td colspan="9" class="n">아직 기록한 학생이 없습니다.</td></tr>';
   $('#btnXlsx').disabled = !subs.length;
   renderDetail();
+  renderEvals();
 }
 
 function renderDetail() {
   const d = subs.find(x => String(x.studentId) === curId), box = $('#tDetail');
   box.classList.toggle('hidden', !d);
   if (!d) return;
+  if (box.dataset.id === curId && box.contains(document.activeElement) && document.activeElement.closest('[data-ev]')) return;   // 평가를 적는 중에는 다시 그리지 않는다
+  box.dataset.id = curId;
   const g = galOf(d.studentId), none = '<dd class="empty">없음</dd>';
   box.innerHTML = `<h2><small>STUDENT</small>${esc(d.studentId)} ${esc(d.name)}</h2>
     <dl class="sum">
@@ -729,6 +847,7 @@ function renderDetail() {
       <dt>Final Graphic</dt>${g ? `<dd><div class="zoom" data-f="${esc(g.fileId)}">${galUrls[g.fileId] ? `<img src="${galUrls[g.fileId]}" alt="최종 그래픽">` : '불러오는 중…'}</div>
         <button class="small" id="dBig">크게 보기</button></dd>` : none}
       <dt>Presentation Script</dt>${d.presentationScript ? `<dd>${esc(d.presentationScript)}</dd>` : none}
+      <dt>발표 평가</dt><dd style="white-space:normal">${evalHtml(String(d.studentId).trim(), nameOf(String(d.studentId).trim()) || d.name)}</dd>
     </dl>`;
   if (g) {
     if (!galUrls[g.fileId]) fetchImages([g]);
@@ -737,17 +856,347 @@ function renderDetail() {
 }
 
 $('#tBody').onclick = e => { const b = e.target.closest('[data-id]'); if (!b) return; curId = b.dataset.id; renderTeacher(); $('#tDetail').scrollIntoView({ behavior: 'smooth' }); };
-$('#btnOnline').onclick = () => { loadRecords(); loadGallery(); };
+$('#btnOnline').onclick = () => { loadRecords(); loadGallery(); loadEvals(); };
 
 $('#btnXlsx').onclick = async () => {
-  const rows = [['학번', '이름', 'Title', 'Main Message', 'Key Information', 'Graphic Organizer', 'Graphic Design Prompt', 'Presentation Script', '제출 여부', '제출 시간', '그래픽 업로드', '마지막 저장 시간']];
+  const rows = [['학번', '이름', 'Title', 'Main Message', 'Key Information', 'Graphic Organizer', 'Graphic Design Prompt', 'Presentation Script', '제출 여부', '제출 시간', '그래픽 업로드', '마지막 저장 시간', '발표 평가(상중하)', '서술 평가', '생기부 문구']];
   for (const d of subs) {
+    const ev = evals[String(d.studentId).trim()] || {};
     rows.push([d.studentId, d.name, d.title, d.mainMessage, (d.keyInformation || []).map((k, i) => `${i + 1}. ${k}`).join('\n'), d.organizer, d.designPrompt,
-      d.presentationScript || '', d.submittedAt ? '제출' : '미제출', fmtTime(d.submittedAt), galOf(d.studentId) || d.hasGraphic ? 'O' : '', fmtTime(d.savedAt || d.submittedAt)]);
+      d.presentationScript || '', d.submittedAt ? '제출' : '미제출', fmtTime(d.submittedAt), galOf(d.studentId) || d.hasGraphic ? 'O' : '', fmtTime(d.savedAt || d.submittedAt), ev.level || '', ev.note || '', ev.seteuk || '']);
   }
   download(await makeXlsx(rows), 'Infographic_Presentation_Results.xlsx');
 };
 
+/* ---------- 발표 평가 · 생기부 (명렬 · 상/중/하 · 서술 평가 · AI 생기부 문구) ---------- */
+// 명렬과 평가는 교사의 Google 스프레드시트(Roster · Evaluations 시트)에 저장한다. 이 페이지 코드에는 학생 이름을 넣지 않는다.
+let rosterList = [], evals = {}, evalClass = '', evalOnline = true;
+const evalVer = {}, evalSaved = {}, evalTimer = {};
+const LEVELS = ['상', '중', '하'];
+const EV_FIELDS = ['level', 'note', 'seteuk', 'analysis'];
+const blankEval = (id, name) => ({ studentId: id, name, level: '', note: '', seteuk: '', analysis: '', at: '' });
+const hasEval = id => { const e = evals[String(id).trim()]; return !!(e && (e.level || e.note.trim())); };
+const recOf = id => subs.find(d => String(d.studentId).trim() === id);
+const tPost = (body, key = teacherKey) => fetch(SHEET_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+  body: JSON.stringify({ ...body, key }) }).then(r => r.json());
+const OLD_SCRIPT = 'Apps Script 가 예전 버전입니다. google-apps-script.gs 를 새로 붙여넣고 [배포 관리] → 새 버전으로 배포하세요.';
+const dirty = id => (evalVer[id] || 0) !== (evalSaved[id] || 0);
+
+async function loadEvals() {
+  if (!SHEET_URL || !teacherKey) return;
+  $('#eMsg').textContent = '';
+  try {
+    const [r, e] = await Promise.all([tPost({ action: 'roster' }), tPost({ action: 'evals' })]);
+    if (!r.ok) throw new Error(r.error);
+    if (!e.ok) throw new Error(e.error);
+    evalOnline = true;
+    rosterList = r.roster;
+    for (const x of e.evals) {
+      if (evalTimer[x.studentId] || dirty(x.studentId)) continue;   // 아직 저장 안 된 내 입력은 덮어쓰지 않는다
+      evals[x.studentId] = { ...blankEval(x.studentId, x.name), ...Object.fromEntries(Object.entries(x).map(([k, v]) => [k, String(v ?? '')])) };
+    }
+  } catch (err) {
+    if (String(err.message) === 'action') { evalOnline = false;
+      $('#eMsg').textContent = OLD_SCRIPT + ' (지금 적은 평가는 이 창을 닫기 전까지 Excel 로 내려받을 수 있습니다)'; }
+    else $('#eMsg').textContent = '명렬·평가를 불러오지 못했습니다. 인터넷 연결을 확인하고 [새로 고침]을 누르세요.';
+  }
+  renderTeacher();
+}
+
+// 평가할 학생 = 명렬 + (명렬에 없는) 글 기록·그래픽·평가
+function roster() {
+  const m = new Map();
+  for (const r of rosterList) m.set(r.studentId, { studentId: r.studentId, name: r.name, num: r.num, inRoster: true });
+  const add = (id, name) => { id = String(id).trim(); if (id && !m.has(id)) m.set(id, { studentId: id, name, num: id.slice(-2).replace(/^0/, ''), inRoster: false }); };
+  for (const d of subs) add(d.studentId, d.name);
+  for (const g of gal) add(g.studentId, g.name);
+  for (const id in evals) add(id, evals[id].name);
+  return [...m.values()].sort(byId);
+}
+const nameOf = id => { const r = rosterList.find(x => x.studentId === id); return r ? r.name : (recOf(id) || evals[id] || {}).name || ''; };
+
+function evalHtml(id, name) {
+  const e = evals[id] || blankEval(id, name), d = recOf(id), r = rosterList.find(x => x.studentId === id);
+  const tags = [d ? '<span class="tag ok">기록</span>' : '<span class="tag">기록 없음</span>',
+    galOf(id) ? '<span class="tag ok">그래픽</span>' : '<span class="tag">그래픽 없음</span>',
+    r ? '' : '<span class="tag warn">명렬에 없음</span>',
+    d && r && d.name !== r.name ? `<span class="tag warn">기록 이름: ${esc(d.name)}</span>` : ''].join('');
+  return `<div class="ev ${hasEval(id) ? 'has' : ''}" data-ev="${esc(id)}" data-name="${esc(name)}">
+    <div class="evhead"><b>${r ? esc(r.num) + '. ' : ''}${esc(name)}</b><small>${esc(id)}</small>${tags}<span class="evst" data-st="${esc(id)}">${esc(stText(id))}</span></div>
+    <div class="evrow">
+      <div class="lv" role="group" aria-label="${esc(name)} 발표 평가 수준">${LEVELS.map(l => `<button type="button" class="${e.level === l ? 'sel' : ''}" data-lv="${l}">${l}</button>`).join('')}</div>
+      <textarea data-f="note" rows="2" placeholder="서술 평가 (발표하는 모습, 잘한 점, 아쉬운 점 등)" aria-label="${esc(name)} 서술 평가">${esc(e.note)}</textarea>
+    </div>
+    <details class="sk" ${e.seteuk ? 'open' : ''}><summary>생기부 문구${e.seteuk ? ` <small data-len>${e.seteuk.length}자</small>` : ''}</summary>
+      ${d ? `<div class="aisteps"><span>무료 AI 로 만들기:</span>
+        <button type="button" class="small" data-copy>① 요청문 복사</button>
+        <button type="button" class="small" data-img ${galOf(id) ? '' : 'disabled title="그래픽이 없습니다"'}>② 그래픽 복사</button>
+        <a class="small btnlink" href="${AI_URL}" target="_blank" rel="noopener">③ Claude 열기 ↗</a></div>
+      <div class="pasterow"><textarea data-paste rows="2" placeholder="④ AI 의 답을 여기에 그대로 붙여넣고 [반영]을 누르세요"></textarea><button type="button" class="small primary" data-apply>반영</button></div>` : '<p class="hint">학생 기록이 없어 AI 요청문을 만들 수 없습니다. 직접 쓰세요.</p>'}
+      <textarea data-f="seteuk" rows="5" placeholder="'주제'를 주제로 인포그래픽을 제작하고 발표함. … (AI 답을 반영하거나 직접 쓰세요)">${esc(e.seteuk)}</textarea>
+      <div class="ana" ${e.analysis ? '' : 'hidden'}><b>프롬프트·이미지 분석 (교사 참고용)</b><p data-ana>${esc(e.analysis)}</p></div>
+    </details></div>`;
+}
+function stText(id) {
+  if (dirty(id)) return evalOnline ? '저장 중…' : '이 창에만 있음';
+  return evals[id] && evals[id].at ? '저장됨 ' + evals[id].at : '';
+}
+function setSt(id, text, cls = '') {
+  document.querySelectorAll(`[data-st="${CSS.escape(id)}"]`).forEach(s => { s.textContent = text; s.className = 'evst ' + cls; });
+}
+// 같은 학생 칸(목록 · 상세)을 모두 지금 값으로 맞춘다 (except: 지금 입력 중인 칸)
+function syncBoxes(id, except) {
+  const e = evals[id];
+  document.querySelectorAll(`[data-ev="${CSS.escape(id)}"]`).forEach(b => {
+    b.classList.toggle('has', hasEval(id));
+    b.querySelectorAll('[data-lv]').forEach(x => x.classList.toggle('sel', x.dataset.lv === e.level));
+    for (const f of ['note', 'seteuk']) { const t = b.querySelector(`[data-f="${f}"]`); if (t && t !== except && t.value !== e[f]) t.value = e[f]; }
+    const sm = b.querySelector('.sk summary'); sm.innerHTML = '생기부 문구' + (e.seteuk ? ` <small data-len>${e.seteuk.length}자</small>` : '');
+    if (e.seteuk) b.querySelector('.sk').open = true;
+    b.querySelector('.ana').hidden = !e.analysis; b.querySelector('[data-ana]').textContent = e.analysis;
+  });
+  countEvals();
+}
+function countEvals() {
+  const all = roster();
+  $('#eInfo').textContent = `평가 ${all.filter(r => hasEval(r.studentId)).length}명 · 생기부 ${all.filter(r => (evals[r.studentId] || {}).seteuk).length}명 / ${all.length}명`;
+}
+
+function renderEvals() {
+  const all = roster(), classes = [...new Set(all.map(r => classOf(r.studentId)))];
+  if (!classes.includes(evalClass)) evalClass = classes[0] || '';
+  countEvals();
+  $('#btnEvalXlsx').disabled = !all.length;
+  $('#eTabs').innerHTML = classes.map(c => { const list = all.filter(r => classOf(r.studentId) === c);
+    return `<button class="small ${c === evalClass ? 'sel' : ''}" data-c="${esc(c)}">${esc(c)} (${list.filter(r => hasEval(r.studentId)).length}/${list.length})</button>`; }).join('');
+  renderGroups();
+  if (($('#eList').contains(document.activeElement) && document.activeElement.matches('textarea'))
+    || [...$('#eList').querySelectorAll('[data-paste]')].some(t => t.value.trim())) return;   // 적는 중이거나 붙여넣은 답이 있으면 목록을 다시 그리지 않는다
+  const list = all.filter(r => classOf(r.studentId) === evalClass);
+  $('#eList').innerHTML = list.length ? list.map(r => evalHtml(r.studentId, r.name)).join('')
+    : '<p class="hint">명렬이 없습니다. 위의 <b>[명렬 불러오기]</b>로 학년·반·번호·성명이 있는 엑셀 파일을 불러오세요.</p>';
+}
+
+function touch(id, name) {
+  const e = evals[id] ||= blankEval(id, name || nameOf(id));
+  evalVer[id] = (evalVer[id] || 0) + 1;
+  setSt(id, stText(id));
+  return e;
+}
+async function saveEval(id, key = teacherKey) {
+  clearTimeout(evalTimer[id]); delete evalTimer[id];
+  const e = evals[id], ver = evalVer[id] || 0;
+  if (!e || !evalOnline || !key) { setSt(id, stText(id)); return; }
+  setSt(id, '저장 중…');
+  try {
+    const j = await tPost({ action: 'evalSave', eval: { studentId: id, name: e.name, ...Object.fromEntries(EV_FIELDS.map(f => [f, e[f]])) } }, key);
+    if (!j.ok) throw new Error(j.error);
+    e.at = j.at;
+    evalSaved[id] = Math.max(evalSaved[id] || 0, ver);
+    if (evalVer[id] === ver) setSt(id, '저장됨 ' + j.at, 'ok');
+  } catch (err) {
+    if (String(err.message) === 'action') { evalOnline = false; loadEvals(); return; }
+    setSt(id, '저장 실패 — 다시 적거나 칸을 벗어나면 다시 저장합니다', 'fail');
+  }
+}
+const later = id => { clearTimeout(evalTimer[id]); evalTimer[id] = setTimeout(() => saveEval(id), 1200); };
+const evalPending = () => Object.keys(evals).filter(dirty);
+function flushEvals() { const key = teacherKey; for (const id of evalPending()) saveEval(id, key); }
+
+// 생기부 문구: 무료 AI(claude.ai · ChatGPT 웹)에 요청문과 그래픽을 붙여넣고, 받은 답을 다시 붙여넣는다
+const AI_URL = 'https://claude.ai/new';
+const topicOf = d => String(d.title || d.mainMessage || '').trim();
+function studentBlock(id, withImg, batch) {
+  const d = recOf(id) || {}, e = evals[id] || {};
+  const keys = (d.keyInformation || []).map((k, i) => `  ${i + 1}. ${k}`).join('\n');
+  return [
+    batch ? `=== ${id} ===` : '[학생 기록]',
+    withImg ? (batch ? `- 그래픽: 첨부 이미지 중 맨 위에 "${id}"라고 적힌 그림` : '- 그래픽: 첨부한 이미지') : '- 그래픽: 없음 (프롬프트와 기록만으로 판단)',
+    `- 주제(Title): ${topicOf(d) || '(없음)'}`,
+    `- Main Message: ${d.mainMessage || '(없음)'}`,
+    `- Key Information:\n${keys || '  (없음)'}`,
+    `- 선택한 Graphic Organizer(정보 조직 방식): ${d.organizer || '(없음)'}`,
+    `- Graphic Design Prompt(이미지를 만들려고 학생이 쓴 프롬프트):\n${d.designPrompt || '(없음)'}`,
+    `- 영어 발표 대본:\n${d.presentationScript || '(없음)'}`,
+    `- 교사의 발표 평가 수준: ${e.level || '(입력 안 함)'}`,
+    `- 교사의 서술 평가: ${(e.note || '').trim() || '(입력 안 함)'}`,
+  ].join('\n');
+}
+// 요청문 (학생 이름은 넣지 않는다)
+function buildPrompt(ids, imgs) {
+  const batch = ids.length > 1, len = +$('#skLen').value;
+  return [
+    '당신은 한국 고등학교 영어 교사가 학교생활기록부 「과목별 세부능력 및 특기사항」을 쓰도록 돕습니다.',
+    batch ? `아래는 학생 ${ids.length}명의 영어 인포그래픽 발표 수행평가 기록입니다. 첨부한 이미지는 학생들이 각자의 Graphic Design Prompt 로 AI 이미지 도구를 써서 만든 최종 인포그래픽이며, 이미지 맨 위에 학번이 적혀 있습니다. 학생마다 따로 판단하세요.`
+      : '아래는 한 학생의 영어 인포그래픽 발표 수행평가 기록입니다. 첨부한 이미지는 학생이 Graphic Design Prompt 로 AI 이미지 도구를 써서 만든 최종 인포그래픽입니다.',
+    '',
+    '[할 일]',
+    '1. 분석 (교사 참고용, 4~6문장): 프롬프트가 레이아웃·색·글자·도형·정보 배치 등을 얼마나 구체적이고 정교하게 지시했는지, 이미지가 그 지시와 주제·핵심 정보를 얼마나 정확히 구현했는지(일치하는 점과 어긋난 점), 선택한 Graphic Organizer 가 정보의 성격에 맞고 실제로 잘 드러나는지 분석하세요. 마지막 문장은 "프롬프트 정교성: 상/중/하 중 하나"로 끝내세요. 이미지가 없으면 그 사실을 밝히고 프롬프트만으로 분석하세요.',
+    '2. 생기부 문구:',
+    "   - 반드시 '주제'을(를) 주제로 인포그래픽을 제작하고 발표함. 으로 시작하세요. 주제는 작은따옴표로 감싸고, 을/를은 앞말에 맞게 하나만 고르세요.",
+    '   - 그 뒤는 그 학생에게만 해당하는 내용으로: 정보를 조직한 방식(Graphic Organizer 선택과 구성), 프롬프트를 구체화해 의도한 이미지를 이끌어 낸 과정과 정교성, 핵심 정보 전달, 영어 발표 모습을 분석과 교사 평가에 근거해 쓰세요.',
+    '   - 교사의 서술 평가 내용은 반드시 반영하세요. 수준에 맞게 강도를 조절하세요(상: 구체적 강점과 역량을 분명히 / 중: 잘한 점 중심에 성장 가능성 / 하: 참여와 노력, 나아진 점 중심). 어느 경우든 부정적 표현은 쓰지 마세요.',
+    "   - 문체는 '~함', '~임', '~보임', '~돋보임' 같은 명사형 종결. 학생 이름이나 '학생은' 같은 주어는 쓰지 마세요.",
+    '   - 기록에 없는 사실(점수, 수상, 다른 활동)을 지어내거나 과장하지 마세요.',
+    `   - 한 문단, 공백 포함 약 ${len}자(±10%). 영어는 주제 외에는 꼭 필요할 때만 쓰세요.`,
+    '',
+    '[답 형식] 다른 말 없이 아래 형식 그대로 답하세요.' + (batch ? ' 학생마다 반복하고, === 학번 === 줄을 꼭 쓰세요.' : ''),
+    (batch ? '=== 학번 ===\n' : '') + '[분석]\n(분석 내용)\n[생기부]\n(생기부 문구)',
+    '',
+    ...ids.map(id => studentBlock(id, imgs.includes(id), batch) + '\n'),
+  ].join('\n');
+}
+// AI 답 → { 학번: { analysis, seteuk } } (한 명이면 onlyId 로)
+function parseAnswer(text, onlyId) {
+  const one = t => {
+    t = t.replace(/\*\*/g, '');
+    const a = t.match(/\[\s*분석\s*\]([\s\S]*?)(?=\[\s*생기부\s*\]|$)/), s = t.match(/\[\s*생기부\s*\]([\s\S]*)$/);
+    const clean = v => v.trim().replace(/^```\w*\s*|\s*```$/g, '').trim();
+    return s ? { analysis: a ? clean(a[1]) : '', seteuk: clean(s[1]).replace(/\s*\n\s*/g, ' ') } : { analysis: '', seteuk: clean(t).replace(/\s*\n\s*/g, ' ') };
+  };
+  const parts = text.split(/^[#\s]*={2,}\s*(\d{4,6})\s*={2,}\s*$/m), out = {};
+  if (parts.length > 1) { for (let i = 1; i < parts.length; i += 2) out[parts[i]] = one(parts[i + 1] || ''); }
+  else if (onlyId && text.trim()) out[onlyId] = one(text);
+  return out;
+}
+function applyAnswer(map) {
+  const ids = Object.keys(map).filter(id => map[id].seteuk);
+  for (const id of ids) {
+    const e = touch(id); e.seteuk = map[id].seteuk; if (map[id].analysis) e.analysis = map[id].analysis;
+    syncBoxes(id); saveEval(id);
+  }
+  return ids;
+}
+// 학생 그래픽 Blob (stamp 이면 맨 위에 학번을 적은 JPEG)
+async function graphicBlob(id, stamp) {
+  const g = galOf(id); if (!g) return null;
+  if (!galUrls[g.fileId]) await fetchImages([g]);
+  if (!galUrls[g.fileId]) return null;
+  const img = new Image(); img.src = galUrls[g.fileId]; await img.decode();
+  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+  const band = stamp ? Math.max(48, Math.round(w / 16)) : 0, c = document.createElement('canvas');
+  c.width = w; c.height = h + band;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h + band); x.drawImage(img, 0, band, w, h);
+  if (stamp) { x.fillStyle = '#1f2540'; x.fillRect(0, 0, w, band); x.fillStyle = '#fff'; x.font = `bold ${Math.round(band * .6)}px sans-serif`; x.textBaseline = 'middle'; x.fillText(id, 16, band / 2); }
+  return new Promise(res => c.toBlob(res, stamp ? 'image/jpeg' : 'image/png', .88));
+}
+async function copyText(t) { await navigator.clipboard.writeText(t); }
+async function copyGraphic(id) {
+  try {
+    const p = graphicBlob(id, false);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': p.then(b => { if (!b) throw new Error('그래픽 없음'); return b; }) })]);
+    return '그래픽을 복사했습니다. AI 입력창에 붙여넣으세요(Ctrl+V).';
+  } catch (err) {   // 이미지 복사가 안 되는 브라우저: 파일로 받는다
+    const b = await graphicBlob(id, false); if (!b) throw new Error('그래픽을 불러오지 못했습니다');
+    download(b, id + '_graphic.png'); return '그래픽을 파일로 내려받았습니다. AI 입력창에 끌어다 놓으세요.';
+  }
+}
+$('#teacherView').addEventListener('input', e => {
+  const box = e.target.closest('[data-ev]'), f = e.target.dataset.f;
+  if (!box || !f) return;
+  const id = box.dataset.ev, ev = touch(id, box.dataset.name);
+  ev[f] = e.target.value;
+  syncBoxes(id, e.target);
+  later(id);
+});
+$('#teacherView').addEventListener('change', e => {
+  const box = e.target.closest('[data-ev]');
+  if (box && e.target.dataset.f && dirty(box.dataset.ev)) saveEval(box.dataset.ev);
+});
+$('#teacherView').addEventListener('click', e => {
+  const box = e.target.closest('[data-ev]'); if (!box) return;
+  const id = box.dataset.ev, b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.lv) { const ev = touch(id, box.dataset.name); ev.level = ev.level === b.dataset.lv ? '' : b.dataset.lv; syncBoxes(id); saveEval(id); renderEvals(); }
+  else if ('copy' in b.dataset) copyText(buildPrompt([id], galOf(id) ? [id] : []))
+    .then(() => setSt(id, galOf(id) ? '요청문을 복사했습니다. AI 에 붙여넣고 ② 그래픽도 함께 올리세요.' : '요청문을 복사했습니다. AI 에 붙여넣으세요.', 'ok'))
+    .catch(err => setSt(id, '복사하지 못했습니다: ' + err.message, 'fail'));
+  else if ('img' in b.dataset) copyGraphic(id).then(m => setSt(id, m, 'ok')).catch(err => setSt(id, err.message, 'fail'));
+  else if ('apply' in b.dataset) {
+    const t = box.querySelector('[data-paste]'), m = parseAnswer(t.value, id);
+    if (!m[id] || !m[id].seteuk) { setSt(id, 'AI 답을 먼저 붙여넣으세요.', 'fail'); return; }
+    if (evals[id] && evals[id].seteuk && !confirm('지금 생기부 문구를 붙여넣은 답으로 바꿀까요?')) return;
+    applyAnswer({ [id]: m[id] }); t.value = '';
+  }
+});
+$('#eTabs').onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; evalClass = b.dataset.c; renderEvals(); };
+$('#btnEval').onclick = loadEvals;
+window.addEventListener('beforeunload', e => { if (teacherKey && evalPending().length) { flushEvals(); e.preventDefault(); e.returnValue = ''; } });
+
+// 반 전체를 10명씩: 요청문 복사 → 그래픽 ZIP(이미지 맨 위에 학번) → AI 답 붙여넣기
+const groupAll = () => roster().filter(r => classOf(r.studentId) === evalClass && recOf(r.studentId));
+const groupList = () => { const g = +$('#bGroup').value || 0; return groupAll().slice(g * 10, g * 10 + 10); };
+function renderGroups() {
+  const n = groupAll().length, sel = $('#bGroup'), keep = sel.value;
+  sel.innerHTML = Array.from({ length: Math.max(1, Math.ceil(n / 10)) }, (_, i) => `<option value="${i}">${i * 10 + 1}~${Math.min(n, i * 10 + 10)}번째 학생</option>`).join('');
+  if (keep && +keep < sel.options.length) sel.value = keep;
+  $('#bInfo').textContent = n ? `${evalClass}: 기록이 있는 학생 ${n}명` : `${evalClass}: 기록이 있는 학생이 없습니다`;
+  for (const b of ['#bCopy', '#bZip', '#bApply']) $(b).disabled = !n;
+}
+$('#bCopy').onclick = async () => {
+  const list = groupList(); if (!list.length) return;
+  const ids = list.map(r => r.studentId), imgs = ids.filter(id => galOf(id));
+  try { await copyText(buildPrompt(ids, imgs)); $('#bMsg').textContent = `요청문을 복사했습니다 (${ids.length}명: ${list.map(r => r.name).join(', ')}). 그래픽 ${imgs.length}장은 ② 로 받아 함께 올리세요.`; }
+  catch (err) { $('#bMsg').textContent = '복사하지 못했습니다: ' + err.message; }
+};
+$('#bZip').onclick = async () => {
+  const list = groupList().filter(r => galOf(r.studentId)); if (!list.length) { $('#bMsg').textContent = '받을 그래픽이 없습니다.'; return; }
+  $('#bMsg').textContent = '그래픽을 모으는 중…';
+  const files = [];
+  for (const r of list) { const b = await graphicBlob(r.studentId, true); if (b) files.push({ name: r.studentId + '.jpg', blob: b }); }
+  const g = +$('#bGroup').value, c = list[0].studentId;   // 파일 이름은 영문으로 (예: graphics_1-1_1-10.zip)
+  download(await makeZip(files), `graphics_${/^\d{5}$/.test(c) ? c[0] + '-' + +c.slice(1, 3) : 'class'}_${g * 10 + 1}-${g * 10 + 10}.zip`);
+  $('#bMsg').textContent = `그래픽 ${files.length}장을 ZIP 으로 받았습니다. 압축을 풀고 사진들을 AI 입력창에 한꺼번에 끌어다 놓으세요.`;
+};
+$('#bApply').onclick = () => {
+  const ids = applyAnswer(parseAnswer($('#bPaste').value));
+  $('#bMsg').textContent = ids.length ? `${ids.length}명의 생기부 문구를 넣었습니다: ${ids.map(id => nameOf(id) || id).join(', ')}` : '답에서 "=== 학번 ===" 과 [생기부] 를 찾지 못했습니다. AI 답 전체를 그대로 붙여넣으세요.';
+  if (ids.length) $('#bPaste').value = '';
+  renderEvals();
+};
+
+// 명렬 불러오기: 시트마다 학년 · 반 · 번호 · 성명(이름) 머리글이 있는 엑셀
+$('#btnRoster').onclick = () => $('#rosterFile').click();
+$('#rosterFile').onchange = async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  try {
+    const out = [], pad2 = v => String(v).padStart(2, '0');
+    for (const s of await readXlsx(file)) {
+      const h = s.rows.findIndex(r => r.includes('번호') && (r.includes('성명') || r.includes('이름')));
+      if (h < 0) continue;
+      const H = s.rows[h], at = k => H.indexOf(k), iName = at('성명') >= 0 ? at('성명') : at('이름');
+      const m = String(s.name).match(/(\d+)\D+(\d+)/);   // 시트 이름 "1-1" → 학년·반 (열이 없을 때)
+      for (const r of s.rows.slice(h + 1)) {
+        const grade = (at('학년') >= 0 ? r[at('학년')] : m && m[1]) || '', cls = (at('반') >= 0 ? r[at('반')] : m && m[2]) || '';
+        const num = r[at('번호')], name = r[iName];
+        if (!/^\d+$/.test(grade) || !/^\d+$/.test(cls) || !/^\d+$/.test(num || '') || !name) continue;
+        out.push({ studentId: `${+grade}${pad2(+cls)}${pad2(+num)}`, grade: +grade, cls: +cls, num: +num, name });
+      }
+    }
+    if (!out.length) throw new Error('학년 · 반 · 번호 · 성명 머리글이 있는 시트를 찾지 못했습니다');
+    const classes = [...new Set(out.map(r => classOf(r.studentId)))];
+    if (!confirm(`${classes.join(', ')}\n모두 ${out.length}명의 명렬을 불러옵니다. 학번은 ${out[0].studentId}(${out[0].name})처럼 만들어집니다.\n지금 저장된 명렬은 이것으로 바뀝니다. 계속할까요?`)) return;
+    const j = await tPost({ action: 'rosterSave', students: out });
+    if (!j.ok) throw new Error(j.error === 'action' ? OLD_SCRIPT : j.error);
+    rosterList = out.map(r => ({ ...r, grade: String(r.grade), cls: String(r.cls), num: String(r.num) }));
+    evalClass = classes[0]; $('#eMsg').textContent = '';
+    renderTeacher();
+  } catch (err) { $('#eMsg').textContent = '명렬을 불러오지 못했습니다: ' + (err.message || err); }
+};
+
+// 평가 · 생기부 Excel: 전체 시트 + 반별 시트
+$('#btnEvalXlsx').onclick = async () => {
+  const head = ['학년', '반', '번호', '학번', '이름', '주제(Title)', 'Graphic Organizer', '상중하', '서술 평가', '생기부 문구', '생기부 글자 수', '프롬프트·이미지 분석', '평가 시간'];
+  const widths = [6, 6, 6, 9, 10, 28, 18, 7, 50, 70, 8, 60, 16];
+  const row = r => { const e = evals[r.studentId] || {}, d = recOf(r.studentId) || {}, ro = rosterList.find(x => x.studentId === r.studentId);
+    const id = r.studentId, five = /^\d{5}$/.test(id);
+    return [ro ? ro.grade : five ? id[0] : '', ro ? ro.cls : five ? +id.slice(1, 3) : '', ro ? ro.num : five ? +id.slice(3) : '', id, r.name,
+      d.title || '', d.organizer || '', e.level || '', e.note || '', e.seteuk || '', e.seteuk ? e.seteuk.length : '', e.analysis || '', e.at || '']; };
+  const all = roster(), classes = [...new Set(all.map(r => classOf(r.studentId)))];
+  const sheets = [{ name: '전체', rows: [head, ...all.map(row)], widths },
+    ...classes.map(c => ({ name: c, rows: [head, ...all.filter(r => classOf(r.studentId) === c).map(row)], widths }))];
+  download(await makeXlsxBook(sheets), 'Infographic_Evaluations.xlsx');
+};
 /* ---------- 반별 그래픽 열람 (온라인으로 받은 그래픽) ---------- */
 let gal = [], galClass = '', galShown = [], lbAt = -1;
 const galUrls = {};   // fileId → 이미지 주소 (한 번 받은 것은 다시 받지 않음)
@@ -888,7 +1337,10 @@ function showMode() {
   $('#btnReset').classList.toggle('hidden', teacher);
   $('#sync').classList.toggle('hidden', teacher);
   $('#who').classList.toggle('hidden', teacher);
-  if (!teacher) { teacherKey = ''; subs = []; curId = null; $('#tBody').innerHTML = ''; renderDetail();
+  if (!teacher) { flushEvals();   // 아직 저장 안 된 평가는 비밀번호를 지우기 전에 보낸다
+    teacherKey = ''; subs = []; curId = null; $('#tBody').innerHTML = ''; renderDetail();
+    evals = {}; rosterList = []; evalClass = ''; evalOnline = true; $('#bPaste').value = $('#bMsg').textContent = ''; $('#eTabs').innerHTML = $('#eList').innerHTML = '';
+    for (const o of [evalVer, evalSaved, evalTimer]) for (const k in o) { if (o === evalTimer) clearTimeout(o[k]); delete o[k]; }
     gal = []; galShown = []; closeLb(); $('#galTabs').innerHTML = $('#galGrid').innerHTML = '';
     for (const k in galUrls) { URL.revokeObjectURL(galUrls[k]); delete galUrls[k]; }
     return; }
@@ -896,6 +1348,7 @@ function showMode() {
   $('#tLock').classList.add('hidden'); $('#tMain').classList.remove('hidden');
   renderTeacher();
   if (!gal.length) loadGallery();
+  loadEvals();
 }
 $('#btnMode').onclick = () => { location.hash = ''; };
 $('#btnTeacher').onclick = () => { location.hash = '#teacher'; };

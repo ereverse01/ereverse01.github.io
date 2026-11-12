@@ -5,6 +5,9 @@
  * 학생이 파일을 내지 않아도 이 스프레드시트의 "Records" 시트에 자동으로 모읍니다. (무료, 학생 로그인 불필요)
  * 학생이 STEP 4에서 올린 그래픽 이미지는 내 Google Drive의 "Infographic 그래픽" 폴더에 저장되고,
  * "Graphics" 시트에 목록이 남습니다. 교사 화면의 [반별 그래픽 열람]에서 반별로 볼 수 있습니다.
+ * 교사 화면 [발표 평가 · 생기부]에서 불러온 명렬은 "Roster" 시트에, 상/중/하·서술 평가·생기부 문구는
+ * "Evaluations" 시트에 저장됩니다. (시트에서 직접 고쳐도 됩니다)
+ * 생기부 문구는 교사 화면에서 요청문·그래픽을 복사해 무료 AI(Claude 웹 등)에 붙여넣어 만듭니다. (API 키·비용 없음)
  * 녹음·영상 파일은 여기로 오지 않습니다. 그것들은 학생이 내는 제출 ZIP으로 받습니다.
  *
  * [설치 방법 — 교사가 한 번만]
@@ -26,6 +29,8 @@ const HEAD = ['학번', '이름', 'Title', 'Main Message', 'Key Information', 'G
   'Presentation Script', '그래픽 업로드', '발표 녹음', '제출 여부', '제출 시간', '마지막 저장 시간', 'data'];
 const SCRIPT_COL = 8;   // 'Presentation Script' 열 (예전 시트에는 없어서 자동으로 끼워 넣는다)
 const HEAD_G = ['학번', '이름', '파일 ID', '업로드 시간', '파일 링크'];
+const HEAD_E = ['학번', '이름', '상중하', '서술 평가', '생기부 문구', '프롬프트·이미지 분석', '평가 시간'];
+const HEAD_R = ['학번', '학년', '반', '번호', '성명'];
 const FOLDER_NAME = 'Infographic 그래픽';
 
 // 처음 한 번 편집기에서 실행: Drive 권한 승인 + 그래픽 폴더 만들기
@@ -107,6 +112,57 @@ function doPost(e) {
       return out_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
     }
 
+    // 교사: 발표 평가 목록
+    if (req.action === 'evals') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      const sh = eSheet_();
+      const rows = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, HEAD_E.length).getDisplayValues() : [];
+      return out_({ ok: true, evals: rows.filter(function (r) { return String(r[0]).trim(); }).map(function (r) {
+        return { studentId: String(r[0]).trim(), name: r[1], level: r[2], note: r[3], seteuk: r[4], analysis: r[5], at: r[6] };
+      }) });
+    }
+
+    // 교사: 발표 평가 저장 (같은 학번이 있으면 그 줄을 고친다)
+    if (req.action === 'evalSave') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      const ev = req.eval || {};
+      const id = String(ev.studentId || '').trim();
+      const cut = function (v, n) { return String(v || '').slice(0, n); };
+      if (!id) return out_({ ok: false, error: 'data' });
+      return locked_(function () {
+        const sh = eSheet_();
+        const at = findRow_(sh, id) || sh.getLastRow() + 1;
+        const at_ = time_(new Date().toISOString());
+        sh.getRange(at, 1, 1, HEAD_E.length).setNumberFormat('@')
+          .setValues([[id, String(ev.name || '').trim(), cut(ev.level, 10), cut(ev.note, 20000), cut(ev.seteuk, 20000), cut(ev.analysis, 20000), at_]]);
+        return out_({ ok: true, at: at_ });
+      });
+    }
+
+    // 교사: 명렬
+    if (req.action === 'roster') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      const sh = rSheet_();
+      const rows = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, HEAD_R.length).getDisplayValues() : [];
+      return out_({ ok: true, roster: rows.filter(function (r) { return String(r[0]).trim(); }).map(function (r) {
+        return { studentId: String(r[0]).trim(), grade: r[1], cls: r[2], num: r[3], name: r[4] };
+      }) });
+    }
+
+    // 교사: 명렬 저장 (통째로 바꾼다)
+    if (req.action === 'rosterSave') {
+      if (!teacher) return out_({ ok: false, error: 'key' });
+      const list = (req.students || []).slice(0, 3000).map(function (s) {
+        return [String(s.studentId || '').trim(), String(s.grade || ''), String(s.cls || ''), String(s.num || ''), String(s.name || '').trim()];
+      }).filter(function (r) { return r[0] && r[4]; });
+      return locked_(function () {
+        const sh = rSheet_();
+        if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, HEAD_R.length).clearContent();
+        if (list.length) sh.getRange(2, 1, list.length, HEAD_R.length).setNumberFormat('@').setValues(list);
+        return out_({ ok: true, count: list.length });
+      });
+    }
+
     return out_({ ok: false, error: 'action' });
   } catch (err) {
     return out_({ ok: false, error: String(err) });
@@ -147,6 +203,28 @@ function gSheet_() {
   if (!sh) sh = ss.insertSheet('Graphics');
   if (sh.getLastRow() === 0) {
     sh.getRange(1, 1, 1, HEAD_G.length).setValues([HEAD_G]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function eSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('Evaluations');
+  if (!sh) sh = ss.insertSheet('Evaluations');
+  if (sh.getRange(1, 1, 1, HEAD_E.length).getValues()[0].join('|') !== HEAD_E.join('|')) {
+    sh.getRange(1, 1, 1, HEAD_E.length).setValues([HEAD_E]).setFontWeight('bold');   // 새 시트 또는 예전 머리글
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function rSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('Roster');
+  if (!sh) sh = ss.insertSheet('Roster');
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, 1, HEAD_R.length).setValues([HEAD_R]).setFontWeight('bold');
     sh.setFrozenRows(1);
   }
   return sh;
