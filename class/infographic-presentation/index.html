@@ -28,6 +28,11 @@
   button.primary { background: var(--main); border-color: var(--main); color: #fff; }
   button.primary:hover:not(:disabled) { background: var(--main-dark); color: #fff; }
   button.small { padding: 5px 10px; font-size: 14px; }
+  button.gpt { background: #10a37f; border-color: #10a37f; color: #fff; }
+  button.gpt:hover:not(:disabled) { background: #0d8a6b; color: #fff; }
+  .gptbox { margin-top: 14px; padding: 14px 16px; border: 1px solid #bfe6d8; background: #effaf5; border-radius: 12px; }
+  .gptbox p { margin: 8px 0 0; font-size: 14px; color: var(--sub); }
+  .gptbox .gptmsg { color: #0f6b47; font-weight: 600; } .gptbox .gptmsg:empty { display: none; }
   button.rec { background: var(--rec); border-color: var(--rec); color: #fff; }
   button.rec:hover:not(:disabled) { color: #fff; filter: brightness(.92); }
 
@@ -600,7 +605,10 @@ const VIEWS = [
      <li>선택한 Graphic Organizer${state.organizer ? ` (<b>${esc(state.organizer)}</b>)` : ''}를 어떻게 시각적으로 표현할 것인가?</li></ul></div>
      <label class="field" for="prompt">Graphic Design Prompt</label>
      <textarea id="prompt" rows="9"></textarea>
-     <p class="hint" style="margin-top:8px"><b>예시</b> 가운데에 스마트폰을 사용하는 청소년을 크게 배치하고, 85%라는 숫자를 가장 눈에 띄게 보여준다. 왼쪽에는 스마트폰 사용 통계를, 오른쪽에는 과도한 사용으로 인한 문제를 배치한다. 파란색과 흰색을 사용하여 깔끔하고 현대적인 인포그래픽으로 만든다.</p>`,
+     <p class="hint" style="margin-top:8px"><b>예시</b> 가운데에 스마트폰을 사용하는 청소년을 크게 배치하고, 85%라는 숫자를 가장 눈에 띄게 보여준다. 왼쪽에는 스마트폰 사용 통계를, 오른쪽에는 과도한 사용으로 인한 문제를 배치한다. 파란색과 흰색을 사용하여 깔끔하고 현대적인 인포그래픽으로 만든다.</p>
+     <div class="gptbox"><button class="gpt" id="gptImg" ${state.prompt.trim() ? '' : 'disabled'}>📋 프롬프트 복사하고 ChatGPT 열기</button>
+       <p>프롬프트를 다 쓰면 누르세요. ChatGPT가 새 창으로 열리며 프롬프트가 들어갑니다. 입력창이 비어 있으면 <b>길게 눌러 붙여넣기</b> 하세요.</p>
+       <p class="gptmsg" id="gptImgMsg"></p></div>`,
 
   () => head(4, '최종 그래픽 업로드') +
     `<div class="guide"><p>외부에서 그래픽을 완성한 후 이곳에 업로드하세요.</p>
@@ -626,7 +634,11 @@ const VIEWS = [
        <p class="sc-fixed">Thank you for listening.</p>
      </div>
      <h3>완성된 대본</h3>
-     <div class="read" id="scRead"></div>`,
+     <div class="read" id="scRead"></div>
+     <div class="gptbox"><button class="gpt" id="gptRead" disabled>🔊 ChatGPT로 대본 듣기</button>
+       <p>빈칸 세 곳을 다 채우면 누를 수 있어요. ChatGPT가 열리고 대본이 들어갑니다(입력창이 비어 있으면 길게 눌러 붙여넣기).<br>
+       답이 나오면 그 아래 <b>🔊 소리 내어 읽기</b>를 누르거나, <b>음성 모드</b>를 켜고 “천천히 읽어 줘”라고 말하면 천천히 읽어 줍니다.</p>
+       <p class="gptmsg" id="gptReadMsg"></p></div>`,
 
   () => {
     const d = doneList(), all = d.every(Boolean);
@@ -674,7 +686,12 @@ const BIND = [
 
   () => { $('.orgs').onclick = e => { const b = e.target.closest('.org'); if (!b) return; state.organizer = b.dataset.org; save(); render(); }; },
 
-  () => bindText('#prompt', 'prompt'),
+  () => {
+    bindText('#prompt', 'prompt');
+    $('#prompt').addEventListener('input', () => { $('#gptImg').disabled = !state.prompt.trim(); });
+    $('#gptImg').onclick = () => openGpt(
+      '아래 디자인 프롬프트대로 영어 인포그래픽 이미지를 만들어 줘. 그림 속 글자는 모두 영어로 써 줘.\n\n' + state.prompt.trim(), '#gptImgMsg');
+  },
 
   () => {
     bindChecks('#check4', 'check4');
@@ -691,7 +708,16 @@ const BIND = [
 
   () => {
     const fit = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
-    const read = () => { $('#scRead').innerHTML = esc(scriptText('\u0000')).replace(/\u0000/g, '<span class="gap">________</span>'); };
+    const read = () => {
+      $('#scRead').innerHTML = esc(scriptText('\u0000')).replace(/\u0000/g, '<span class="gap">________</span>');
+      $('#gptRead').disabled = !SCRIPT.every(([k]) => state[k].trim());
+    };
+    $('#gptRead').onclick = () => openGpt([
+      '나는 영어 발표를 연습하는 한국 고등학생이야. 아래 영어 발표 대본을 원어민처럼 천천히, 또박또박 읽어 줘.',
+      '- 대본을 한 글자도 바꾸지 말고 그대로 다시 써 줘. 고치거나 설명을 붙이지 마.',
+      '- 한 문장씩 줄을 바꾸고 문장 사이에 빈 줄을 넣어서 천천히 읽기 좋게 해 줘.',
+      '- 대본 밖에는 아무 말도 쓰지 마. (내가 🔊 소리 내어 읽기로 들을 거야. 음성 모드에서는 아주 천천히 읽어 줘.)',
+      '', 'Please read my script aloud slowly and clearly:', '', scriptText()].join('\n'), '#gptReadMsg');
     document.querySelectorAll('.script textarea').forEach(t => {
       t.value = state[t.dataset.k]; t.classList.toggle('filled', !!t.value.trim()); fit(t);
       t.oninput = () => { state[t.dataset.k] = t.value.replace(/\n/g, ' '); t.classList.toggle('filled', !!t.value.trim()); fit(t); read(); save(); };
@@ -705,6 +731,15 @@ const BIND = [
     $('#submit').onclick = submit;
   },
 ];
+
+// 글을 복사하고 ChatGPT 를 새 창으로 연다 (?q= 로 입력창에 바로 넣고, 안 되면 붙여넣기)
+function openGpt(text, msgSel) {
+  const msg = $(msgSel);
+  navigator.clipboard.writeText(text).then(
+    () => { msg.textContent = '✓ 복사했습니다. ChatGPT 입력창이 비어 있으면 길게 눌러 붙여넣기 하세요.'; },
+    () => { msg.textContent = 'ChatGPT를 열었습니다. (자동 복사는 안 되었어요)'; });
+  window.open('https://chatgpt.com/?q=' + encodeURIComponent(text), '_blank', 'noopener');
+}
 
 function bindChecks(sel, key) {
   $(sel).onchange = e => { state[key][+e.target.dataset.i] = e.target.checked; save(); };
