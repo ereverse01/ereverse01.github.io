@@ -111,6 +111,17 @@
   .full td.dup { background: #ffb4b4; }
   .full td.vac { background: #dcc8ff; }
   .full td.vac .t { color: #5b21b6; font-weight: 600; }
+  .full td.bo { background: #c8efe3; }
+  .combo-day { margin: 14px 0 6px; font-weight: 700; font-size: 15px; }
+  .combo { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
+  .combo .arrow { color: var(--muted); }
+  .combo b.n { color: #1d4ed8; }
+  .combo button { flex: none; font-size: 13px; padding: 6px 10px; }
+  .crange { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .crange button { font-size: 13px; padding: 6px 10px; }
+  table.bo-list { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  .bo-list td, .bo-list th { border-bottom: 1px solid var(--line); padding: 6px; text-align: left; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
   .cell.chg { box-shadow: inset 0 0 0 2px #f59e0b; }
   .cell.dup { box-shadow: inset 0 0 0 2px #dc2626; }
   .cell.sel { background: #2f6fde; color: #fff; }
@@ -591,7 +602,7 @@
       const [p, col] = [+k.split('|')[0], k.slice(k.indexOf('|') + 1)];
       if (!valid(p, col)) return;
       const c = cells[k] || (cells[k] = { p, col, g: col.startsWith('c:') ? 3 : (+col[2] || 2), base: null });
-      c.s = v.s; c.t = v.t; c.changed = true;
+      c.s = v.s; c.t = v.t; c.changed = true; c.bo = v.bo || '';
     });
     // 같은 시간 두 수업 / 비게 된 수업
     const seen = {};
@@ -671,13 +682,13 @@
             const study = /도서관|자습/.test(c.col);
             const k = c.g < 3 ? 'g12' : study ? 's' : 'l';
             const small = [c.g < 3 ? c.s : c.s ? '3학년 ' + c.s : ''];
-            if (c.changed) small.push('교체');
+            if (c.changed) small.push(c.bo ? '보강' : '교체');
             if (c.dup) small.push('⚠ 겹침');
             ls.push({ k: k + (c.changed ? ' chg' : '') + (c.dup ? ' dup' : '') + (sel === d + '|' + c.p + '|' + c.col ? ' sel' : ''), big: study ? '도서관 자습감독' : colLabel(c.col), small: small.filter(Boolean).join(' · '), key: d + '|' + c.p + '|' + c.col });
           });
           // 원래 내 수업이었는데 교체로 빠진 칸
           Object.values(dcs[d].cells).filter(c => c.p === p && c.changed && c.base && names(c.base.t).includes(name) && !names(c.t).includes(name))
-            .forEach(c => ls.push({ k: 'del', big: colLabel(c.col), small: '교체로 빠짐', open: d + '|' + c.p + '|' + c.col }));
+            .forEach(c => ls.push({ k: 'del', big: colLabel(c.col), small: c.bo ? '보강 (' + c.t + ')' : '교체로 빠짐', open: d + '|' + c.p + '|' + c.col }));
           (del3[d + '|' + p] || []).forEach(l => ls.push({ k: 'del', big: place3(l.place), small: '삭제' }));
           if (!ls.length && p > dmax[d]) { body += '<td class="none"></td>'; return; }
           body += '<td data-dp="' + d + '|' + p + '">' + ls.map(c => {
@@ -770,7 +781,7 @@
           if (c) {
             cell.k = c.g < 3 ? 'g12' : 'g3';
             cell.t = c.g < 3 ? (c.s || '') + '\n' + (c.t || '') : c.t;
-            cell.chg = !!c.changed; cell.dup = !!c.dup; cell.vac = c.vacated;
+            cell.chg = !!c.changed; cell.dup = !!c.dup; cell.vac = c.vacated; cell.bo = !!c.bo;
           }
           row[ci] = cell;
         }
@@ -828,7 +839,7 @@
           if (cell.k === 'g12') { const [s, t] = cell.t.split('\n'); inner = '<div class="s">' + esc(s) + '</div><div class="t">' + esc(t || '') + '</div>'; }
           else inner = esc(cell.t).replace(/\n/g, '<br>');
           const cls = [cell.k === 'day' ? 'day' : cell.k === 'per' ? 'per' : cell.k === 'ev' ? 'ev' : '',
-            cell.dup ? 'dup' : cell.vac ? 'vac' : cell.chg ? 'chg' : '', cell.key ? 'slot' : ''].filter(Boolean).join(' ');
+            cell.dup ? 'dup' : cell.vac ? 'vac' : cell.bo ? 'bo' : cell.chg ? 'chg' : '', cell.key ? 'slot' : ''].filter(Boolean).join(' ');
           if (cell.vac) inner = '<div class="s">' + esc((cell.t.split('\n')[0]) || '') + '</div><div class="t">빈 수업</div>';
           body += '<td class="' + cls + '"' + attr + (cell.key ? ' data-key="' + esc(cell.key) + '"' : '') + '>' + inner + '</td>';
         });
@@ -840,14 +851,17 @@
     out.innerHTML = '<div class="card"><div class="summary"><h2>1~3학년 전체시간표</h2>'
       + '<span class="meta">' + md(rg[0]) + ' ~ ' + md(rg[1]) + (W ? '' : ' · 1·2학년 시간표가 아직 없어요') + '</span>'
       + '<span class="actions no-print"><input id="hl" type="text" placeholder="이름 강조" style="width:130px;font-size:14px;padding:7px 10px">'
-      + '<button id="xlsxBtn">📥 엑셀로 받기</button></span></div>'
+      + '<button id="xlsxBtn">📥 엑셀로 받기</button>'
+      + '<select id="fmtKind" style="width:auto;font-size:14px;padding:7px 8px"><option value="학급">학급시간표</option><option value="교사">교사시간표</option><option value="전체">전체시간표</option><option value="주간">주간시간표</option></select>'
+      + '<button id="fmtBtn">📄 학교 양식으로 받기</button></span></div>'
       + '<div class="legend" style="margin-top:6px"><span>이름을 누르면 그 선생님 시간표가 나와요. '
       + (adminPw ? '칸을 끌어다 다른 칸에 놓으면 맞바꿔요 (터치는 꾹 눌렀다 끌기) · 끄는 동안 <b style="color:#16a34a">초록 테두리</b>=교체 가능, <b style="color:#ea580c">주황</b>=겹침.' : '수업 바꾸기는 담당자 모드에서 할 수 있어요.') + '</span>'
       + '<span><i style="background:#ffe1b8"></i>교체한 수업</span><span><i style="background:#ffb4b4"></i>같은 시간 두 수업 (겹침)</span>'
-      + '<span><i style="background:#dcc8ff"></i>빈 수업 (아무도 없음)</span></div>'
+      + '<span><i style="background:#dcc8ff"></i>빈 수업 (아무도 없음)</span><span><i style="background:#c8efe3"></i>보강</span></div>'
       + (weeks.length ? html : '<p class="msg">선택한 기간에 평일이 없어요.</p>')
-      + logHTML(rg) + '</div>';
+      + logHTML(rg) + boHTML(rg) + '</div>';
     $('xlsxBtn').onclick = () => exportXlsx(weeks, rg);
+    $('fmtBtn').onclick = () => schoolXlsx($('fmtKind').value, weeks, rg);
     $('hl').oninput = e => {
       const q = e.target.value.trim();
       out.querySelectorAll('table.full td').forEach(td => td.classList.toggle('hl', !!q && td.textContent.includes(q) && !td.classList.contains('day')));
@@ -869,8 +883,8 @@
     const dc = dayCells(d), c = dc.cells[k];
     const base = c && c.base;
     const same = base ? base.s === val.s && base.t === val.t : !val.s && !val.t;
-    if (same) { if (CHG[d]) { delete CHG[d][k]; if (!Object.keys(CHG[d]).length) delete CHG[d]; } }
-    else (CHG[d] = CHG[d] || {})[k] = { s: val.s || '', t: val.t || '' };
+    if (same && !val.bo) { if (CHG[d]) { delete CHG[d][k]; if (!Object.keys(CHG[d]).length) delete CHG[d]; } }
+    else (CHG[d] = CHG[d] || {})[k] = { s: val.s || '', t: val.t || '', ...(val.bo ? { bo: val.bo } : {}) };
     invalidate();
   }
   // 교체는 바뀐 칸만 서버로 보내고, 서버가 최신 내역 위에 합쳐서 돌려줌
@@ -970,6 +984,9 @@
       const r = personalHTML(name, days[0], days[4], key);
       html += r.html.replace('<div class="week"><h3>', '<div class="week"><h3 style="display:none">');
     }
+    if (adminPw && (names(c1.t).length || (c1.base && c1.base.t))) {
+      html += '<div class="tools">' + (names(c1.t).length ? '<button class="primary" id="openCombos">🔁 교체 조합 찾기</button>' : '') + '<button id="openBogang">🙋 보강 넣기</button></div>';
+    }
     if (adminPw) {
       html += '<div class="direct"><b>누른 칸 직접 바꾸기</b>'
         + (g12 ? '<input id="dirS" type="text" placeholder="과목" value="' + esc(c1.s || '') + '" style="width:110px">' : '')
@@ -992,6 +1009,162 @@
       { d: a.d, p: a.p, col: a.col, val: { s: c2.s || '', t: c2.t || '' } },
       { d: b.d, p: b.p, col: b.col, val: { s: c1.s || '', t: c1.t || '' } },
     ], desc);
+  }
+
+  // ---------- 교체 조합 찾기 (2명 맞바꾸기 · 3명 돌려 바꾸기) ----------
+  // 선택과목 묶음(A2·B2 …)은 그 학년 모든 칸이 한 덩어리 → 다른 묶음하고만 바꿈. 공통과목은 같은 반 공통과목하고만.
+  const isGrp = c => !!c && c.g < 3 && /^[A-Z]\d$/.test(c.s || '');
+  const gradeCols = g => W ? W.cols.filter(c => c.grade === g).map(c => 'a:' + c.key) : [];
+  const excludedOn = (n, d) => { const i = D && D.dayInfo[d]; return !!(i && i.excluded.includes(n)); };
+  function unitAt(d, p, cols) {
+    const dc = dayCells(d);
+    if (!cols.every(col => dc.valid(p, col))) return null;
+    const cells = {};
+    cols.forEach(col => { cells[col] = dc.cells[p + '|' + col] || null; });
+    return { d, p, cells };
+  }
+  const unitNames = u => [...new Set(Object.values(u.cells).flatMap(c => c ? names(c.t) : []))];
+  const busyOut = (n, d, p, cols) => Object.values(dayCells(d).cells).some(c => c.p === p && !cols.includes(c.col) && names(c.t).includes(n));
+  function findCombos(key, from, to) {
+    const { d, p, col } = splitKey(key);
+    const X0 = cellOf(key), grp = isGrp(X0);
+    const cols = grp ? gradeCols(X0.g) : [col];
+    const X = unitAt(d, p, cols);
+    const res = { grp, cols, X, two: [], three: [], from, to };
+    if (!X || !unitNames(X).length) return res;
+    const sig = u => cols.map(c => u.cells[c] ? (u.cells[c].s || '') + '/' + (u.cells[c].t || '') : '').join('|');
+    const units = [];
+    weeksOf(from, to).flat().forEach(dd => {
+      const dc = dayCells(dd);
+      for (let pp = 1; pp <= dc.maxP; pp++) {
+        if (dd === d && pp === p) continue;
+        const u = unitAt(dd, pp, cols);
+        if (!u) continue;
+        const main = grp ? Object.values(u.cells).find(Boolean) : u.cells[col];
+        if (grp ? !isGrp(main) : isGrp(main)) continue;   // 선택과목 ↔ 공통과목은 안 됨
+        if (sig(u) === sig(X)) continue;
+        u.empty = !unitNames(u).length;
+        units.push(u);
+      }
+    });
+    const memo = new Map();
+    const ok = (u, s) => {   // u 의 선생님들이 s 시간에 다른 수업이 없는지
+      const k = u.d + u.p + '>' + s.d + s.p;
+      if (!memo.has(k)) memo.set(k, unitNames(u).every(n => !excludedOn(n, s.d) && !busyOut(n, s.d, s.p, cols)));
+      return memo.get(k);
+    };
+    units.forEach(Y => { if (ok(X, Y) && ok(Y, X)) res.two.push([Y]); });
+    const full = units.filter(u => !u.empty);
+    const fromX = full.filter(Y => ok(X, Y)), toX = full.filter(Z => ok(Z, X));
+    fromX.forEach(Y => toX.forEach(Z => { if (Y !== Z && ok(Y, Z)) res.three.push([Y, Z]); }));
+    return res;
+  }
+  // cyc[i] 수업이 cyc[i+1] 자리로 (마지막은 처음 자리로)
+  function comboOps(cyc, cols) {
+    const ops = [];
+    cyc.forEach((u, i) => {
+      const s = cyc[(i + 1) % cyc.length];
+      cols.forEach(col => {
+        const c = u.cells[col];
+        ops.push({ d: s.d, p: s.p, col, val: { s: c ? c.s || '' : '', t: c ? c.t || '' : '', ...(c && c.bo ? { bo: c.bo } : {}) } });
+      });
+    });
+    return ops;
+  }
+  function unitText(u, grp) {
+    if (grp) { const m = Object.values(u.cells).find(Boolean); return (m ? m.s : '') + ' 묶음'; }
+    const c = Object.values(u.cells)[0];
+    return c && c.t ? (c.s ? c.s + ' ' : '') + c.t : '빈 칸';
+  }
+  let comboState = null;
+  function openCombos(key, mode) {
+    mode = mode || (comboState && comboState.key === key ? comboState.mode : 'week');
+    const { d, col } = splitKey(key);
+    const wk = weekDays(d);
+    let from = wk[0], to = wk[4];
+    if (mode === '2w') to = iso(addDays(parseIso(wk[4]), 7));
+    if (mode === 'range') { const rg = getRange(); if (rg) [from, to] = rg; }
+    const R = findCombos(key, from, to);
+    comboState = { key, mode, R };
+    const who = R.grp ? R.X && Object.values(R.X.cells).find(Boolean).s + ' 묶음 (' + (Object.values(R.X.cells).find(Boolean).g) + '학년 전체)' : colLabel(col) + ' ' + unitText(R.X || { cells: {} }, false);
+    const one = u => '<b class="n">' + esc(slotName(u.d, u.p)) + '</b> ' + esc(unitText(u, R.grp));
+    let html = '<div class="mhead"><div><h2>🔁 교체 조합</h2><div class="meta">' + esc(slotName(d, splitKey(key).p) + ' ' + who) + '</div></div><button id="swapClose">✕ 닫기</button></div>'
+      + '<div class="crange">' + [['week', '이번 주'], ['2w', '2주 (다음 주까지)'], ['range', '조회 기간 (' + md(getRange() ? getRange()[0] : from) + '~' + md(getRange() ? getRange()[1] : to) + ')']]
+        .map(([k, t]) => '<button data-crange="' + k + '"' + (k === mode ? ' class="on"' : '') + '>' + t + '</button>').join('') + '<button data-back="1">← 시간표로</button></div>'
+      + '<p class="meta">' + md(from) + ' ~ ' + md(to) + ' 안에서 아무도 겹치지 않게 바꿀 수 있는 조합이에요. '
+      + (R.grp ? '선택과목 묶음은 그 학년 전체가 같이 움직이고, 다른 묶음하고만 바꿔요.' : '같은 반 공통과목끼리만 바꿔요 (선택과목 묶음과는 안 바꿈).') + '</p>';
+    if (!R.X || !unitNames(R.X).length) html += '<p class="msg">이 칸에는 바꿀 수업이 없어요.</p>';
+    else {
+      html += '<h3 style="margin:16px 0 4px">2명 맞바꾸기 · ' + R.two.length + '가지</h3>';
+      if (!R.two.length) html += '<p class="meta">없어요.</p>';
+      let last = '';
+      R.two.slice().sort((a, b) => (a[0].d + a[0].p).localeCompare(b[0].d + b[0].p)).forEach(c => {
+        const i = R.two.indexOf(c), Y = c[0];
+        if (Y.d !== last) { html += '<div class="combo-day">' + md(Y.d) + ' (' + dowOf(Y.d) + ')</div>'; last = Y.d; }
+        html += '<div class="combo"><span>' + one(R.X) + ' <span class="arrow">↔</span> ' + one(Y) + '</span><button class="primary" data-combo="t' + i + '">이걸로 교체</button></div>';
+      });
+      const MAX = 150;
+      html += '<h3 style="margin:22px 0 4px">3명 돌려 바꾸기 · ' + R.three.length + '가지' + (R.three.length > MAX ? ' (앞의 ' + MAX + '개만 보여요)' : '') + '</h3>'
+        + '<p class="meta" style="margin:0">A → B 자리, B → C 자리, C → A 자리로 옮겨요.</p>';
+      if (!R.three.length) html += '<p class="meta">없어요.</p>';
+      last = '';
+      R.three.map((c, i) => ({ c, i })).sort((a, b) => (a.c[0].d + a.c[0].p + a.c[1].d + a.c[1].p).localeCompare(b.c[0].d + b.c[0].p + b.c[1].d + b.c[1].p)).slice(0, MAX).forEach(({ c, i }) => {
+        const [Y, Z] = c;
+        if (Y.d !== last) { html += '<div class="combo-day">' + md(Y.d) + ' (' + dowOf(Y.d) + ')</div>'; last = Y.d; }
+        html += '<div class="combo"><span>' + one(R.X) + ' <span class="arrow">→</span> ' + one(Y) + ' 자리<br>' + one(Y) + ' <span class="arrow">→</span> ' + one(Z) + ' 자리<br>'
+          + one(Z) + ' <span class="arrow">→</span> ' + one(R.X) + ' 자리</span><button class="primary" data-combo="h' + i + '">이걸로 교체</button></div>';
+      });
+    }
+    $('swapBox').innerHTML = html;
+    $('modal').hidden = false;
+  }
+  async function applyCombo(id) {
+    const R = comboState.R, cyc = id[0] === 't' ? [R.X, ...R.two[+id.slice(1)]] : [R.X, ...R.three[+id.slice(1)]];
+    const head = R.grp ? '' : colLabel(R.cols[0]) + ' ';
+    const desc = head + (cyc.length === 2
+      ? slotName(cyc[0].d, cyc[0].p) + ' ' + unitText(cyc[0], R.grp) + ' ↔ ' + slotName(cyc[1].d, cyc[1].p) + ' ' + unitText(cyc[1], R.grp)
+      : '3명 돌려 바꾸기: ' + cyc.map((u, i) => unitText(u, R.grp) + ' ' + slotName(u.d, u.p) + '→' + slotName(cyc[(i + 1) % 3].d, cyc[(i + 1) % 3].p)).join(', '));
+    closeSwap();
+    await applyOps(comboOps(cyc, R.cols), desc);
+  }
+
+  // ---------- 보강: 그 시간 수업 없는 선생님 ----------
+  function boCounts(from, to) {
+    const cnt = {};
+    Object.entries(CHG).forEach(([dd, m]) => { if (dd < from || dd > to) return; Object.values(m).forEach(v => { if (v.bo) names(v.t).forEach(n => { cnt[n] = (cnt[n] || 0) + 1; }); }); });
+    return cnt;
+  }
+  function openBogang(key) {
+    const { d, p, col } = splitKey(key);
+    const c = cellOf(key);
+    const absent = c.bo ? names(c.bo) : names(c.t);
+    const mon = d.slice(0, 7), cnt = boCounts(mon + '-01', mon + '-31');
+    const dc = dayCells(d);
+    const dayN = n => Object.values(dc.cells).filter(x => names(x.t).includes(n)).length;
+    const free = allTeachers().filter(n => !absent.includes(n) && !names(c.t).includes(n) && !busyAt(n, d, p).length && !excludedOn(n, d))
+      .map(n => ({ n, day: dayN(n), bo: cnt[n] || 0 }))
+      .sort((a, b) => (b.day > 0) - (a.day > 0) || a.bo - b.bo || b.day - a.day || a.n.localeCompare(b.n, 'ko'));
+    let html = '<div class="mhead"><div><h2>🙋 보강 넣기</h2><div class="meta">' + esc(colLabel(col) + ' ' + slotName(d, p) + ' ' + (c.s || '') + ' · 원래 ' + (absent.join(', ') || '없음'))
+      + '</div></div><button id="swapClose">✕ 닫기</button></div>'
+      + '<p class="meta">이 시간에 수업이 없는 선생님 ' + free.length + '명이에요. 그날 수업이 있는(학교에 있는) 선생님, 이번 달 보강이 적은 선생님 순서예요. 이름을 누르면 보강으로 넣어요.</p>'
+      + '<div class="crange"><button data-back="1">← 시간표로</button>' + (c.bo ? '<button id="boCancel">보강 취소 (원래대로)</button>' : '') + '</div>'
+      + '<table class="bo-list"><tr><th>선생님</th><th>그날 수업</th><th>' + (+mon.slice(5)) + '월 보강</th><th></th></tr>'
+      + free.map(f => '<tr><td><b>' + esc(f.n) + '</b></td><td>' + (f.day ? f.day + '시간' : '<span class="meta">없음 (출근 확인)</span>') + '</td><td>' + f.bo + '회</td><td><button class="primary" data-bo="' + esc(f.n) + '" style="font-size:13px;padding:5px 10px">보강 넣기</button></td></tr>').join('')
+      + '</table>';
+    swapAt = key;
+    $('swapBox').innerHTML = html;
+    $('modal').hidden = false;
+  }
+  function boHTML(rg) {
+    const rows = [];
+    Object.entries(CHG).forEach(([dd, m]) => { if (dd < rg[0] || dd > rg[1]) return; Object.entries(m).forEach(([k, v]) => { if (v.bo) { const p = +k.split('|')[0], col = k.slice(k.indexOf('|') + 1); rows.push({ dd, p, col, v }); } }); });
+    if (!rows.length) return '';
+    const cnt = {};
+    rows.forEach(r => names(r.v.t).forEach(n => (cnt[n] = cnt[n] || []).push(r)));
+    return '<h3 style="margin:24px 2px 8px;font-size:16px">🙋 보강 집계 (' + md(rg[0]) + '~' + md(rg[1]) + ')</h3><table class="cal"><tr><th>선생님</th><th>횟수</th><th>내역</th></tr>'
+      + Object.entries(cnt).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'ko')).map(([n, rs]) => '<tr><td><b>' + esc(n) + '</b></td><td>' + rs.length + '회</td><td class="auto">'
+        + rs.sort((a, b) => (a.dd + a.p).localeCompare(b.dd + b.p)).map(r => esc(md(r.dd) + ' ' + r.p + '교시 ' + colLabel(r.col) + ' ' + (r.v.s || '') + ' (' + r.v.bo + ' 대신)')).join(' · ') + '</td></tr>').join('')
+      + '</table>';
   }
 
   // ---------- 끌어다 놓기 (마우스: 바로 끌기 / 터치: 꾹 눌렀다 끌기) ----------
@@ -1135,7 +1308,7 @@
           alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
           border: { top: thin, left: thin, right: thin, bottom: end ? thick : thin },
           ...(r < 2 ? { fill: { patternType: 'solid', fgColor: { rgb: fill[M.cols[c].g] } } }
-            : body && (body.dup || body.vac || body.chg) ? { fill: { patternType: 'solid', fgColor: { rgb: body.dup ? 'FFB4B4' : body.vac ? 'DCC8FF' : 'FFE1B8' } } }
+            : body && (body.dup || body.vac || body.chg) ? { fill: { patternType: 'solid', fgColor: { rgb: body.dup ? 'FFB4B4' : body.vac ? 'DCC8FF' : body.bo ? 'C8EFE3' : 'FFE1B8' } } }
             : body && body.k === 'ev' ? { fill: { patternType: 'solid', fgColor: { rgb: 'EDEEF1' } } }
             : body && (body.k === 'day' || body.k === 'per') ? { fill: { patternType: 'solid', fgColor: { rgb: 'F6F7F9' } } } : {}),
         };
@@ -1144,6 +1317,141 @@
       X.utils.book_append_sheet(wb, ws, (md(days[0]) + '~' + md(days[days.length - 1])).replace(/\//g, '.'));
     });
     X.writeFile(wb, '1~3학년 전체시간표 ' + md(rg[0]).replace('/', '.') + '~' + md(rg[1]).replace('/', '.') + '.xlsx');
+  }
+
+  // ---------- 학교 양식 엑셀 (학급·교사·전체·주간) : 주마다 시트 하나, 교체·보강 반영 ----------
+  const TIMES = ['08:20', '09:20', '10:20', '11:20', '13:00', '14:00', '15:00', '16:00'];
+  function schoolCols() {
+    const out = [];
+    (W ? W.cols : []).forEach(c => out.push({ col: 'a:' + c.key, g: c.grade, label: c.cls, home: /^\d+$/.test(c.cls), title: c.grade + '학년 ' + c.cls + (/^\d+$/.test(c.cls) ? '반' : '') }));
+    places3().forEach(p => out.push({ col: 'c:' + p, g: 3, label: /^\d+반$/.test(p) ? p.replace('반', '') : p.replace('도서관 자습감독', '도서관 자습'), home: /^\d+반$/.test(p), title: /^\d+반$/.test(p) ? '3학년 ' + p : p }));
+    const idx = {};
+    out.forEach(o => { idx[o.g] = (idx[o.g] || 0) + 1; o.code = o.g === 3 && !o.home ? o.label : String(o.g * 100 + (o.g === 3 ? +o.label : idx[o.g])); });
+    return out;
+  }
+  function schoolXlsx(kind, weeks, rg) {
+    const X = window.XLSX, wb = X.utils.book_new();
+    const SC = schoolCols(), byCol = Object.fromEntries(SC.map(o => [o.col, o]));
+    const thin = { style: 'thin', color: { rgb: '808080' } };
+    const FILL = { head: 'EEF1F5', chg: 'FFE1B8', bo: 'C8EFE3', dup: 'FFB4B4', off: 'EDEEF1', g1: 'E3F0FF', g2: 'E5F6EA', g3: 'FDF0DD' };
+    const clsText = c => !c ? '' : c.g < 3 ? (c.s || '') + '\n' + (c.t || '') : (c.s ? c.s + '\n' : '') + (c.t || '');
+    const mark = c => !c ? '' : c.dup ? 'dup' : c.bo ? 'bo' : c.changed ? 'chg' : '';
+    const dayHead = d => dowOf(d) + '(' + md(d) + ')';
+    const offLabel = dc => dc.maxP ? '' : [...new Set([dc.pl && dc.pl.label, dc.s3 && dc.s3.label].filter(Boolean))].join(' / ') || '수업 없음';
+    weeks.forEach(days => {
+      const dcs = days.map(d => dayCells(d));
+      const P = Math.max(1, ...dcs.map(x => x.maxP));
+      const aoa = [], merges = [], st = {};   // st['r|c'] = {fill, bold}
+      const put = (r, c, v, s) => { (aoa[r] = aoa[r] || [])[c] = v; if (s) st[r + '|' + c] = s; };
+      if (kind === '학급') {
+        let r = 0;
+        SC.filter(o => o.home).forEach(o => {
+          put(r, 0, o.title, { fill: FILL.head, bold: 1 });
+          days.forEach((d, j) => put(r, j + 1, dayHead(d), { fill: FILL.head, bold: 1 }));
+          for (let p = 1; p <= P; p++) {
+            put(r + p, 0, p + '교시\n(' + (TIMES[p - 1] || '') + ')', { fill: FILL.head });
+            dcs.forEach((dc, j) => {
+              if (!dc.valid(p, o.col)) return put(r + p, j + 1, p === 1 ? offLabel(dc) : '', { fill: FILL.off });
+              const c = dc.cells[p + '|' + o.col];
+              put(r + p, j + 1, clsText(c), mark(c) ? { fill: FILL[mark(c)] } : null);
+            });
+          }
+          r += P + 2;
+        });
+      } else if (kind === '교사') {
+        const T = [...new Set(dcs.flatMap(dc => Object.values(dc.cells).flatMap(c => names(c.t))))].sort((a, b) => a.localeCompare(b, 'ko'));
+        let r = 0;
+        T.forEach(n => {
+          put(r, 0, n, { fill: FILL.head, bold: 1 });
+          days.forEach((d, j) => put(r, j + 1, dayHead(d), { fill: FILL.head, bold: 1 }));
+          for (let p = 1; p <= P; p++) {
+            put(r + p, 0, p + '교시\n(' + (TIMES[p - 1] || '') + ')', { fill: FILL.head });
+            dcs.forEach((dc, j) => {
+              const cs = Object.values(dc.cells).filter(c => c.p === p && names(c.t).includes(n));
+              put(r + p, j + 1, cs.map(c => (byCol[c.col] ? byCol[c.col].code : colLabel(c.col)) + '\n' + (c.s || '')).join('\n'), cs.length && mark(cs[0]) ? { fill: FILL[mark(cs[0])] } : null);
+            });
+          }
+          r += P + 2;
+        });
+      } else if (kind === '전체') {
+        const n = SC.length + 2;
+        put(0, 0, '전체시간표 (' + md(days[0]) + '~' + md(days[days.length - 1]) + ')', { bold: 1 });
+        merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: n - 1 } });
+        put(1, 0, '요일', { fill: FILL.head, bold: 1 }); put(1, 1, '교시', { fill: FILL.head, bold: 1 });
+        merges.push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } }, { s: { r: 1, c: 1 }, e: { r: 2, c: 1 } });
+        [1, 2, 3].forEach(g => {
+          const ix = SC.map((o, i) => o.g === g ? i + 2 : -1).filter(i => i >= 0);
+          if (!ix.length) return;
+          put(1, ix[0], g + '학년', { fill: FILL['g' + g], bold: 1 });
+          if (ix.length > 1) merges.push({ s: { r: 1, c: ix[0] }, e: { r: 1, c: ix[ix.length - 1] } });
+          ix.forEach(i => put(2, i, SC[i - 2].label, { fill: FILL['g' + g], bold: 1 }));
+        });
+        let r = 3;
+        dcs.forEach((dc, j) => {
+          const np = Math.max(dc.maxP, 1);
+          put(r, 0, dayHead(days[j]).replace('(', '\n('), { fill: FILL.head, bold: 1 });
+          if (np > 1) merges.push({ s: { r, c: 0 }, e: { r: r + np - 1, c: 0 } });
+          for (let p = 1; p <= np; p++) {
+            put(r + p - 1, 1, String(p), { fill: FILL.head });
+            SC.forEach((o, i) => {
+              if (!dc.valid(p, o.col)) return put(r + p - 1, i + 2, !dc.maxP && p === 1 && i === 0 ? offLabel(dc) : '', { fill: FILL.off });
+              const c = dc.cells[p + '|' + o.col];
+              put(r + p - 1, i + 2, clsText(c), mark(c) ? { fill: FILL[mark(c)] } : null);
+            });
+          }
+          if (!dc.maxP) merges.push({ s: { r, c: 2 }, e: { r, c: n - 1 } });
+          r += np;
+        });
+      } else {   // 주간
+        const T = [...new Set(dcs.flatMap(dc => Object.values(dc.cells).flatMap(c => names(c.t))))].sort((a, b) => a.localeCompare(b, 'ko'));
+        const span = dcs.map(dc => Math.max(dc.maxP, 1));
+        const total = span.reduce((a, b) => a + b, 0);
+        put(0, 0, '주간시간표 (' + md(days[0]) + '~' + md(days[days.length - 1]) + ')', { bold: 1 });
+        merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: total } });
+        put(1, 0, '교사', { fill: FILL.head, bold: 1 });
+        merges.push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
+        let c0 = 1;
+        dcs.forEach((dc, j) => {
+          put(1, c0, dayHead(days[j]) + (dc.maxP ? '' : ' ' + offLabel(dc)), { fill: FILL.head, bold: 1 });
+          if (span[j] > 1) merges.push({ s: { r: 1, c: c0 }, e: { r: 1, c: c0 + span[j] - 1 } });
+          for (let p = 1; p <= span[j]; p++) put(2, c0 + p - 1, dc.maxP ? String(p) : '', { fill: FILL.head });
+          c0 += span[j];
+        });
+        T.forEach((nm, ti) => {
+          const r = 3 + ti;
+          let c = 1, hrs = 0;
+          dcs.forEach((dc, j) => {
+            for (let p = 1; p <= span[j]; p++) {
+              const cs = Object.values(dc.cells).filter(x => x.p === p && names(x.t).includes(nm));
+              hrs += cs.length;
+              put(r, c, cs.map(x => (byCol[x.col] ? byCol[x.col].code : colLabel(x.col)) + '\n' + (x.s || '')).join('\n'), cs.length && mark(cs[0]) ? { fill: FILL[mark(cs[0])] } : null);
+              c++;
+            }
+          });
+          put(r, 0, nm + '(' + String(hrs).padStart(2, '0') + ')', { bold: 1 });
+        });
+      }
+      const rows = aoa.length, cols = Math.max(...aoa.map(r => (r || []).length));
+      for (let r = 0; r < rows; r++) { aoa[r] = aoa[r] || []; for (let c = 0; c < cols; c++) if (aoa[r][c] == null) aoa[r][c] = ''; }
+      const ws = X.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = merges;
+      const isBlank = r => kind === '학급' || kind === '교사' ? aoa[r].every(v => v === '') : false;
+      ws['!cols'] = Array.from({ length: cols }, (_, c) => ({ wch: c === 0 ? (kind === '주간' ? 11 : 10) : kind === '주간' ? 6 : kind === '전체' && c === 1 ? 4 : kind === '전체' ? 8 : 14 }));
+      ws['!rows'] = aoa.map((_, r) => ({ hpt: isBlank(r) ? 8 : (kind === '주간' && r < 3) || (kind === '전체' && r < 3) ? 18 : 30 }));
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const ref = X.utils.encode_cell({ r, c }), s = st[r + '|' + c] || {};
+        if (isBlank(r)) continue;
+        const title = (kind === '전체' || kind === '주간') && r === 0;
+        ws[ref].s = {
+          font: { name: '맑은 고딕', sz: title ? 14 : 9, bold: !!s.bold || title },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          ...(title ? {} : { border: { top: thin, left: thin, right: thin, bottom: thin } }),
+          ...(s.fill ? { fill: { patternType: 'solid', fgColor: { rgb: s.fill } } } : {}),
+        };
+      }
+      X.utils.book_append_sheet(wb, ws, (md(days[0]) + '~' + md(days[days.length - 1])).replace(/\//g, '.'));
+    });
+    X.writeFile(wb, kind + '시간표 ' + md(rg[0]).replace('/', '.') + '~' + md(rg[1]).replace('/', '.') + '.xlsx');
   }
 
   // ---------- 이벤트 ----------
@@ -1181,6 +1489,25 @@
     const w = e.target.closest('[data-who]');
     if (w && swapAt) return openTeacher(swapAt, w.dataset.who);
     if (!swapAt || !adminPw) return;
+    if (e.target.closest('#openCombos')) return openCombos(swapAt, 'week');
+    if (e.target.closest('#openBogang')) return openBogang(swapAt);
+    const cr = e.target.closest('[data-crange]');
+    if (cr) return openCombos(swapAt, cr.dataset.crange);
+    if (e.target.closest('[data-back]')) return openTeacher(swapAt);
+    const cb = e.target.closest('[data-combo]');
+    if (cb) return applyCombo(cb.dataset.combo);
+    const bo = e.target.closest('[data-bo]');
+    if (bo) {
+      const k = splitKey(swapAt), c = cellOf(swapAt), absent = c.bo || c.t || '';
+      closeSwap();
+      return applyOps([{ d: k.d, p: k.p, col: k.col, val: { s: c.s || '', t: bo.dataset.bo, bo: absent } }],
+        '보강: ' + colLabel(k.col) + ' ' + slotName(k.d, k.p) + ' ' + (c.s ? c.s + ' ' : '') + absent + ' → ' + bo.dataset.bo);
+    }
+    if (e.target.closest('#boCancel')) {
+      const k = splitKey(swapAt), c = cellOf(swapAt);
+      closeSwap();
+      return applyOps([{ d: k.d, p: k.p, col: k.col, val: c.base || { s: '', t: '' } }], '보강 취소: ' + colLabel(k.col) + ' ' + slotName(k.d, k.p) + ' (' + c.t + ' → ' + ((c.base && c.base.t) || '빈 칸') + ')');
+    }
     const { d, p, col } = splitKey(swapAt);
     const c1 = dayCells(d).cells[p + '|' + col] || { s: '', t: '' };
     const slot = colLabel(col) + ' ' + slotName(d, p);
@@ -1227,6 +1554,7 @@
     catch (e) { $('calStatus').textContent = '⚠️ ' + e.message; }
   };
 
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tt = { findCombos, dayCells, unitAt, unitNames, busyOut, gradeCols, cellOf };  // 로컬 점검용
   init();
 })();
 </script>
