@@ -913,7 +913,7 @@
   });
   document.addEventListener('click', async e => {
     if (!e.target.closest('#logMsg')) return;
-    const lines = logRows().filter(c => c.checked).map(c => LOG.find(x => logId(x) === c.dataset.logsel)).filter(Boolean).map(x => x.desc);
+    const lines = logRows().filter(c => c.checked).map(c => LOG.find(x => logId(x) === c.dataset.logsel)).filter(Boolean).map(x => x.desc.replace(/^\s*보강\s*앱에서\s*반영\s*[:：]?\s*/, ''));
     if (!lines.length) { alert('보낼 교체 내역을 먼저 체크해 주세요.'); return; }
     const msg = '수업 변동 안내 드립니다.\n\n' + lines.join('\n') + '\n\n감사합니다 :)';
     if (await copyText(msg)) alert('복사했어요! 메신저에 붙여넣기(Ctrl+V) 하세요.\n\n' + msg);
