@@ -116,6 +116,8 @@
   .combo { display: flex; gap: 10px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin: 6px 0; font-size: 14px; }
   .combo .arrow { color: var(--muted); }
   .combo b.n { color: #1d4ed8; }
+  .combo .peek { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+  .combo .peek:hover { color: #1d4ed8; }
   .combo button { flex: none; font-size: 13px; padding: 6px 10px; }
   .crange { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
   .crange button { font-size: 13px; padding: 6px 10px; }
@@ -266,6 +268,7 @@
   <input type="file" id="file" accept=".xlsx,.xlsm" hidden>
 </div>
 <div class="modal no-print" id="modal" hidden><div class="mbox" id="swapBox"></div></div>
+<div class="modal no-print" id="peekModal" hidden style="z-index:60"><div class="mbox" id="peekBox"></div></div>
 
 <script>
 (function () {
@@ -1087,7 +1090,22 @@
     const R = findCombos(key, from, to);
     comboState = { key, mode, R };
     const who = R.grp ? R.X && Object.values(R.X.cells).find(Boolean).s + ' 묶음 (' + (Object.values(R.X.cells).find(Boolean).g) + '학년 전체)' : colLabel(col) + ' ' + unitText(R.X || { cells: {} }, false);
-    const one = u => '<b class="n">' + esc(slotName(u.d, u.p)) + '</b> ' + esc(unitText(u, R.grp));
+    // 선생님 이름을 누르면 그 선생님 현재 시간표 팝업 (data-peek)
+    const peekName = (n, u) => {
+      const col = R.cols.find(cc => u.cells[cc] && names(u.cells[cc].t).includes(n)) || R.cols[0];
+      return '<span class="peek" data-peek="' + esc(n) + '" data-pk="' + esc(u.d + '|' + u.p + '|' + col) + '">' + esc(n) + '</span>';
+    };
+    const one = u => {
+      let t;
+      if (R.grp) {
+        const ns = unitNames(u);
+        t = esc(unitText(u, true)) + (ns.length ? ' <small>(' + ns.map(n => peekName(n, u)).join(', ') + ')</small>' : '');
+      } else {
+        const c = Object.values(u.cells)[0];
+        t = c && c.t ? (c.s ? esc(c.s) + ' ' : '') + names(c.t).map(n => peekName(n, u)).join(', ') : '빈 칸';
+      }
+      return '<b class="n">' + esc(slotName(u.d, u.p)) + '</b> ' + t;
+    };
     let html = '<div class="mhead"><div><h2>🔁 교체 조합</h2><div class="meta">' + esc(slotName(d, splitKey(key).p) + ' ' + who) + '</div></div><button id="swapClose">✕ 닫기</button></div>'
       + '<div class="crange">' + [['week', '이번 주'], ['2w', '2주 (다음 주까지)'], ['range', '조회 기간 (' + md(getRange() ? getRange()[0] : from) + '~' + md(getRange() ? getRange()[1] : to) + ')']]
         .map(([k, t]) => '<button data-crange="' + k + '"' + (k === mode ? ' class="on"' : '') + '>' + t + '</button>').join('') + '<button data-back="1">← 시간표로</button></div>'
@@ -1481,11 +1499,31 @@
     if (u && confirm('이 교체를 되돌릴까요?')) undo(+u.dataset.undo);
   });
   const closeSwap = () => { $('modal').hidden = true; swapAt = null; };
+
+  // 교체 조합에서 선생님 이름 누르면: 그 선생님 현재 시간표 (누른 칸 주 ~ 상대 칸 주), 상대 칸 강조
+  function openPeek(name, pk) {
+    const y = splitKey(pk), x = swapAt ? splitKey(swapAt) : y;
+    const a = x.d < y.d ? x.d : y.d, b = x.d < y.d ? y.d : x.d;
+    const from = weekDays(a)[0], to = weekDays(b)[4];
+    const r = personalHTML(name, from, to, pk);
+    $('peekBox').innerHTML = '<div class="mhead"><div><h2>' + esc(name) + ' 선생님 현재 시간표</h2>'
+      + '<div class="meta">' + md(from) + ' ~ ' + md(to) + ' · 파란 칸: ' + esc(slotName(y.d, y.p)) + ' (바꿀 자리)</div></div>'
+      + '<button id="peekClose">✕ 닫기</button></div>' + r.html;
+    $('peekModal').hidden = false;
+  }
+  let peekDown = false;
+  $('peekModal').addEventListener('pointerdown', e => { peekDown = e.target === $('peekModal'); });
+  $('peekModal').addEventListener('click', e => {
+    if ((e.target === $('peekModal') && peekDown) || e.target.closest('#peekClose')) $('peekModal').hidden = true;
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('peekModal').hidden) { e.stopImmediatePropagation(); $('peekModal').hidden = true; } }, true);
   // 바깥 어두운 곳을 눌렀다 뗐을 때만 닫기 (칸 안에서 글자 고르다 밖에서 떼면 안 닫힘)
   let downOnBack = false;
   $('modal').addEventListener('pointerdown', e => { downOnBack = e.target === $('modal'); });
   $('modal').addEventListener('click', async e => {
     if ((e.target === $('modal') && downOnBack) || e.target.closest('#swapClose')) return closeSwap();
+    const pv = e.target.closest('[data-peek]');
+    if (pv) return openPeek(pv.dataset.peek, pv.dataset.pk);
     const w = e.target.closest('[data-who]');
     if (w && swapAt) return openTeacher(swapAt, w.dataset.who);
     if (!swapAt || !adminPw) return;
@@ -1554,7 +1592,7 @@
     catch (e) { $('calStatus').textContent = '⚠️ ' + e.message; }
   };
 
-  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tt = { findCombos, dayCells, unitAt, unitNames, busyOut, gradeCols, cellOf };  // 로컬 점검용
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.__tt = { findCombos, dayCells, unitAt, unitNames, busyOut, gradeCols, cellOf, openTeacher, openCombos };  // 로컬 점검용
   init();
 })();
 </script>
