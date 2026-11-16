@@ -875,11 +875,50 @@
   function logHTML(rg) {
     const list = LOG.map((e, i) => ({ e, i })).filter(({ e }) => e.cells.some(c => c.d >= rg[0] && c.d <= rg[1])).reverse();
     if (!list.length) return '';
-    return '<h3 style="margin:24px 2px 8px;font-size:16px">🔁 교체 내역</h3><table class="cal">'
-      + list.map(({ e, i }) => '<tr><td style="width:90px" class="auto">' + fmtTime(e.at) + '</td><td>' + esc(e.desc) + '</td><td style="width:100px">'
+    const n = list.filter(({ e }) => logSel.has(logId(e))).length;
+    return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:24px 2px 8px">'
+      + '<h3 style="margin:0;font-size:16px">🔁 교체 내역</h3>'
+      + '<label style="font-size:14px;cursor:pointer"><input type="checkbox" id="logAll"' + (n && n === list.length ? ' checked' : '') + '> 전체 선택</label>'
+      + '<button id="logMsg" style="font-size:14px;padding:6px 12px">💬 선택한 내역 메시지 보내기' + (n ? ' (' + n + ')' : '') + '</button></div>'
+      + '<table class="cal">'
+      + list.map(({ e, i }) => '<tr><td style="width:36px;text-align:center"><input type="checkbox" data-logsel="' + esc(logId(e)) + '"' + (logSel.has(logId(e)) ? ' checked' : '') + ' style="width:18px;height:18px;cursor:pointer"></td>'
+        + '<td style="width:90px" class="auto">' + fmtTime(e.at) + '</td><td>' + esc(e.desc) + '</td><td style="width:100px">'
         + (adminPw ? '<button data-undo="' + i + '" style="font-size:13px;padding:5px 9px">되돌리기</button>' : '') + '</td></tr>').join('')
       + '</table>';
   }
+  // 교체 내역 선택 → 안내 메시지 복사
+  const logSel = new Set();
+  const logId = e => String(e.id || e.at);
+  function logRows() { return [...document.querySelectorAll('[data-logsel]')]; }
+  function logRefresh() {
+    const rows = logRows(), n = rows.filter(c => c.checked).length;
+    const all = $('logAll'); if (all) all.checked = !!n && n === rows.length;
+    const b = $('logMsg'); if (b) b.textContent = '💬 선택한 내역 메시지 보내기' + (n ? ' (' + n + ')' : '');
+  }
+  async function copyText(t) {
+    try { await navigator.clipboard.writeText(t); return true; } catch (e) {
+      const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+      ta.remove(); return ok;
+    }
+  }
+  document.addEventListener('change', e => {
+    const c = e.target.closest('[data-logsel]');
+    if (c) { c.checked ? logSel.add(c.dataset.logsel) : logSel.delete(c.dataset.logsel); logRefresh(); return; }
+    if (e.target.id === 'logAll') {
+      logRows().forEach(r => { r.checked = e.target.checked; e.target.checked ? logSel.add(r.dataset.logsel) : logSel.delete(r.dataset.logsel); });
+      logRefresh();
+    }
+  });
+  document.addEventListener('click', async e => {
+    if (!e.target.closest('#logMsg')) return;
+    const lines = logRows().filter(c => c.checked).map(c => LOG.find(x => logId(x) === c.dataset.logsel)).filter(Boolean).map(x => x.desc);
+    if (!lines.length) { alert('보낼 교체 내역을 먼저 체크해 주세요.'); return; }
+    const msg = '수업 변동 안내 드립니다.\n\n' + lines.join('\n') + '\n\n감사합니다 :)';
+    if (await copyText(msg)) alert('복사했어요! 메신저에 붙여넣기(Ctrl+V) 하세요.\n\n' + msg);
+    else prompt('복사가 안 됐어요. 아래 글을 직접 복사해 주세요.', msg);
+  });
 
   // 칸 값 바꾸기 (원래 값과 같으면 교체 기록에서 지움)
   function setSlot(d, k, val) {
