@@ -12,6 +12,7 @@
 | class/worksheet-maker | 지문 학습지 만들기 |
 | class/montage-maker | 몽타주 만들기 |
 | class/reinforcement-cards | 보상카드 |
+| class/rolling-paper | 롤링페이퍼 |
 | work/class-progress | 수업 진도표 |
 | work/personal-timetable | 개인시간표 |
 | work/teacher-slot | 학력평가 시간표 교체 |
