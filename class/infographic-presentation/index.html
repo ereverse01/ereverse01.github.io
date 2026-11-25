@@ -530,6 +530,8 @@ function go(step) {
 [취소] 학번·이름을 다시 확인합니다.`)) {
       const who = me(); state = Object.assign(blank(), who, { sentAs: null }); persist();
       for (const k of Object.keys(media)) setMedia(k, null);
+      if (SHEET_URL) restoreFromServer().then(got => { if (got) { render();   // 이 학생이 다른 컴퓨터에서 하던 기록이 있으면 불러온다
+        $('#msg').innerHTML = '<span class="okmsg" style="display:block;margin:0">✓ 선생님께 저장되어 있던 내 기록을 불러왔습니다. 이어서 하세요.</span>'; } }).catch(() => {});
     } else {
       $('#msg').innerHTML = `${esc(a.studentId)} ${esc(a.name)} 학생의 작업이 남아 있는 기기입니다. 학번·이름을 다시 확인하세요. ` +
         `<button class="small" id="keepWho">학번·이름을 고친 것이 맞아요 (내 작업 그대로 계속)</button>`;
@@ -540,10 +542,42 @@ function go(step) {
   state.step = Math.max(0, Math.min(LAST, step)); save(); render();
   window.scrollTo({ top: 0 });
 }
-function next() {
+async function next() {
   const d = doneList();
   if (!d[state.step]) { $('#msg').textContent = NEED[state.step]; return; }
+  // 학번·이름을 넣고 넘어갈 때, 이 기기에 작업이 없으면 선생님께 저장된 내 기록을 불러온다 (다른 컴퓨터·초기화된 컴퓨터)
+  if (state.step === 0 && localEmpty() && SHEET_URL && !otherStudent() && !busy) {
+    busy = true; $('#next').disabled = true; $('#msg').textContent = '저장된 기록이 있는지 확인하는 중…';
+    let got = false;
+    try { got = await restoreFromServer(); } catch (e) {}   // 못 불러와도 그냥 진행 (서버가 빈 칸으로 덮어쓰지 않는다)
+    busy = false;
+    go(1);
+    if (got) $('#msg').innerHTML = '<span class="okmsg" style="display:block;margin:0">✓ 선생님께 저장되어 있던 내 기록을 불러왔습니다. 이어서 하세요.</span>';
+    return;
+  }
   go(state.step + 1);
+}
+// 이 기기에 아직 아무 작업도 없는가 (학번·이름 말고)
+const localEmpty = () => !state.title.trim() && !state.mainMessage.trim() && !state.keyInfo.some(k => k.trim()) && !state.organizer
+  && !state.prompt.trim() && !media.graphic && !SCRIPT.some(([k]) => state[k].trim());
+async function restoreFromServer() {
+  const who = me();
+  const j = await post(JSON.stringify({ action: 'load', ...who }), { tries: 2, timeout: 30000 });
+  const r = j.record;
+  if ((!r && !j.graphic) || !localEmpty() || !sameWho(me(), who)) return false;   // 기다리는 동안 학생이 입력을 시작했으면 덮어쓰지 않는다
+  if (r) {
+    const sc = r.script || {};
+    Object.assign(state, { title: r.title || '', mainMessage: r.mainMessage || '',
+      keyInfo: (r.keyInformation || []).length ? r.keyInformation.slice() : [''], organizer: r.organizer || '', prompt: r.designPrompt || '',
+      scTopic: sc.topic || '', scMessage: sc.mainMessage || '', scDetail: sc.detail || '', submittedAt: r.submittedAt || '' });
+  }
+  if (j.graphic) {
+    const bin = Uint8Array.from(atob(j.graphic.data), c => c.charCodeAt(0));
+    await setMedia('graphic', new Blob([bin], { type: j.graphic.mime }));
+    state.graphicSentFor = baseName(state); state.graphicSentAs = who;   // 이미 선생님께 있는 그래픽이라 다시 보내지 않는다
+  }
+  state.sentAs = who; persist();
+  return true;
 }
 
 function render() {
@@ -560,7 +594,9 @@ function render() {
   if ($('#next')) $('#next').onclick = next;
   BIND[state.step]();
 }
-$('#stepper').onclick = e => { const b = e.target.closest('button'); if (b) go(+b.dataset.step); };
+$('#stepper').onclick = e => { const b = e.target.closest('button'); if (!b) return;
+  if (state.step === 0 && +b.dataset.step > 0 && localEmpty()) next();   // 학번 단계에서 넘어갈 때는 저장된 기록부터 확인
+  else go(+b.dataset.step); };
 
 const head = (n, title) => `<h2><small>STEP ${n}</small>${title}</h2>`;
 // 입력칸과 state를 연결
@@ -813,7 +849,8 @@ async function post(body, { tries = 4, timeout = 60000, keepalive = false, onRet
 /* ---------- 글 기록 자동 전송 (SHEET_URL 을 설정했을 때만) ---------- */
 let syncTimer = null;
 function queueSync() {
-  if (!SHEET_URL || !doneList()[0]) return;
+  // 학번·이름 단계에서는 보내지 않는다: 다음 학생이 학번만 먼저 고친 순간 앞 학생 기록이 바뀌거나 지워지지 않게
+  if (!SHEET_URL || !doneList()[0] || state.step === 0) return;
   clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 3000);
 }
 async function syncNow(leaving) {
@@ -1527,6 +1564,15 @@ function showMode() {
 $('#btnMode').onclick = () => { location.hash = ''; };
 $('#btnTeacher').onclick = () => { location.hash = '#teacher'; };
 window.onhashchange = showMode;
+
+// 같은 앱을 탭 두 개로 열었을 때: 다른 탭에서 바꾼 내용으로 맞춘다 (예전 내용이 최신 기록을 덮어쓰지 않게)
+window.addEventListener('storage', async e => {
+  if (e.key !== LS_KEY || busy || location.hash === '#teacher') return;
+  clearTimeout(syncTimer); syncTimer = null;
+  try { state = Object.assign(blank(), JSON.parse(e.newValue || '{}')); } catch (err) { return; }
+  try { for (const k of Object.keys(media)) { media[k] = (await idbGet('blobs', k)) || null; if (urls[k]) { URL.revokeObjectURL(urls[k]); delete urls[k]; } } } catch (err) {}
+  render();
+});
 
 (async () => {
   try { for (const k of Object.keys(media)) media[k] = (await idbGet('blobs', k)) || null; } catch (e) {}
