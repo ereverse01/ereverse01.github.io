@@ -8,6 +8,9 @@
  * 교사 화면 [발표 평가 · 생기부]에서 불러온 명렬은 "Roster" 시트에, 상/중/하·서술 평가·생기부 문구는
  * "Evaluations" 시트에 저장됩니다. (시트에서 직접 고쳐도 됩니다)
  * 생기부 문구는 교사 화면에서 요청문·그래픽을 복사해 무료 AI(Claude 웹 등)에 붙여넣어 만듭니다. (API 키·비용 없음)
+ * 기록을 지키는 장치: 빈 칸이 와도 이미 저장된 내용은 지우지 않고, 한 번 제출한 기록은 미제출로 되돌아가지 않습니다.
+ * 학생이 [최종 제출]을 누를 때마다, 그리고 기록·그래픽 줄을 지울 때마다 "Backup" 시트에 사본을 남깁니다.
+ * (사라진 기록은 Backup 시트의 data 열에서 찾을 수 있습니다)
  * 녹음·영상 파일은 여기로 오지 않습니다. 그것들은 학생이 내는 제출 ZIP으로 받습니다.
  *
  * [설치 방법 — 교사가 한 번만]
@@ -31,6 +34,7 @@ const SCRIPT_COL = 8;   // 'Presentation Script' 열 (예전 시트에는 없어
 const HEAD_G = ['학번', '이름', '파일 ID', '업로드 시간', '파일 링크'];
 const HEAD_E = ['학번', '이름', '상중하', '서술 평가', '생기부 문구', '프롬프트·이미지 분석', '평가 시간'];
 const HEAD_R = ['학번', '학년', '반', '번호', '성명'];
+const HEAD_B = ['보관 시간', '사유', '종류', '학번', '이름', '제출 시간', '파일 ID', 'data'];
 const FOLDER_NAME = 'Infographic 그래픽';
 
 // 처음 한 번 편집기에서 실행: Drive 권한 승인 + 그래픽 폴더 만들기
@@ -54,19 +58,24 @@ function doPost(e) {
     }
 
     if (req.action === 'save') {
-      const d = req.data || {};
-      const id = String(d.studentId || '').trim(), name = String(d.name || '').trim();
-      const json = JSON.stringify(d);
-      if (!id || !name || json.length > 40000) return out_({ ok: false, error: 'data' });
-      const row = [id, name, d.title || '', d.mainMessage || '',
-        (d.keyInformation || []).map(function (k, i) { return (i + 1) + '. ' + k; }).join('\n'),
-        d.organizer || '', d.designPrompt || '', d.presentationScript || '', d.hasGraphic ? 'O' : '', d.hasAudio ? 'O' : '',
-        d.submittedAt ? '제출' : '미제출', time_(d.submittedAt), time_(d.savedAt), json];
+      const incoming = req.data || {};
+      const id = String(incoming.studentId || '').trim(), name = String(incoming.name || '').trim();
+      if (!id || !name || JSON.stringify(incoming).length > 40000) return out_({ ok: false, error: 'data' });
       return locked_(function () {
         const sh = sheet_();
         // 학번과 이름이 모두 같은 줄만 고친다 (학번을 잘못 쳐도 다른 친구 기록을 덮어쓰지 않게)
-        const at = findRow_(sh, id, name) || sh.getLastRow() + 1;
+        const found = findRow_(sh, id, name), at = found || sh.getLastRow() + 1;
+        const before = found ? recordAt_(sh, found) : null;
+        // 빈 칸으로 온 항목은 이미 있는 내용을 지우지 않는다 (다른 컴퓨터·지워진 브라우저에서 빈 기록이 와도 안전)
+        const d = merge_(before, incoming);
+        if (before && before.submittedAt && !incoming.submittedAt) d.submittedAt = before.submittedAt;   // 제출 → 미제출로 되돌리지 않음
+        const json = JSON.stringify(d);
+        const row = [id, name, d.title || '', d.mainMessage || '',
+          (d.keyInformation || []).map(function (k, i) { return (i + 1) + '. ' + k; }).join('\n'),
+          d.organizer || '', d.designPrompt || '', d.presentationScript || '', d.hasGraphic ? 'O' : '', d.hasAudio ? 'O' : '',
+          d.submittedAt ? '제출' : '미제출', time_(d.submittedAt), time_(d.savedAt), json];
         sh.getRange(at, 1, 1, HEAD.length).setNumberFormat('@').setValues([row]);
+        if (d.submittedAt && (!before || before.submittedAt !== d.submittedAt)) backup_('최종 제출', '기록', id, name, d.submittedAt, '', json);
         dropOld_(req.old, id, name);
         return out_({ ok: true });
       });
@@ -115,6 +124,21 @@ function doPost(e) {
       return out_({ ok: true, mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
     }
 
+    // 학생: 다른 컴퓨터에서 이어 하기 — 학번과 이름이 모두 맞는 내 기록과 그래픽을 돌려준다
+    if (req.action === 'load') {
+      const id = String(req.studentId || '').trim(), name = String(req.name || '').trim();
+      if (!id || !name) return out_({ ok: false, error: 'data' });
+      const sh = sheet_(), at = findRow_(sh, id, name);
+      const record = at ? recordAt_(sh, at) : null;
+      let graphic = null;
+      const g = gSheet_(), ga = findRow_(g, id, name);
+      if (ga) try {
+        const blob = DriveApp.getFileById(String(g.getRange(ga, 3).getValue())).getBlob();
+        graphic = { mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) };
+      } catch (err) {}
+      return out_({ ok: true, record: record, graphic: graphic });
+    }
+
     // 교사: 잘못 들어간 그래픽 지우기 (파일은 Drive 휴지통으로)
     if (req.action === 'imgDel') {
       if (!teacher) return out_({ ok: false, error: 'key' });
@@ -122,6 +146,8 @@ function doPost(e) {
         const sh = gSheet_();
         const ids = sh.getLastRow() > 1 ? sh.getRange(2, 3, sh.getLastRow() - 1, 1).getValues() : [];
         for (let i = ids.length - 1; i >= 0; i--) if (String(ids[i][0]) === String(req.fileId || '')) {
+          const r = sh.getRange(i + 2, 1, 1, 2).getValues()[0];
+          backup_('교사가 그래픽 삭제 (Drive 휴지통)', '그래픽', r[0], r[1], '', req.fileId, '');
           try { DriveApp.getFileById(req.fileId).setTrashed(true); } catch (err) {}
           sh.deleteRow(i + 2);
           return out_({ ok: true });
@@ -136,6 +162,8 @@ function doPost(e) {
       return locked_(function () {
         const sh = sheet_(), at = findRow_(sh, String(req.studentId || '').trim(), String(req.name || '').trim());
         if (!at) return out_({ ok: false, error: 'data' });
+        const old = recordAt_(sh, at) || {};
+        backup_('교사가 기록 줄 삭제', '기록', req.studentId, req.name, old.submittedAt || '', '', JSON.stringify(old));
         sh.deleteRow(at);
         return out_({ ok: true });
       });
@@ -215,18 +243,51 @@ function findRow_(sh, id, name) {
 
 // 같은 학생이 학번(또는 이름)만 고쳐 쓴 경우: 예전에 잘못 보낸 기록·그래픽 줄을 지운다.
 // 학번과 이름이 둘 다 바뀌었으면 다른 학생일 수 있으니 지우지 않는다.
+// 이미 제출한 기록은 지우지 않고, 지우는 줄은 모두 Backup 시트에 남긴다 (그래픽 파일도 Drive 에 그대로 둔다)
 function dropOld_(old, id, name) {
   if (!old) return;
   const oid = String(old.studentId || '').trim(), oname = String(old.name || '').trim();
   if (!oid || !oname || (oid === id && oname === name) || (oid !== id && oname !== name)) return;
+  const why = '학번·이름 수정 → ' + id + ' ' + name;
   const r = sheet_(), ra = findRow_(r, oid, oname);
-  if (ra) r.deleteRow(ra);
+  const rec = ra ? recordAt_(r, ra) : null;
+  if (rec && rec.submittedAt) return;   // 제출까지 한 기록이면 다른 학생 것일 수 있으니 그대로 둔다
+  if (ra) { backup_(why, '기록', oid, oname, '', '', JSON.stringify(rec || {})); r.deleteRow(ra); }
   const g = gSheet_(), ga = findRow_(g, oid, oname);
-  if (ga) {
-    const f = String(g.getRange(ga, 3).getValue());
-    if (f) try { DriveApp.getFileById(f).setTrashed(true); } catch (err) {}
-    g.deleteRow(ga);
-  }
+  if (ga) { backup_(why, '그래픽', oid, oname, '', String(g.getRange(ga, 3).getValue()), ''); g.deleteRow(ga); }
+}
+
+// Records 시트 한 줄의 원본(JSON)
+function recordAt_(sh, at) {
+  try { return JSON.parse(sh.getRange(at, HEAD.length).getValue()); } catch (err) { return null; }
+}
+
+function isEmpty_(v) {
+  if (v === undefined || v === null || v === '' || v === false) return true;
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === 'object') return Object.keys(v).every(function (k) { return isEmpty_(v[k]); });
+  return false;
+}
+// 새 기록을 쓰되, 새 기록에서 비어 있는 항목은 예전 내용을 남긴다
+function merge_(oldD, newD) {
+  if (!oldD) return newD;
+  const out = {};
+  Object.keys(oldD).concat(Object.keys(newD)).forEach(function (k) {
+    if (k in out) return;
+    const o = oldD[k], n = newD[k];
+    if (n && o && typeof n === 'object' && typeof o === 'object' && !Array.isArray(n) && !Array.isArray(o)) out[k] = merge_(o, n);
+    else out[k] = isEmpty_(n) && !isEmpty_(o) ? o : (n === undefined ? o : n);
+  });
+  return out;
+}
+
+function backup_(why, kind, id, name, submittedAt, fileId, json) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName('Backup');
+  if (!sh) sh = ss.insertSheet('Backup');
+  if (sh.getLastRow() === 0) { sh.getRange(1, 1, 1, HEAD_B.length).setValues([HEAD_B]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  sh.getRange(sh.getLastRow() + 1, 1, 1, HEAD_B.length).setNumberFormat('@')
+    .setValues([[time_(new Date().toISOString()), why, kind, String(id || ''), String(name || ''), time_(submittedAt), String(fileId || ''), String(json || '')]]);
 }
 
 function sheet_() {
